@@ -1,9 +1,12 @@
+import { useNavigate } from "react-router";
 import MicIcon from "@mui/icons-material/Mic";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import SearchIcon from "@mui/icons-material/Search";
 import HistoryIcon from "@mui/icons-material/History";
 
 export function Features() {
+  const navigate = useNavigate();
+
   const features = [
     {
       id: 1,
@@ -11,6 +14,7 @@ export function Features() {
       description: "Use your device's microphone to record voice prompts that will be processed by LunaAI's LLM orchestration.",
       icon: <MicIcon sx={{ fontSize: 48 }} />,
       action: "Start Recording",
+      route: "/startrecording",
     },
     {
       id: 2,
@@ -18,6 +22,7 @@ export function Features() {
       description: "Upload pre-recorded audio files for LunaAI to transcribe and process through multiple AI providers.",
       icon: <UploadFileIcon sx={{ fontSize: 48 }} />,
       action: "Upload File",
+      route: "/uploadprompt",
     },
     {
       id: 3,
@@ -25,6 +30,7 @@ export function Features() {
       description: "Search through previous prompts, responses, and LLM interactions with powerful text-based queries.",
       icon: <SearchIcon sx={{ fontSize: 48 }} />,
       action: "Open Search",
+      route: null,
     },
     {
       id: 4,
@@ -32,6 +38,7 @@ export function Features() {
       description: "Browse and review all previous desktop entries, prompts, and LLM response chains from your history.",
       icon: <HistoryIcon sx={{ fontSize: 48 }} />,
       action: "View Entries",
+      route: "/mydesktop",
     },
   ];
 
@@ -57,7 +64,15 @@ export function Features() {
                 <p className="text-slate-600 text-sm mb-4">
                   {feature.description}
                 </p>
-                <button className="px-4 py-2 bg-slate-900 text-white rounded hover:bg-slate-800 transition-colors text-sm">
+                <button 
+                  onClick={() => feature.route && navigate(feature.route)}
+                  disabled={!feature.route}
+                  className={`px-4 py-2 rounded text-sm transition-colors ${
+                    feature.route
+                      ? "bg-slate-900 text-white hover:bg-slate-800"
+                      : "bg-slate-300 text-slate-500 cursor-not-allowed"
+                  }`}
+                >
                   {feature.action}
                 </button>
               </div>

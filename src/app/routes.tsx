@@ -8,6 +8,9 @@ import { Features } from "./components/Features";
 import { Visualizations } from "./components/Visualizations";
 import { Administrator } from "./components/Administrator";
 import { Transactions } from "./components/Transactions";
+import { VoicePrompt } from "./components/VoicePrompt";
+import { UploadPrompt } from "./components/UploadPrompt";
+import { StartRecording } from "./components/StartRecording";
 import { Login } from "./components/Login";
 import { Root } from "./components/Root";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -18,13 +21,20 @@ export const router = createBrowserRouter([
     element: <Login />,
   },
   {
+    path: "/",
+    element: <Root />,
+    children: [
+      { index: true, element: <Home /> },
+      { path: "home", element: <Home /> },
+    ],
+  },
+  {
     element: <ProtectedRoute />,
     children: [
       {
         path: "/",
         element: <Root />,
         children: [
-          { index: true, element: <Home /> },
           { path: "about", element: <About /> },
           { path: "contact", element: <Contact /> },
           { path: "profile", element: <Profile /> },
@@ -33,6 +43,9 @@ export const router = createBrowserRouter([
           { path: "visualizations", element: <Visualizations /> },
           { path: "administrator", element: <Administrator /> },
           { path: "transactions", element: <Transactions /> },
+          { path: "voiceprompt", element: <VoicePrompt /> },
+          { path: "uploadprompt", element: <UploadPrompt /> },
+          { path: "startrecording", element: <StartRecording /> },
         ],
       },
     ],

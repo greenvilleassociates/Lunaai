@@ -1,21 +1,23 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
 import { useState, useEffect } from "react";
-import { Tabs, Tab } from "@mui/material";
 import DesktopWindowsIcon from "@mui/icons-material/DesktopWindows";
 import FeaturesIcon from "@mui/icons-material/AutoAwesome";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import MenuIcon from "@mui/icons-material/Menu";
+import CloseIcon from "@mui/icons-material/Close";
 import lunaLogo from "figma:asset/97a2e4984c2367786c9db0dc16a816860615bd7e.png";
+import ctsLogo from "figma:asset/399d93660a307619ab55b61f935095fec4286492.png";
 
 export function Root() {
   const location = useLocation();
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
-  const [bottomTabValue, setBottomTabValue] = useState<string | false>(false);
   const [loginTime, setLoginTime] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [ipAddress, setIpAddress] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const storedUsername = localStorage.getItem("username");
@@ -26,21 +28,6 @@ export function Root() {
     setIpAddress(localStorage.getItem("ipAddress") || "");
   }, []);
 
-  useEffect(() => {
-    // Update bottom tab based on current route
-    if (location.pathname === "/mydesktop") {
-      setBottomTabValue("mydesktop");
-    } else if (location.pathname === "/features") {
-      setBottomTabValue("features");
-    } else if (location.pathname === "/visualizations") {
-      setBottomTabValue("visualizations");
-    } else if (location.pathname === "/administrator") {
-      setBottomTabValue("administrator");
-    } else {
-      setBottomTabValue(false);
-    }
-  }, [location.pathname]);
-
   const handleLogout = () => {
     // Clear localStorage
     localStorage.removeItem("uid");
@@ -49,11 +36,6 @@ export function Root() {
     
     // Redirect to login
     navigate("/login");
-  };
-
-  const handleBottomTabChange = (_event: React.SyntheticEvent, newValue: string) => {
-    setBottomTabValue(newValue);
-    navigate(`/${newValue}`);
   };
 
   const isActive = (path: string) => {
@@ -71,6 +53,13 @@ export function Root() {
           <div className="flex items-center gap-3">
             <img src={lunaLogo} alt="LunaAI Logo" className="h-10 w-10 rounded-lg object-cover" />
             <h1 className="text-xl">LunaAI</h1>
+            {/* Hamburger Menu Button (visible on small screens) */}
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="lg:hidden ml-4 p-2 hover:bg-slate-800 rounded transition-colors"
+            >
+              {sidebarOpen ? <CloseIcon /> : <MenuIcon />}
+            </button>
           </div>
           <nav className="flex gap-6 items-center">
             <Link 
@@ -118,56 +107,113 @@ export function Root() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto p-8">
-        <Outlet />
-      </main>
+      {/* Main Content Area with Sidebar */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar Navigation - Desktop (10% width on large screens) */}
+        <aside className="hidden lg:flex lg:w-[10%] bg-slate-800 text-white flex-col shadow-lg">
+          <nav className="flex flex-col p-4 gap-2">
+            <Link
+              to="/mydesktop"
+              className={`flex flex-col items-center gap-2 p-4 rounded hover:bg-slate-700 transition-colors ${
+                isActive("/mydesktop") ? "bg-slate-700 text-white" : "text-slate-300"
+              }`}
+            >
+              <DesktopWindowsIcon fontSize="medium" />
+              <span className="text-xs text-center">My Desktop</span>
+            </Link>
+            <Link
+              to="/features"
+              className={`flex flex-col items-center gap-2 p-4 rounded hover:bg-slate-700 transition-colors ${
+                isActive("/features") ? "bg-slate-700 text-white" : "text-slate-300"
+              }`}
+            >
+              <FeaturesIcon fontSize="medium" />
+              <span className="text-xs text-center">Features</span>
+            </Link>
+            <Link
+              to="/visualizations"
+              className={`flex flex-col items-center gap-2 p-4 rounded hover:bg-slate-700 transition-colors ${
+                isActive("/visualizations") ? "bg-slate-700 text-white" : "text-slate-300"
+              }`}
+            >
+              <BarChartIcon fontSize="medium" />
+              <span className="text-xs text-center">Visualizations</span>
+            </Link>
+            <Link
+              to="/administrator"
+              className={`flex flex-col items-center gap-2 p-4 rounded hover:bg-slate-700 transition-colors ${
+                isActive("/administrator") ? "bg-slate-700 text-white" : "text-slate-300"
+              }`}
+            >
+              <AdminPanelSettingsIcon fontSize="medium" />
+              <span className="text-xs text-center">Administrator</span>
+            </Link>
+          </nav>
+        </aside>
 
-      {/* Bottom Bar with Material UI Tabs */}
+        {/* Sidebar Navigation - Mobile (hamburger dropdown) */}
+        {sidebarOpen && (
+          <aside className="lg:hidden absolute top-[72px] left-0 w-64 bg-slate-800 text-white shadow-lg z-50">
+            <nav className="flex flex-col p-4 gap-2">
+              <Link
+                to="/mydesktop"
+                onClick={() => setSidebarOpen(false)}
+                className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/mydesktop") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+              >
+                <DesktopWindowsIcon fontSize="small" />
+                <span className="text-sm">My Desktop</span>
+              </Link>
+              <Link
+                to="/features"
+                onClick={() => setSidebarOpen(false)}
+                className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/features") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+              >
+                <FeaturesIcon fontSize="small" />
+                <span className="text-sm">Features</span>
+              </Link>
+              <Link
+                to="/visualizations"
+                onClick={() => setSidebarOpen(false)}
+                className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/visualizations") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+              >
+                <BarChartIcon fontSize="small" />
+                <span className="text-sm">Visualizations</span>
+              </Link>
+              <Link
+                to="/administrator"
+                onClick={() => setSidebarOpen(false)}
+                className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/administrator") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+              >
+                <AdminPanelSettingsIcon fontSize="small" />
+                <span className="text-sm">Administrator</span>
+              </Link>
+            </nav>
+          </aside>
+        )}
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-auto p-8 lg:w-[90%]">
+          <Outlet />
+        </main>
+      </div>
+
+      {/* Bottom Footer */}
       <footer className="w-full bg-slate-900 text-white shadow-md">
-        <Tabs
-          value={bottomTabValue}
-          onChange={handleBottomTabChange}
-          centered
-          sx={{
-            "& .MuiTabs-indicator": {
-              backgroundColor: "white",
-            },
-            "& .MuiTab-root": {
-              color: "rgba(255, 255, 255, 0.6)",
-              "&.Mui-selected": {
-                color: "white",
-              },
-            },
-          }}
-        >
-          <Tab
-            value="mydesktop"
-            icon={<DesktopWindowsIcon />}
-            label="My Desktop"
-            iconPosition="start"
-          />
-          <Tab
-            value="features"
-            icon={<FeaturesIcon />}
-            label="Features"
-            iconPosition="start"
-          />
-          <Tab
-            value="visualizations"
-            icon={<BarChartIcon />}
-            label="Visualizations"
-            iconPosition="start"
-          />
-          <Tab
-            value="administrator"
-            icon={<AdminPanelSettingsIcon />}
-            label="Administrator"
-            iconPosition="start"
-          />
-        </Tabs>
         <div className="text-center py-2 text-xs text-slate-400 border-t border-slate-800">
-          © 2026 Capitol Technology Solutions, Inc - Research Triangle Park - North Carolina
+          <div className="mb-2">
+            © 2026 Capitol Technology Solutions, Inc - Research Triangle Park - North Carolina
+          </div>
+          <div className="flex justify-center">
+            <img src={ctsLogo} alt="CTS Logo" className="h-[25px] w-[25px] object-contain" />
+          </div>
         </div>
       </footer>
 
