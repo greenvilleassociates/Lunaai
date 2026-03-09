@@ -1,0 +1,72 @@
+[
+  {
+    "uid": "user-001",
+    "username": "john",
+    "password": "test12345",
+    "role": "superuser",
+    "address1": "123 Main Street",
+    "address2": "Apt 4B",
+    "city": "Durham",
+    "state": "NC",
+    "zip": "27703",
+    "phone": "919-555-0101",
+    "cell": "919-555-0102",
+    "profilePicture": ""
+  },
+  {
+    "uid": "user-002",
+    "username": "joe",
+    "password": "test12345",
+    "role": "superuser",
+    "address1": "456 Oak Avenue",
+    "address2": "",
+    "city": "Raleigh",
+    "state": "NC",
+    "zip": "27601",
+    "phone": "919-555-0201",
+    "cell": "919-555-0202",
+    "profilePicture": ""
+  },
+  {
+    "uid": "user-003",
+    "username": "brian",
+    "password": "test12345",
+    "role": "superuser",
+    "address1": "789 Pine Road",
+    "address2": "Suite 100",
+    "city": "Chapel Hill",
+    "state": "NC",
+    "zip": "27514",
+    "phone": "919-555-0301",
+    "cell": "919-555-0302",
+    "profilePicture": ""
+  },
+  {
+    "uid": "user-004",
+    "username": "portia",
+    "password": "test12345",
+    "role": "superuser",
+    "address1": "321 Elm Street",
+    "address2": "",
+    "city": "Cary",
+    "state": "NC",
+    "zip": "27511",
+    "phone": "919-555-0401",
+    "cell": "919-555-0402",
+    "profilePicture": ""
+  },
+  {
+    "uid": "user-005",
+    "username": "joey",
+    "password": "test12345",
+    "role": "superuser",
+    "address1": "654 Maple Drive",
+    "address2": "Unit 2",
+    "city": "Durham",
+    "state": "NC",
+    "zip": "27707",
+    "phone": "919-555-0501",
+    "cell": "919-555-0502",
+    "profilePicture": ""
+  }
+]
