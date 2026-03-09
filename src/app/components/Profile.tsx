@@ -293,6 +293,19 @@ export function Profile() {
                   <ListItemText primary="View Transactions" />
                 </ListItemButton>
               </ListItem>
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => navigate("/userhelp")}
+                  sx={{
+                    "&:hover": {
+                      backgroundColor: "#8B0000",
+                      color: "white",
+                    },
+                  }}
+                >
+                  <ListItemText primary="Open Trouble Ticket" />
+                </ListItemButton>
+              </ListItem>
             </List>
           </div>
 

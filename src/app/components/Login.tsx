@@ -1,6 +1,12 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, Link } from "react-router";
 import users from "../data/users.json";
+import { API_CONFIG, getApiUrl } from "../config/api";
+
+// Helper function to generate a session token
+function generateSessionToken(): string {
+  return `sess_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+}
 
 export function Login() {
   const [username, setUsername] = useState("");
@@ -52,6 +58,81 @@ export function Login() {
       localStorage.setItem("latitude", latitude);
       localStorage.setItem("longitude", longitude);
       localStorage.setItem("ipAddress", ipAddress);
+      
+      // Post login log to Azure API
+      try {
+        const logUrl = getApiUrl(API_CONFIG.ENDPOINTS.USER_LOG);
+        const logEntry = {
+          descr: `User login from ${ipAddress} at ${latitude}, ${longitude}`,
+          emplid: 0, // Can be populated from user data if available
+          fullname: user.username,
+          logdate: new Date().toISOString(),
+          secpriority: 1, // 1 = Low priority for normal login
+          noccomments: `Successful login at ${loginTime}`,
+          nocOpId: 0,
+          escalationId: 0,
+          triagecasenumber: "",
+          userid: parseInt(user.uid) || 0,
+          role: user.role,
+        };
+
+        await fetch(logUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${user.uid}`,
+          },
+          body: JSON.stringify(logEntry),
+        });
+        
+        console.log("Login logged successfully");
+      } catch (error) {
+        // Don't block login if logging fails
+        console.error("Failed to log user login:", error);
+      }
+      
+      // Create user session
+      try {
+        const sessionUrl = getApiUrl(API_CONFIG.ENDPOINTS.USER_SESSION);
+        const sessionToken = generateSessionToken();
+        const sessionStart = new Date();
+        
+        // Store session token in localStorage
+        localStorage.setItem("sessionToken", sessionToken);
+        localStorage.setItem("sessionStart", sessionStart.toISOString());
+        
+        const sessionEntry = {
+          userid: parseInt(user.uid.replace('user-', '')) || 0,
+          token: sessionToken,
+          acknowledged: 0,
+          actionpriority: 0,
+          sessionstart: sessionStart.toISOString(),
+          sessionend: new Date(sessionStart.getTime() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
+          sessionrecorded: 0,
+          sessionrecordurl: "",
+          sessiondescription: `Login session from ${ipAddress} at ${latitude}, ${longitude}`,
+          sessionusername: user.username,
+          sessionemail: `${user.username}@capitoltechnology.net`, // Construct email from username
+          sessionfirstname: user.username.charAt(0).toUpperCase() + user.username.slice(1),
+          sessionlastname: "", // Not available in user data
+          sessionfullname: user.username.charAt(0).toUpperCase() + user.username.slice(1),
+          sessioncomplete: 0,
+        };
+
+        await fetch(sessionUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${user.uid}`,
+          },
+          body: JSON.stringify(sessionEntry),
+        });
+        
+        console.log("User session created successfully");
+      } catch (error) {
+        // Don't block login if session creation fails
+        console.error("Failed to create user session:", error);
+      }
       
       // Redirect to home page
       navigate("/");
@@ -108,7 +189,20 @@ export function Login() {
           </button>
         </form>
 
-        <div className="mt-6 text-sm text-slate-600 text-center">
+        {/* Registration Link */}
+        <div className="mt-4 text-center">
+          <p className="text-sm text-slate-600">
+            Don't have an account?{" "}
+            <Link
+              to="/register"
+              className="text-slate-900 hover:text-slate-700 font-semibold underline"
+            >
+              Register here
+            </Link>
+          </p>
+        </div>
+
+        <div className="mt-6 text-sm text-slate-600 text-center border-t border-slate-200 pt-4">
           <p className="mb-2">Test Users:</p>
           <p>john, joe, brian, portia, joey</p>
           <p>Password: test12345</p>

@@ -6,8 +6,11 @@ import BarChartIcon from "@mui/icons-material/BarChart";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
+import NotificationsIcon from "@mui/icons-material/Notifications";
+import HelpIcon from "@mui/icons-material/Help";
 import lunaLogo from "figma:asset/97a2e4984c2367786c9db0dc16a816860615bd7e.png";
 import ctsLogo from "figma:asset/399d93660a307619ab55b61f935095fec4286492.png";
+import { API_CONFIG, getApiUrl } from "../config/api";
 
 export function Root() {
   const location = useLocation();
@@ -28,11 +31,48 @@ export function Root() {
     setIpAddress(localStorage.getItem("ipAddress") || "");
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Get session token from localStorage
+    const sessionToken = localStorage.getItem("sessionToken");
+    const uid = localStorage.getItem("uid");
+    
+    // Mark session as complete (not deleted, just inactive) in Azure API
+    if (sessionToken && uid) {
+      try {
+        const sessionUrl = getApiUrl(API_CONFIG.ENDPOINTS.USER_SESSION);
+        const sessionEnd = new Date();
+        
+        // Update the session to mark it as complete with end time
+        // Session remains in database for audit/reporting purposes
+        await fetch(sessionUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${uid}`,
+          },
+          body: JSON.stringify({
+            token: sessionToken,
+            sessionend: sessionEnd.toISOString(),
+            sessioncomplete: 1, // Mark session as complete/inactive
+          }),
+        });
+        
+        console.log("Session marked as complete (inactive)");
+      } catch (error) {
+        console.error("Failed to update session:", error);
+      }
+    }
+    
     // Clear localStorage
     localStorage.removeItem("uid");
     localStorage.removeItem("username");
     localStorage.removeItem("role");
+    localStorage.removeItem("sessionToken");
+    localStorage.removeItem("sessionStart");
+    localStorage.removeItem("loginTime");
+    localStorage.removeItem("latitude");
+    localStorage.removeItem("longitude");
+    localStorage.removeItem("ipAddress");
     
     // Redirect to login
     navigate("/login");
@@ -46,7 +86,7 @@ export function Root() {
   };
 
   return (
-    <div className="size-full flex flex-col">
+    <div className="size-full flex flex-col min-h-[1000px]">
       {/* Top Bar */}
       <header className="w-full bg-slate-900 text-white px-6 py-4 shadow-md">
         <div className="flex items-center justify-between">
@@ -93,6 +133,24 @@ export function Root() {
               }`}
             >
               Profile
+            </Link>
+            <Link 
+              to="/usernotifications" 
+              className={`hover:text-slate-300 transition-colors ${
+                isActive("/usernotifications") ? "text-white font-semibold" : "text-slate-400"
+              }`}
+              title="Notifications"
+            >
+              <NotificationsIcon />
+            </Link>
+            <Link 
+              to="/userhelp" 
+              className={`hover:text-slate-300 transition-colors ${
+                isActive("/userhelp") ? "text-white font-semibold" : "text-slate-400"
+              }`}
+              title="Help & Support"
+            >
+              <HelpIcon />
             </Link>
             <div className="flex items-center gap-4 ml-4 pl-4 border-l border-slate-700">
               <span className="text-sm text-slate-400">Welcome, {username}</span>
