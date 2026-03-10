@@ -1,24 +1,28 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router";
-import users from "../data/users.json";
 import { API_CONFIG, getApiUrl } from "../config/api";
+import { DATA_URLS, fetchExternalData } from "../config/dataUrls";
 
 /**
  * Login Component
  * 
  * Authentication Flow:
  * ┌─────────────────────────────────────────────────────────────┐
- * │ 1. POST /api/Auth/login {username, plainPassword}          │
+ * │ 1. Check external JSON first (for superusers without domain)│
+ * │    ├─ Fetch from luna.capitoltechnology.net/data/users.json│
+ * │    ├─ Found → Authenticate locally                         │
+ * │    │   └─ POST /api/Usersession to create session ✓        │
+ * │    └─ Not found → Try API authentication                   │
+ * │                                                             │
+ * │ 2. POST /api/Auth/login {username, plainPassword}          │
  * │    ├─ Success → Get {user, token}                          │
  * │    │   ├─ Store authToken                                  │
  * │    │   └─ Session auto-created by Azure ✓                  │
- * │    └─ Fail → Fallback to local JSON                        │
- * │        ├─ Validate against users.json                      │
- * │        └─ POST /api/Usersession to create session ✓        │
+ * │    └─ Fail → Invalid credentials                           │
  * │                                                             │
- * │ 2. Capture geolocation & IP address                        │
- * │ 3. POST /api/Userlog (both methods)                        │
- * │ 4. Redirect to home                                        │
+ * │ 3. Capture geolocation & IP address                        │
+ * │ 4. POST /api/Userlog (both methods)                        │
+ * │ 5. Redirect to home                                        │
  * └─────────────────────────────────────────────────────────────┘
  */
 
@@ -40,7 +44,142 @@ export function Login() {
     setLoading(true);
 
     try {
-      // Try Azure API first
+      // Check external JSON first for superusers without domain
+      const users = await fetchExternalData(DATA_URLS.USERS);
+      const localUser = users.find(
+        (u: { username: string; password: string }) => u.username === username && u.password === password
+      );
+      
+      if (localUser) {
+        // Local JSON authentication successful
+        console.log("Local JSON authentication successful for user:", localUser.username);
+        
+        // Get current time
+        const loginTime = new Date().toLocaleString();
+        
+        // Get user's location
+        let latitude = "N/A";
+        let longitude = "N/A";
+        try {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject);
+          });
+          latitude = position.coords.latitude.toFixed(6);
+          longitude = position.coords.longitude.toFixed(6);
+        } catch (error) {
+          console.log("Location access denied or unavailable");
+        }
+
+        // Get IP address
+        let ipAddress = "N/A";
+        try {
+          const response = await fetch("https://api.ipify.org?format=json");
+          const data = await response.json();
+          ipAddress = data.ip;
+        } catch (error) {
+          console.log("IP address fetch failed");
+        }
+
+        // Store uid and session information in localStorage
+        localStorage.setItem("uid", localUser.uid || localUser.id || localUser.userid?.toString() || "");
+        localStorage.setItem("username", localUser.username || username);
+        localStorage.setItem("role", localUser.role || "user");
+        localStorage.setItem("loginTime", loginTime);
+        localStorage.setItem("latitude", latitude);
+        localStorage.setItem("longitude", longitude);
+        localStorage.setItem("ipAddress", ipAddress);
+        
+        console.log("LocalStorage updated with uid:", localStorage.getItem("uid"));
+        
+        // Post login log to Azure API
+        try {
+          const logUrl = getApiUrl(API_CONFIG.ENDPOINTS.USER_LOG);
+          const logEntry = {
+            descr: `User login from ${ipAddress} at ${latitude}, ${longitude}`,
+            emplid: 0, // Can be populated from user data if available
+            fullname: localUser.username,
+            logdate: new Date().toISOString(),
+            secpriority: 1, // 1 = Low priority for normal login
+            noccomments: `Successful login at ${loginTime}`,
+            nocOpId: 0,
+            escalationId: 0,
+            triagecasenumber: "",
+            userid: parseInt(localUser.uid) || 0,
+            role: localUser.role,
+          };
+
+          await fetch(logUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localUser.uid}`,
+            },
+            body: JSON.stringify(logEntry),
+          });
+          
+          console.log("Login logged successfully");
+        } catch (error) {
+          // Don't block login if logging fails
+          console.error("Failed to log user login:", error);
+        }
+        
+        // Create user session
+        try {
+          const sessionUrl = getApiUrl(API_CONFIG.ENDPOINTS.USER_SESSION);
+          const sessionToken = generateSessionToken();
+          const sessionStart = new Date();
+          
+          // Store session token in localStorage
+          localStorage.setItem("sessionToken", sessionToken);
+          localStorage.setItem("sessionStart", sessionStart.toISOString());
+          
+          const sessionEntry = {
+            userid: parseInt(localUser.uid.replace('user-', '')) || 0,
+            token: sessionToken,
+            acknowledged: 0,
+            actionpriority: 0,
+            sessionstart: sessionStart.toISOString(),
+            sessionend: new Date(sessionStart.getTime() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
+            sessionrecorded: 0,
+            sessionrecordurl: "",
+            sessiondescription: `Login session from ${ipAddress} at ${latitude}, ${longitude}`,
+            sessionusername: localUser.username,
+            sessionemail: `${localUser.username}@capitoltechnology.net`, // Construct email from username
+            sessionfirstname: localUser.username.charAt(0).toUpperCase() + localUser.username.slice(1),
+            sessionlastname: "", // Not available in user data
+            sessionfullname: localUser.username.charAt(0).toUpperCase() + localUser.username.slice(1),
+            sessioncomplete: 0,
+          };
+
+          await fetch(sessionUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localUser.uid}`,
+            },
+            body: JSON.stringify(sessionEntry),
+          });
+          
+          console.log("User session created successfully (local JSON auth)");
+        } catch (error) {
+          // Don't block login if session creation fails
+          console.error("Failed to create user session:", error);
+        }
+        
+        // Redirect to home page
+        console.log("About to navigate to / ...");
+        setLoading(false);
+        
+        // Use setTimeout to ensure state updates complete before navigation
+        setTimeout(() => {
+          console.log("Navigating now with uid:", localStorage.getItem("uid"));
+          navigate("/", { replace: true });
+        }, 100);
+        
+        return;
+      }
+
+      // Try Azure API if local JSON authentication fails
       const loginUrl = getApiUrl(API_CONFIG.ENDPOINTS.AUTH_LOGIN);
       const loginResponse = await fetch(loginUrl, {
         method: "POST",
@@ -58,19 +197,8 @@ export function Login() {
       let authToken = "";
 
       if (!loginResponse.ok) {
-        // Fallback to local JSON authentication
-        console.log("Azure API login failed, trying local authentication");
-        const localUser = users.find(
-          (u) => u.username === username && u.password === password
-        );
-        
-        if (!localUser) {
-          throw new Error("Invalid username or password");
-        }
-        
-        user = localUser;
-        useApiAuth = false;
-        console.log("Local JSON authentication successful");
+        // Invalid credentials
+        throw new Error("Invalid username or password");
       } else {
         const apiResponse = await loginResponse.json();
         // Azure API returns { user: {...}, token: "..." }
@@ -202,7 +330,16 @@ export function Login() {
       }
       
       // Redirect to home page
-      navigate("/");
+      console.log("About to navigate to / ...");
+      setLoading(false);
+      
+      // Use setTimeout to ensure state updates complete before navigation
+      setTimeout(() => {
+        console.log("Navigating now with uid:", localStorage.getItem("uid"));
+        navigate("/", { replace: true });
+      }, 100);
+      
+      return;
     } catch (error) {
       setError(error.message);
     } finally {
