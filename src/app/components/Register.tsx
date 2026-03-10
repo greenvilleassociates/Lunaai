@@ -28,13 +28,6 @@ export function Register() {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "user",
-    companyid: "",
-    employeeid: "",
-    microsoftid: "",
-    ncrid: "",
-    oracleid: "",
-    azureid: "",
   });
 
   const handleChange = (field: string, value: string) => {
@@ -82,24 +75,17 @@ export function Register() {
     }
 
     try {
-      // Prepare user payload (without id - Azure will assign it)
+      // Prepare minimal user payload for /api/Auth/signup
       const userPayload = {
         firstname: formData.firstname,
         lastname: formData.lastname,
         username: formData.username,
         email: formData.email,
-        plainpassword: formData.password, // API expects plainpassword, server will hash it
-        role: formData.role,
-        companyid: formData.companyid ? parseInt(formData.companyid) : 0,
-        employeeid: formData.employeeid || "",
-        microsoftid: formData.microsoftid || "",
-        ncrid: formData.ncrid || "",
-        oracleid: formData.oracleid || "",
-        azureid: formData.azureid || "",
+        plainPassword: formData.password, // API expects plainPassword with capital P
       };
 
       // Register user via API
-      await apiRequest(API_CONFIG.ENDPOINTS.USERS, {
+      await apiRequest(API_CONFIG.ENDPOINTS.AUTH_SIGNUP, {
         method: "POST",
         body: JSON.stringify(userPayload),
       });
@@ -210,79 +196,6 @@ export function Register() {
                 onChange={(e) => handleChange("confirmPassword", e.target.value)}
                 required
                 disabled={loading}
-                sx={{ mb: 3 }}
-              />
-
-              <FormControl fullWidth sx={{ mb: 3 }}>
-                <InputLabel>Role</InputLabel>
-                <Select
-                  value={formData.role}
-                  label="Role"
-                  onChange={(e) => handleChange("role", e.target.value)}
-                  disabled={loading}
-                >
-                  <MenuItem value="user">User</MenuItem>
-                  <MenuItem value="admin">Admin</MenuItem>
-                </Select>
-              </FormControl>
-
-              <TextField
-                fullWidth
-                label="Company ID"
-                value={formData.companyid}
-                onChange={(e) => handleChange("companyid", e.target.value)}
-                disabled={loading}
-                helperText="Optional - Leave blank if unknown"
-                sx={{ mb: 3 }}
-              />
-
-              <TextField
-                fullWidth
-                label="Employee ID"
-                value={formData.employeeid}
-                onChange={(e) => handleChange("employeeid", e.target.value)}
-                disabled={loading}
-                helperText="Optional - Leave blank if unknown"
-                sx={{ mb: 3 }}
-              />
-
-              <TextField
-                fullWidth
-                label="Microsoft ID"
-                value={formData.microsoftid}
-                onChange={(e) => handleChange("microsoftid", e.target.value)}
-                disabled={loading}
-                helperText="Optional - Leave blank if unknown"
-                sx={{ mb: 3 }}
-              />
-
-              <TextField
-                fullWidth
-                label="NCR ID"
-                value={formData.ncrid}
-                onChange={(e) => handleChange("ncrid", e.target.value)}
-                disabled={loading}
-                helperText="Optional - Leave blank if unknown"
-                sx={{ mb: 3 }}
-              />
-
-              <TextField
-                fullWidth
-                label="Oracle ID"
-                value={formData.oracleid}
-                onChange={(e) => handleChange("oracleid", e.target.value)}
-                disabled={loading}
-                helperText="Optional - Leave blank if unknown"
-                sx={{ mb: 3 }}
-              />
-
-              <TextField
-                fullWidth
-                label="Azure ID"
-                value={formData.azureid}
-                onChange={(e) => handleChange("azureid", e.target.value)}
-                disabled={loading}
-                helperText="Optional - Leave blank if unknown"
                 sx={{ mb: 3 }}
               />
 

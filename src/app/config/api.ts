@@ -81,9 +81,10 @@ export const API_CONFIG = {
     USER_SESSION_BY_ID: (id: string) => `/Usersession/${id}`,
     
     // Authentication
-    AUTH_LOGIN: '/auth/login',
+    AUTH_LOGIN: '/Auth/login',
     AUTH_VERIFY: '/auth/verify',
     AUTH_REFRESH: '/auth/refresh',
+    AUTH_SIGNUP: '/Auth/signup',
     
     // LLM Processing
     LLM_PROCESS: '/llm/process',

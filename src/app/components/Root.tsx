@@ -73,6 +73,7 @@ export function Root() {
     localStorage.removeItem("latitude");
     localStorage.removeItem("longitude");
     localStorage.removeItem("ipAddress");
+    localStorage.removeItem("authToken");
     
     // Redirect to login
     navigate("/login");

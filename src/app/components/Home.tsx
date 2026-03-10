@@ -1,17 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import {
-  TextField,
-  Button,
-  CircularProgress,
-  Alert,
-  Box,
-  Paper,
-} from "@mui/material";
-import { Send, AutoAwesome } from "@mui/icons-material";
-import lunaLogo from "figma:asset/97a2e4984c2367786c9db0dc16a816860615bd7e.png";
-import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { Box, TextField, Button, CircularProgress, Alert, Paper } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
+import { AutoAwesome, Send } from "@mui/icons-material";
 import { API_CONFIG, getApiUrl } from "../config/api";
+import { getAuthHeaders } from "../utils/auth";
+import { ImageWithFallback } from "./figma/ImageWithFallback";
+import lunaLogo from "figma:asset/97a2e4984c2367786c9db0dc16a816860615bd7e.png";
 
 const seasideImages = [
   "https://images.unsplash.com/photo-1610289795012-6b0cebf95f0f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtYWxkaXZlcyUyMHR1cnF1b2lzZSUyMGJlYWNofGVufDF8fHx8MTc3MzA3MjAzMXww&ixlib=rb-4.1.0&q=80&w=1080",
@@ -81,10 +76,7 @@ export function Home() {
       const url = getApiUrl(API_CONFIG.ENDPOINTS.WEB_SEARCH);
       const response = await fetch(url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${uid}`,
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(payload),
       });
 

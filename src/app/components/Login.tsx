@@ -3,6 +3,25 @@ import { useNavigate, Link } from "react-router";
 import users from "../data/users.json";
 import { API_CONFIG, getApiUrl } from "../config/api";
 
+/**
+ * Login Component
+ * 
+ * Authentication Flow:
+ * ┌─────────────────────────────────────────────────────────────┐
+ * │ 1. POST /api/Auth/login {username, plainPassword}          │
+ * │    ├─ Success → Get {user, token}                          │
+ * │    │   ├─ Store authToken                                  │
+ * │    │   └─ Session auto-created by Azure ✓                  │
+ * │    └─ Fail → Fallback to local JSON                        │
+ * │        ├─ Validate against users.json                      │
+ * │        └─ POST /api/Usersession to create session ✓        │
+ * │                                                             │
+ * │ 2. Capture geolocation & IP address                        │
+ * │ 3. POST /api/Userlog (both methods)                        │
+ * │ 4. Redirect to home                                        │
+ * └─────────────────────────────────────────────────────────────┘
+ */
+
 // Helper function to generate a session token
 function generateSessionToken(): string {
   return `sess_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
@@ -12,18 +31,54 @@ export function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
-    // Find user with matching username and password
-    const user = users.find(
-      (u) => u.username === username && u.password === password
-    );
+    try {
+      // Try Azure API first
+      const loginUrl = getApiUrl(API_CONFIG.ENDPOINTS.AUTH_LOGIN);
+      const loginResponse = await fetch(loginUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username,
+          plainPassword: password,
+        }),
+      });
 
-    if (user) {
+      let user;
+      let useApiAuth = true;
+      let authToken = "";
+
+      if (!loginResponse.ok) {
+        // Fallback to local JSON authentication
+        console.log("Azure API login failed, trying local authentication");
+        const localUser = users.find(
+          (u) => u.username === username && u.password === password
+        );
+        
+        if (!localUser) {
+          throw new Error("Invalid username or password");
+        }
+        
+        user = localUser;
+        useApiAuth = false;
+        console.log("Local JSON authentication successful");
+      } else {
+        const apiResponse = await loginResponse.json();
+        // Azure API returns { user: {...}, token: "..." }
+        user = apiResponse.user || apiResponse;
+        authToken = apiResponse.token || "";
+        console.log("Azure API login successful - session created automatically");
+      }
+
       // Get current time
       const loginTime = new Date().toLocaleString();
       
@@ -51,13 +106,19 @@ export function Login() {
       }
 
       // Store uid and session information in localStorage
-      localStorage.setItem("uid", user.uid);
-      localStorage.setItem("username", user.username);
-      localStorage.setItem("role", user.role);
+      localStorage.setItem("uid", user.uid || user.id || user.userid?.toString() || "");
+      localStorage.setItem("username", user.username || username);
+      localStorage.setItem("role", user.role || "user");
       localStorage.setItem("loginTime", loginTime);
       localStorage.setItem("latitude", latitude);
       localStorage.setItem("longitude", longitude);
       localStorage.setItem("ipAddress", ipAddress);
+      
+      // Store auth token if using API authentication
+      if (authToken) {
+        localStorage.setItem("authToken", authToken);
+        console.log("Auth token stored");
+      }
       
       // Post login log to Azure API
       try {
@@ -91,53 +152,61 @@ export function Login() {
         console.error("Failed to log user login:", error);
       }
       
-      // Create user session
-      try {
-        const sessionUrl = getApiUrl(API_CONFIG.ENDPOINTS.USER_SESSION);
-        const sessionToken = generateSessionToken();
-        const sessionStart = new Date();
-        
-        // Store session token in localStorage
-        localStorage.setItem("sessionToken", sessionToken);
-        localStorage.setItem("sessionStart", sessionStart.toISOString());
-        
-        const sessionEntry = {
-          userid: parseInt(user.uid.replace('user-', '')) || 0,
-          token: sessionToken,
-          acknowledged: 0,
-          actionpriority: 0,
-          sessionstart: sessionStart.toISOString(),
-          sessionend: new Date(sessionStart.getTime() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
-          sessionrecorded: 0,
-          sessionrecordurl: "",
-          sessiondescription: `Login session from ${ipAddress} at ${latitude}, ${longitude}`,
-          sessionusername: user.username,
-          sessionemail: `${user.username}@capitoltechnology.net`, // Construct email from username
-          sessionfirstname: user.username.charAt(0).toUpperCase() + user.username.slice(1),
-          sessionlastname: "", // Not available in user data
-          sessionfullname: user.username.charAt(0).toUpperCase() + user.username.slice(1),
-          sessioncomplete: 0,
-        };
+      // Create user session ONLY if using local JSON authentication
+      // Azure API creates session automatically during login
+      if (!useApiAuth) {
+        try {
+          const sessionUrl = getApiUrl(API_CONFIG.ENDPOINTS.USER_SESSION);
+          const sessionToken = generateSessionToken();
+          const sessionStart = new Date();
+          
+          // Store session token in localStorage
+          localStorage.setItem("sessionToken", sessionToken);
+          localStorage.setItem("sessionStart", sessionStart.toISOString());
+          
+          const sessionEntry = {
+            userid: parseInt(user.uid.replace('user-', '')) || 0,
+            token: sessionToken,
+            acknowledged: 0,
+            actionpriority: 0,
+            sessionstart: sessionStart.toISOString(),
+            sessionend: new Date(sessionStart.getTime() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
+            sessionrecorded: 0,
+            sessionrecordurl: "",
+            sessiondescription: `Login session from ${ipAddress} at ${latitude}, ${longitude}`,
+            sessionusername: user.username,
+            sessionemail: `${user.username}@capitoltechnology.net`, // Construct email from username
+            sessionfirstname: user.username.charAt(0).toUpperCase() + user.username.slice(1),
+            sessionlastname: "", // Not available in user data
+            sessionfullname: user.username.charAt(0).toUpperCase() + user.username.slice(1),
+            sessioncomplete: 0,
+          };
 
-        await fetch(sessionUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${user.uid}`,
-          },
-          body: JSON.stringify(sessionEntry),
-        });
-        
-        console.log("User session created successfully");
-      } catch (error) {
-        // Don't block login if session creation fails
-        console.error("Failed to create user session:", error);
+          await fetch(sessionUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${authToken || user.uid}`,
+            },
+            body: JSON.stringify(sessionEntry),
+          });
+          
+          console.log("User session created successfully (local JSON auth)");
+        } catch (error) {
+          // Don't block login if session creation fails
+          console.error("Failed to create user session:", error);
+        }
+      } else {
+        // Azure API already created the session
+        console.log("Session already created by Azure API");
       }
       
       // Redirect to home page
       navigate("/");
-    } else {
-      setError("Invalid username or password");
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -184,8 +253,9 @@ export function Login() {
           <button
             type="submit"
             className="w-full bg-slate-900 text-white py-2 rounded-md hover:bg-slate-800 transition-colors"
+            disabled={loading}
           >
-            Login
+            {loading ? "Logging in..." : "Login"}
           </button>
         </form>
 
