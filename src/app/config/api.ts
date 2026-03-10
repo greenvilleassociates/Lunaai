@@ -3,9 +3,20 @@
  * 
  * Root API: lunaapi-h3a0ataqcphhd5em.westus3-01.azurewebsites.net
  * Most APIs have a base of /api (e.g., /api/users)
+ * 
+ * ⚠️ IP RESTRICTION NOTICE:
+ * The Azure API is IP address restricted. When developing in Figma Make,
+ * requests may be blocked if Figma's IP addresses are not whitelisted.
+ * 
+ * Development Mode:
+ * - Set DEV_MODE to true to use local JSON fallbacks when API is unreachable
+ * - Set DEV_MODE to false to require API connectivity (production)
  */
 
 export const API_CONFIG = {
+  // Development mode - enables fallback to local JSON when API is unreachable
+  DEV_MODE: true,
+  
   // Root API URL on Azure
   ROOT_URL: 'https://lunaapi-h3a0ataqcphhd5em.westus3-01.azurewebsites.net',
   
@@ -118,6 +129,8 @@ export function getApiUrl(endpoint: string): string {
 
 /**
  * Helper function for making API requests with standard headers
+ * 
+ * Handles IP restriction errors gracefully in development mode
  */
 export async function apiRequest<T>(
   endpoint: string,
@@ -137,17 +150,93 @@ export async function apiRequest<T>(
     defaultHeaders['Authorization'] = `Bearer ${uid}`;
   }
   
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      ...defaultHeaders,
-      ...options.headers,
-    },
-  });
-  
-  if (!response.ok) {
-    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        ...defaultHeaders,
+        ...options.headers,
+      },
+    });
+    
+    if (!response.ok) {
+      // Check if it's an IP restriction error (403 Forbidden or similar)
+      if (response.status === 403 || response.status === 401) {
+        const errorText = await response.text();
+        console.error('🚫 API Access Denied - Possible IP Restriction:', {
+          status: response.status,
+          statusText: response.statusText,
+          endpoint: endpoint,
+          error: errorText,
+        });
+        
+        if (API_CONFIG.DEV_MODE) {
+          console.warn('⚠️ DEV_MODE is enabled - fallback to local data should occur');
+        }
+      }
+      
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
+    
+    return response.json();
+  } catch (error) {
+    // Network errors (CORS, connection refused, etc.)
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      console.error('🌐 Network Error - Cannot reach API:', {
+        endpoint: endpoint,
+        url: url,
+        error: error.message,
+      });
+      
+      if (API_CONFIG.DEV_MODE) {
+        console.warn('⚠️ DEV_MODE is enabled - fallback to local data should occur');
+      }
+    }
+    
+    throw error;
   }
-  
-  return response.json();
+}
+
+/**
+ * Check if API is accessible (useful for diagnostics)
+ */
+export async function checkApiHealth(): Promise<{ accessible: boolean; message: string; ip?: string }> {
+  try {
+    // First get current IP
+    let currentIp = 'Unknown';
+    try {
+      const ipResponse = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipResponse.json();
+      currentIp = ipData.ip;
+    } catch (e) {
+      console.warn('Could not fetch IP address');
+    }
+    
+    // Try to reach the API root
+    const response = await fetch(API_CONFIG.ROOT_URL, {
+      method: 'HEAD',
+      mode: 'no-cors', // Avoid CORS preflight
+    });
+    
+    return {
+      accessible: true,
+      message: 'API is reachable',
+      ip: currentIp,
+    };
+  } catch (error) {
+    let currentIp = 'Unknown';
+    try {
+      const ipResponse = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipResponse.json();
+      currentIp = ipData.ip;
+    } catch (e) {
+      // Ignore
+    }
+    
+    return {
+      accessible: false,
+      message: `API is NOT reachable. Your IP: ${currentIp}. This IP may need to be whitelisted in Azure.`,
+      ip: currentIp,
+    };
+  }
 }

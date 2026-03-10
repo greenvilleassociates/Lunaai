@@ -19,6 +19,7 @@ import { Login } from "./components/Login";
 import { Register } from "./components/Register";
 import { Root } from "./components/Root";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { NetworkInfo } from "./components/NetworkInfo";
 
 export const router = createBrowserRouter([
   {
@@ -53,6 +54,7 @@ export const router = createBrowserRouter([
           { path: "aisearch", element: <AISearch /> },
           { path: "userhelp", element: <UserHelp /> },
           { path: "usernotifications", element: <UserNotifications /> },
+          { path: "networkinfo", element: <NetworkInfo /> },
         ],
       },
     ],

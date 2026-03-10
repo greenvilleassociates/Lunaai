@@ -76,8 +76,9 @@ export function Login() {
           const response = await fetch("https://api.ipify.org?format=json");
           const data = await response.json();
           ipAddress = data.ip;
+          console.log("🌐 Client IP Address detected:", ipAddress);
         } catch (error) {
-          console.log("IP address fetch failed");
+          console.log("IP address fetch failed:", error);
         }
 
         // Store uid and session information in localStorage
@@ -229,8 +230,9 @@ export function Login() {
         const response = await fetch("https://api.ipify.org?format=json");
         const data = await response.json();
         ipAddress = data.ip;
+        console.log("🌐 Client IP Address detected:", ipAddress);
       } catch (error) {
-        console.log("IP address fetch failed");
+        console.log("IP address fetch failed:", error);
       }
 
       // Store uid and session information in localStorage

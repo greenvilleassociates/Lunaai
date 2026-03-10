@@ -129,21 +129,29 @@ async function apiRequest<T>(
 ): Promise<T> {
   const url = getApiUrl(endpoint);
   
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      ...getAuthHeaders(),
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        ...getAuthHeaders(),
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`API Error: ${response.status} - ${errorText}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API Error: ${response.status} - ${errorText}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    // Check if it's a network error or IP restriction
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      console.error('Network error - API may be unreachable:', error);
+    }
+    throw error;
   }
-
-  return response.json();
 }
 
 // ============================================================================
@@ -159,11 +167,12 @@ export const UserService = {
       const users = await apiRequest<User[]>(API_CONFIG.ENDPOINTS.USERS);
       return users;
     } catch (error) {
-      console.error("Failed to fetch users from API:", error);
+      // Silently fall back to local JSON for superusers
       if (shouldUseSuperuserFallback()) {
-        console.log("Using local JSON fallback for superuser");
+        console.log("✓ Using local JSON fallback for users");
         return usersJson as User[];
       }
+      console.error("Failed to fetch users from API:", error);
       throw error;
     }
   },
@@ -176,12 +185,17 @@ export const UserService = {
       const user = await apiRequest<User>(API_CONFIG.ENDPOINTS.USER_BY_ID(uid));
       return user;
     } catch (error) {
-      console.error(`Failed to fetch user ${uid} from API:`, error);
+      // Silently fall back to local JSON for superusers
       if (shouldUseSuperuserFallback()) {
         const user = usersJson.find((u) => u.uid === uid);
-        return user ? (user as User) : null;
+        if (user) {
+          console.log(`✓ Using local JSON fallback for user ${uid}`);
+          return user as User;
+        }
       }
-      throw error;
+      // Only log error if we're not falling back or user not found
+      console.error(`⚠ User ${uid} not found in API or local fallback`);
+      return null;
     }
   },
 
@@ -283,9 +297,14 @@ export const CompanyService = {
       );
       return company;
     } catch (error) {
-      console.error(`Failed to fetch company ${companyId} from API:`, error);
+      // Always fall back to local JSON for companies
       const company = companiesJson.find((c) => c.companyId === companyId);
-      return company ? (company as Company) : null;
+      if (company) {
+        console.log(`✓ Using local JSON fallback for company ${companyId}`);
+        return company as Company;
+      }
+      console.error(`⚠ Company ${companyId} not found in API or local fallback`);
+      return null;
     }
   },
 

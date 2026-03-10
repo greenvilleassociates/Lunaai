@@ -1,8 +1,18 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
-import { Box, TextField, Button, CircularProgress, Alert, Paper } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
-import { AutoAwesome, Send } from "@mui/icons-material";
+import { useNavigate, Link } from "react-router";
+import {
+  Typography,
+  Button,
+  Paper,
+  Box,
+  TextField,
+  Alert,
+  CircularProgress,
+  Container,
+  Card,
+  CardContent,
+} from "@mui/material";
+import { Rocket, Cloud, CheckCircle, ArrowForward, AutoAwesome, Send } from "@mui/icons-material";
 import { API_CONFIG, getApiUrl } from "../config/api";
 import { getAuthHeaders } from "../utils/auth";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
@@ -205,9 +215,9 @@ export function Home() {
               <Box className="mt-4 text-center">
                 <p className="text-sm text-slate-600">
                   Please{" "}
-                  <a href="/login" className="text-blue-600 hover:underline font-medium">
+                  <Link to="/login" className="text-blue-600 hover:underline font-medium">
                     log in
-                  </a>{" "}
+                  </Link>{" "}
                   to submit questions to LunaAI
                 </p>
               </Box>
