@@ -1,3 +1,6 @@
+import React, { useState, useEffect } from "react";
+import { Box, Typography, Tabs, Tab, Paper, Alert, Chip } from "@mui/material";
+import { Business } from "@mui/icons-material";
 import { StoreManagement } from "./StoreManagement";
 import { RoleManagement } from "./RoleManagement";
 import { RegionManagement } from "./RegionManagement";
@@ -5,29 +8,7 @@ import { ManagerManagement } from "./ManagerManagement";
 import { CompanyEvents } from "./CompanyEvents";
 import { InstanceManagement } from "./InstanceManagement";
 import { Administrator as UsersBuCompaniesGroups } from "./Administrator";
-
-interface User {
-  uid: string;
-  username: string;
-  password: string;
-  role: string;
-  companyId: string;
-  address1: string;
-  address2: string;
-  city: string;
-  state: string;
-  zip: string;
-  phone: string;
-  cell: string;
-  profilePicture: string;
-}
-
-interface Company {
-  companyId: string;
-  companyName: string;
-  administratorUid: string;
-  email: string;
-}
+import { UserService, CompanyService, User, Company } from "../services/dataService";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -55,25 +36,49 @@ export function AdministratorTabbed() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
   const [activeTab, setActiveTab] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load current user from localStorage
-    const uid = localStorage.getItem("uid");
-    const user = users.find((u) => u.uid === uid) as User | undefined;
-    if (user) {
-      setCurrentUser(user);
-      
-      // Find the company for this user
-      const company = companies.find((c) => c.companyId === user.companyId) as Company | undefined;
-      if (company) {
-        setCurrentCompany(company);
+    async function loadUserData() {
+      try {
+        const uid = localStorage.getItem("uid");
+        if (!uid) {
+          setLoading(false);
+          return;
+        }
+
+        // Load current user from API
+        const user = await UserService.getById(uid);
+        if (user) {
+          setCurrentUser(user);
+          
+          // Find the company for this user
+          const company = await CompanyService.getById(user.companyId);
+          if (company) {
+            setCurrentCompany(company);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load user data:", error);
+      } finally {
+        setLoading(false);
       }
     }
+
+    loadUserData();
   }, []);
 
   // Check if current user is admin for their company
   const isCompanyAdmin = currentCompany?.administratorUid === currentUser?.uid;
   const isSuperUser = currentUser?.role === "superuser";
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto flex justify-center items-center py-12">
+        <Typography>Loading...</Typography>
+      </div>
+    );
+  }
 
   if (!currentUser) {
     return (

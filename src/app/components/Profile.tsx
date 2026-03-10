@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { TextField, Button, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
 import { useNavigate } from "react-router";
-import users from "../data/users.json";
+import { UserService, User } from "../services/dataService";
 
 interface UserProfile {
   uid: string;
@@ -32,26 +32,40 @@ export function Profile() {
   });
   const [savedMessage, setSavedMessage] = useState("");
   const [activeSection, setActiveSection] = useState<"account" | "security" | "logs">("account");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load user profile from localStorage and users.json
-    const uid = localStorage.getItem("uid");
-    const user = users.find((u) => u.uid === uid);
+    async function loadProfile() {
+      try {
+        const uid = localStorage.getItem("uid");
+        if (!uid) {
+          setLoading(false);
+          return;
+        }
 
-    if (user) {
-      setProfile({
-        uid: user.uid,
-        username: user.username,
-        address1: user.address1,
-        address2: user.address2,
-        city: user.city,
-        state: user.state,
-        zip: user.zip,
-        phone: user.phone,
-        cell: user.cell,
-        profilePicture: user.profilePicture,
-      });
+        const user = await UserService.getById(uid);
+        if (user) {
+          setProfile({
+            uid: user.uid,
+            username: user.username,
+            address1: user.address1,
+            address2: user.address2,
+            city: user.city,
+            state: user.state,
+            zip: user.zip,
+            phone: user.phone,
+            cell: user.cell,
+            profilePicture: user.profilePicture,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to load profile:", error);
+      } finally {
+        setLoading(false);
+      }
     }
+
+    loadProfile();
   }, []);
 
   const handleChange = (field: keyof UserProfile, value: string) => {
@@ -61,11 +75,16 @@ export function Profile() {
     }));
   };
 
-  const handleSave = () => {
-    // Save to localStorage (in a real app, this would save to a backend)
-    localStorage.setItem(`profile_${profile.uid}`, JSON.stringify(profile));
-    setSavedMessage("Profile saved successfully!");
-    setTimeout(() => setSavedMessage(""), 3000);
+  const handleSave = async () => {
+    try {
+      await UserService.update(profile.uid, profile);
+      setSavedMessage("Profile saved successfully!");
+      setTimeout(() => setSavedMessage(""), 3000);
+    } catch (error) {
+      console.error("Failed to save profile:", error);
+      setSavedMessage("Failed to save profile");
+      setTimeout(() => setSavedMessage(""), 3000);
+    }
   };
 
   // Generate avatar color based on first letter
