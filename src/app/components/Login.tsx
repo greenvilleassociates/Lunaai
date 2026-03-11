@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router";
+import { IconButton, InputAdornment } from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { API_CONFIG, getApiUrl } from "../config/api";
 import { DATA_URLS, fetchExternalData } from "../config/dataUrls";
 
@@ -8,9 +10,12 @@ import { DATA_URLS, fetchExternalData } from "../config/dataUrls";
  * 
  * Authentication Flow:
  * ┌─────────────────────────────────────────────────────────────┐
- * │ 1. Check external JSON first (for superusers without domain)│
+ * │ 1. Check local JSON first (superusers & development)       │
  * │    ├─ Fetch from luna.capitoltechnology.net/data/users.json│
+ * │    │   (falls back to bundled JSON if external unavailable)│
  * │    ├─ Found → Authenticate locally                         │
+ * │    │   ├─ Store credentials in localStorage                │
+ * │    │   ├─ POST /api/User to sync to database (optional)    │
  * │    │   └─ POST /api/Usersession to create session ✓        │
  * │    └─ Not found → Try API authentication                   │
  * │                                                             │
@@ -34,9 +39,18 @@ function generateSessionToken(): string {
 export function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  const handleClickShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const handleMouseDownPassword = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +58,7 @@ export function Login() {
     setLoading(true);
 
     try {
-      // Check external JSON first for superusers without domain
+      // Check local JSON first for superusers and development
       const users = await fetchExternalData(DATA_URLS.USERS);
       const localUser = users.find(
         (u: { username: string; password: string }) => u.username === username && u.password === password
@@ -53,6 +67,49 @@ export function Login() {
       if (localUser) {
         // Local JSON authentication successful
         console.log("Local JSON authentication successful for user:", localUser.username);
+        
+        // Try to create the user in the database if they don't exist yet
+        try {
+          const userCreateUrl = getApiUrl(API_CONFIG.ENDPOINTS.USERS);
+          console.log("📤 Attempting to create user in database:", localUser.uid);
+          
+          const createResponse = await fetch(userCreateUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localUser.uid}`,
+            },
+            body: JSON.stringify({
+              uid: localUser.uid,
+              username: localUser.username,
+              password: localUser.password,
+              role: localUser.role || "user",
+              companyId: localUser.companyId || "company-001",
+              address1: localUser.address1 || "",
+              address2: localUser.address2 || "",
+              city: localUser.city || "",
+              state: localUser.state || "",
+              zip: localUser.zip || "",
+              phone: localUser.phone || "",
+              cell: localUser.cell || "",
+              profilePicture: localUser.profilePicture || "",
+              email: localUser.email || `${localUser.username}@capitoltechnology.net`,
+            }),
+          });
+          
+          if (createResponse.ok) {
+            console.log("✅ User created in database successfully");
+          } else if (createResponse.status === 409) {
+            // 409 Conflict means user already exists - this is fine
+            console.log("✓ User already exists in database");
+          } else {
+            const errorText = await createResponse.text();
+            console.warn("⚠ Failed to create user in database:", createResponse.status, errorText);
+          }
+        } catch (error) {
+          // Don't block login if user creation fails
+          console.warn("⚠ Failed to create user in database (API may be restricted):", error);
+        }
         
         // Get current time
         const loginTime = new Date().toLocaleString();
@@ -282,54 +339,8 @@ export function Login() {
         console.error("Failed to log user login:", error);
       }
       
-      // Create user session ONLY if using local JSON authentication
-      // Azure API creates session automatically during login
-      if (!useApiAuth) {
-        try {
-          const sessionUrl = getApiUrl(API_CONFIG.ENDPOINTS.USER_SESSION);
-          const sessionToken = generateSessionToken();
-          const sessionStart = new Date();
-          
-          // Store session token in localStorage
-          localStorage.setItem("sessionToken", sessionToken);
-          localStorage.setItem("sessionStart", sessionStart.toISOString());
-          
-          const sessionEntry = {
-            userid: parseInt(user.uid.replace('user-', '')) || 0,
-            token: sessionToken,
-            acknowledged: 0,
-            actionpriority: 0,
-            sessionstart: sessionStart.toISOString(),
-            sessionend: new Date(sessionStart.getTime() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
-            sessionrecorded: 0,
-            sessionrecordurl: "",
-            sessiondescription: `Login session from ${ipAddress} at ${latitude}, ${longitude}`,
-            sessionusername: user.username,
-            sessionemail: `${user.username}@capitoltechnology.net`, // Construct email from username
-            sessionfirstname: user.username.charAt(0).toUpperCase() + user.username.slice(1),
-            sessionlastname: "", // Not available in user data
-            sessionfullname: user.username.charAt(0).toUpperCase() + user.username.slice(1),
-            sessioncomplete: 0,
-          };
-
-          await fetch(sessionUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${authToken || user.uid}`,
-            },
-            body: JSON.stringify(sessionEntry),
-          });
-          
-          console.log("User session created successfully (local JSON auth)");
-        } catch (error) {
-          // Don't block login if session creation fails
-          console.error("Failed to create user session:", error);
-        }
-      } else {
-        // Azure API already created the session
-        console.log("Session already created by Azure API");
-      }
+      // Azure API already created the session
+      console.log("Session already created by Azure API");
       
       // Redirect to home page
       console.log("About to navigate to / ...");
@@ -340,8 +351,6 @@ export function Login() {
         console.log("Navigating now with uid:", localStorage.getItem("uid"));
         navigate("/", { replace: true });
       }, 100);
-      
-      return;
     } catch (error) {
       setError(error.message);
     } finally {
@@ -373,14 +382,28 @@ export function Login() {
             <label htmlFor="password" className="block text-sm mb-2 text-slate-700">
               Password
             </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900"
-              required
-            />
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-2 pr-12 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900"
+                required
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center">
+                <IconButton
+                  aria-label="toggle password visibility"
+                  onClick={handleClickShowPassword}
+                  onMouseDown={handleMouseDownPassword}
+                  edge="end"
+                  size="small"
+                  sx={{ mr: 1 }}
+                >
+                  {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                </IconButton>
+              </div>
+            </div>
           </div>
 
           {error && (

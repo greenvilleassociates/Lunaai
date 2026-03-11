@@ -1,7 +1,11 @@
-import { useState, useEffect } from "react";
-import { TextField, Button, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
+import { useState, useEffect, useRef } from "react";
+import { TextField, Button, List, ListItem, ListItemButton, ListItemText, CircularProgress } from "@mui/material";
 import { useNavigate } from "react-router";
 import { UserService, User } from "../services/dataService";
+import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import { getApiUrl } from "../config/api";
+import { getFileUploadHeaders } from "../utils/auth";
 
 interface UserProfile {
   uid: string;
@@ -33,6 +37,8 @@ export function Profile() {
   const [savedMessage, setSavedMessage] = useState("");
   const [activeSection, setActiveSection] = useState<"account" | "security" | "logs">("account");
   const [loading, setLoading] = useState(true);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function loadProfile() {
@@ -77,13 +83,25 @@ export function Profile() {
 
   const handleSave = async () => {
     try {
-      await UserService.update(profile.uid, profile);
+      // Fetch full user object and merge with profile changes
+      const fullUser = await UserService.getById(profile.uid);
+      
+      if (!fullUser) {
+        throw new Error("Could not fetch user data");
+      }
+      
+      const updatedUser = {
+        ...fullUser,
+        ...profile,
+      };
+      
+      await UserService.update(profile.uid, updatedUser);
       setSavedMessage("Profile saved successfully!");
       setTimeout(() => setSavedMessage(""), 3000);
     } catch (error) {
       console.error("Failed to save profile:", error);
-      setSavedMessage("Failed to save profile");
-      setTimeout(() => setSavedMessage(""), 3000);
+      setSavedMessage("Failed to save profile. Check console for details.");
+      setTimeout(() => setSavedMessage(""), 5000);
     }
   };
 
@@ -103,6 +121,82 @@ export function Profile() {
     return colors[index];
   };
 
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      alert("Please select a valid image file");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      setUploadingImage(true);
+      
+      // Upload to Azure Blob Storage with fileCategory=projectimages
+      const apiUrl = getApiUrl(`/File/upload?fileCategory=projectimages`);
+      
+      console.log("📤 Uploading to:", apiUrl);
+      console.log("📦 File:", file.name, file.type, file.size, "bytes");
+      
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: getFileUploadHeaders(),
+        body: formData,
+      });
+
+      console.log("📥 Response status:", response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Response error:", errorText);
+        throw new Error(`Upload failed: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log("✅ Upload response data:", data);
+
+      // Try different possible response field names
+      const newProfilePictureUrl = data.blobUrl || data.url || data.fileUrl || data.azureUrl;
+      
+      if (!newProfilePictureUrl) {
+        console.error("⚠️ No URL found in response. Full response:", data);
+        throw new Error("No blob URL returned from server");
+      }
+
+      console.log("🖼️ New profile picture URL:", newProfilePictureUrl);
+
+      // Update the profile picture URL in the text field (state only - not saved to DB yet)
+      setProfile((prev) => {
+        console.log("📝 Updating profile state from:", prev.profilePicture, "to:", newProfilePictureUrl);
+        return {
+          ...prev,
+          profilePicture: newProfilePictureUrl,
+        };
+      });
+
+      // Show message that upload succeeded and user should save
+      setSavedMessage("✓ Picture uploaded! Click 'Save Profile' to update your profile.");
+      setTimeout(() => setSavedMessage(""), 5000);
+      
+    } catch (error) {
+      console.error("⚠ Failed to upload profile picture:", error);
+      const errorMessage = error instanceof Error ? error.message : "Upload failed";
+      setSavedMessage(`Error: ${errorMessage}`);
+      setTimeout(() => setSavedMessage(""), 5000);
+    } finally {
+      setUploadingImage(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto">
       <h2 className="text-3xl mb-6">User Profile</h2>
@@ -112,25 +206,32 @@ export function Profile() {
         <div className="bg-white p-6 rounded-lg shadow-md flex gap-6 flex-1">
           {/* Profile Picture Section */}
           <div className="flex-shrink-0">
-            {profile.profilePicture ? (
-              <img
-                src={profile.profilePicture}
-                alt={profile.username}
-                className="w-48 h-48 rounded-lg object-cover shadow-md"
-              />
-            ) : (
-              <div
-                className="w-48 h-48 rounded-lg shadow-md flex items-center justify-center"
-                style={{
-                  backgroundColor: getAvatarColor(profile.username),
-                }}
-              >
-                <span className="text-white text-8xl font-bold uppercase">
-                  {profile.username.charAt(0)}
-                </span>
-              </div>
-            )}
-            <div className="mt-4 text-center">
+            <div className="relative">
+              {profile.profilePicture ? (
+                <img
+                  src={profile.profilePicture}
+                  alt={profile.username}
+                  className="w-48 h-48 rounded-lg object-cover shadow-md"
+                />
+              ) : (
+                <div
+                  className="w-48 h-48 rounded-lg shadow-md flex items-center justify-center"
+                  style={{
+                    backgroundColor: getAvatarColor(profile.username),
+                  }}
+                >
+                  <span className="text-white text-8xl font-bold uppercase">
+                    {profile.username.charAt(0)}
+                  </span>
+                </div>
+              )}
+              {uploadingImage && (
+                <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
+                  <CircularProgress sx={{ color: "white" }} />
+                </div>
+              )}
+            </div>
+            <div className="mt-4">
               <TextField
                 label="Profile Picture URL"
                 value={profile.profilePicture}
@@ -138,7 +239,32 @@ export function Profile() {
                 fullWidth
                 variant="outlined"
                 size="small"
+                disabled={uploadingImage}
               />
+              <Button
+                variant="contained"
+                component="label"
+                startIcon={uploadingImage ? <CircularProgress size={20} sx={{ color: "white" }} /> : <PhotoCameraIcon />}
+                disabled={uploadingImage}
+                sx={{ 
+                  mt: 2, 
+                  width: '100%',
+                  backgroundColor: "#0f172a",
+                  "&:hover": {
+                    backgroundColor: "#1e293b",
+                  },
+                }}
+              >
+                {uploadingImage ? "Uploading..." : "Upload Picture"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  hidden
+                  disabled={uploadingImage}
+                />
+              </Button>
             </div>
           </div>
 

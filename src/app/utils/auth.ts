@@ -31,6 +31,25 @@ export function getAuthHeaders(): Record<string, string> {
 }
 
 /**
+ * Get authorization headers for file upload requests (without Content-Type)
+ * The browser will automatically set Content-Type with boundary for multipart/form-data
+ */
+export function getFileUploadHeaders(): Record<string, string> {
+  const authToken = getAuthToken();
+  const uid = localStorage.getItem("uid");
+  
+  const headers: Record<string, string> = {};
+
+  if (authToken) {
+    headers["Authorization"] = `Bearer ${authToken}`;
+  } else if (uid) {
+    headers["Authorization"] = `Bearer ${uid}`;
+  }
+
+  return headers;
+}
+
+/**
  * Check if user is authenticated
  */
 export function isAuthenticated(): boolean {

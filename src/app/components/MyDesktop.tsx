@@ -3,7 +3,10 @@ import { useState, useEffect } from "react";
 import FolderIcon from "@mui/icons-material/Folder";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import SearchIcon from "@mui/icons-material/Search";
+import MicIcon from "@mui/icons-material/Mic";
+import AudioFileIcon from "@mui/icons-material/AudioFile";
 import { API_CONFIG, getApiUrl } from "../config/api";
+import { DATA_URLS, fetchExternalData } from "../config/dataUrls";
 
 interface WebSearchResult {
   id: number;
@@ -16,12 +19,27 @@ interface WebSearchResult {
   expectedcost: number;
 }
 
+interface VoiceCommand {
+  id: number;
+  commandType?: string | null;
+  voiceBlobURL?: string | null;
+  actionTime?: string | null;
+  actionType?: number | null;
+  status?: string | null;
+  useridstring?: string | null;
+  userid?: number | null;
+  displayname?: string | null;
+}
+
 export function MyDesktop() {
   const [searchHistory, setSearchHistory] = useState<WebSearchResult[]>([]);
+  const [voiceCommands, setVoiceCommands] = useState<VoiceCommand[]>([]);
   const [loading, setLoading] = useState(true);
+  const [voiceLoading, setVoiceLoading] = useState(true);
 
   useEffect(() => {
     loadRecentSearches();
+    loadVoiceCommands();
   }, []);
 
   const loadRecentSearches = async () => {
@@ -42,13 +60,62 @@ export function MyDesktop() {
 
       if (response.ok) {
         const data = await response.json();
-        // Get the 5 most recent searches
-        setSearchHistory(data.slice(0, 5));
+        // Filter by current user and get 5 most recent
+        const userSearches = data.filter((item: WebSearchResult) => item.uid === uid);
+        setSearchHistory(userSearches.slice(0, 5));
+        console.log("✅ Search history loaded from database");
+      } else {
+        throw new Error("Database unavailable");
       }
     } catch (err) {
-      console.error("Error loading search history:", err);
+      console.warn("⚠ Database unavailable - loading from local JSON:", err);
+      // Fallback to local JSON data
+      try {
+        const fallbackData = await fetchExternalData<WebSearchResult[]>(DATA_URLS.WEBSEARCH);
+        const uid = localStorage.getItem("uid");
+        const userSearches = fallbackData.filter((item: WebSearchResult) => item.uid === uid);
+        setSearchHistory(userSearches.slice(0, 5));
+        console.log("✅ Search history loaded from local JSON fallback");
+      } catch (fallbackErr) {
+        console.error("Failed to load fallback data:", fallbackErr);
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadVoiceCommands = async () => {
+    try {
+      const uid = localStorage.getItem("uid");
+      if (!uid) {
+        setVoiceLoading(false);
+        return;
+      }
+
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.VOICE_COMMANDS);
+      const response = await fetch(url, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${uid}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Get the 5 most recent voice commands
+        setVoiceCommands(data.slice(0, 5));
+        console.log("✅ Voice commands loaded from database");
+      } else {
+        throw new Error("Database unavailable");
+      }
+    } catch (err) {
+      console.warn("⚠ Database unavailable - loading voice commands from localStorage:", err);
+      // Fallback to localStorage
+      const localVoiceCommands = JSON.parse(localStorage.getItem("voiceCommands") || "[]");
+      setVoiceCommands(localVoiceCommands.slice(0, 5));
+      console.log("✅ Voice commands loaded from localStorage fallback");
+    } finally {
+      setVoiceLoading(false);
     }
   };
 
@@ -94,14 +161,92 @@ export function MyDesktop() {
           </div>
         </Link>
 
-        {/* AI Search History */}
+        {/* Voice Commands History */}
+        <div className="p-8 border border-slate-200 rounded-lg bg-white">
+          <div className="flex items-center gap-4 mb-4">
+            <MicIcon sx={{ fontSize: 48 }} className="text-slate-700" />
+            <h3 className="text-2xl">Voice Commands History</h3>
+          </div>
+          <p className="text-slate-600 mb-4">
+            Your most recent voice uploads and processing status.
+          </p>
+          <div className="space-y-2">
+            {voiceLoading ? (
+              <div className="p-3 bg-slate-50 rounded text-sm text-center text-slate-500">
+                Loading...
+              </div>
+            ) : voiceCommands.length === 0 ? (
+              <div className="p-3 bg-slate-50 rounded text-sm text-center text-slate-500">
+                No voice commands yet.{" "}
+                <Link to="/uploadprompt" className="text-blue-600 hover:underline">
+                  Upload Voice File
+                </Link>
+              </div>
+            ) : (
+              voiceCommands.map((item) => {
+                // Extract filename from voiceBlobURL or use commandType
+                const fileName = item.commandType || 
+                  (item.voiceBlobURL ? item.voiceBlobURL.split('/').pop() : null) || 
+                  "Voice Recording";
+                
+                return (
+                  <div key={item.id} className="p-3 bg-slate-50 rounded text-sm">
+                    <p className="font-medium text-slate-900 mb-1">
+                      {truncateText(fileName, 60)}
+                    </p>
+                    {item.displayname && (
+                      <p className="text-slate-600 text-xs mb-1">
+                        User: {item.displayname}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-3 text-xs text-slate-500">
+                      <span>{item.actionTime ? formatDate(item.actionTime) : "N/A"}</span>
+                      <span>•</span>
+                      <span>Action Type: {item.actionType || "N/A"}</span>
+                      <span>•</span>
+                      <span
+                        className={`${
+                          item.status === "processing"
+                            ? "text-blue-600"
+                            : item.status === "completed"
+                            ? "text-green-600"
+                            : item.status === "queued"
+                            ? "text-yellow-600"
+                            : "text-slate-500"
+                        }`}
+                      >
+                        {item.status === "processing" && "🔄 Processing"}
+                        {item.status === "completed" && "✓ Completed"}
+                        {item.status === "queued" && "⏳ Queued"}
+                        {item.status === "failed" && "✗ Failed"}
+                        {!item.status && "Unknown"}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+          {voiceCommands.length > 0 && (
+            <div className="mt-4 text-center">
+              <Link
+                to="/uploadprompt"
+                className="text-sm text-blue-600 hover:underline"
+              >
+                View all voice commands →
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* AI Text Search History */}
         <div className="p-8 border border-slate-200 rounded-lg bg-white">
           <div className="flex items-center gap-4 mb-4">
             <SearchIcon sx={{ fontSize: 48 }} className="text-slate-700" />
-            <h3 className="text-2xl">AI Search History</h3>
+            <h3 className="text-2xl">AI Text Search History</h3>
           </div>
           <p className="text-slate-600 mb-4">
-            Your most recent AI-powered search queries and responses.
+            Your most recent AI-powered text search queries and responses.
           </p>
           <div className="space-y-2">
             {loading ? (
@@ -152,16 +297,20 @@ export function MyDesktop() {
           <h3 className="text-2xl mb-4">Quick Stats</h3>
           <div className="space-y-4">
             <div>
-              <p className="text-sm text-slate-600">Total AI Searches</p>
+              <p className="text-sm text-slate-600">Total AI Processes</p>
+              <p className="text-3xl text-slate-900">{searchHistory.length + voiceCommands.length}</p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">Total AI Text Searches</p>
               <p className="text-3xl text-slate-900">{searchHistory.length > 0 ? searchHistory.length : "0"}</p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">Voice AI Commands</p>
+              <p className="text-3xl text-slate-900">{voiceCommands.length > 0 ? voiceCommands.length : "0"}</p>
             </div>
             <div>
               <p className="text-sm text-slate-600">Active LLM Providers</p>
               <p className="text-3xl text-slate-900">2</p>
-            </div>
-            <div>
-              <p className="text-sm text-slate-600">Recent Searches</p>
-              <p className="text-3xl text-slate-900">{searchHistory.length}</p>
             </div>
           </div>
         </div>

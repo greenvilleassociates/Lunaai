@@ -8,16 +8,19 @@
 // Import local JSON files as fallback
 import usersJsonFallback from "../data/users.json";
 import companiesJsonFallback from "../data/companies.json";
+import websearchJsonFallback from "../data/websearch.json";
 
 export const DATA_URLS = {
   USERS: "https://luna.capitoltechnology.net/data/users.json",
   COMPANIES: "https://luna.capitoltechnology.net/data/companies.json",
+  WEBSEARCH: "https://luna.capitoltechnology.net/data/websearch.json",
 } as const;
 
 // Map of local fallback data
 const LOCAL_FALLBACKS: Record<string, any> = {
   [DATA_URLS.USERS]: usersJsonFallback,
   [DATA_URLS.COMPANIES]: companiesJsonFallback,
+  [DATA_URLS.WEBSEARCH]: websearchJsonFallback,
 };
 
 /**
@@ -46,16 +49,14 @@ export async function fetchExternalData<T>(url: string): Promise<T> {
     console.log(`✓ Successfully fetched data from ${url}`);
     return data;
   } catch (error) {
-    console.warn(`⚠ Failed to fetch from ${url}, using local fallback`);
-    
-    // Use local fallback data
+    // Silently fall back to local data (expected in development)
     const fallbackData = LOCAL_FALLBACKS[url];
     if (fallbackData) {
-      console.log('✓ Using local fallback data');
+      console.log('✓ Using local JSON data');
       return fallbackData as T;
     }
     
-    // No fallback available
+    // No fallback available - this is a real error
     console.error(`✗ No local fallback available for ${url}`);
     throw new Error(`Failed to fetch data from ${url} and no local fallback available`);
   }

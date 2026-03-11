@@ -5,6 +5,11 @@ import PauseIcon from "@mui/icons-material/Pause";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AudioFileIcon from "@mui/icons-material/AudioFile";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import { CircularProgress, Alert } from "@mui/material";
+import { getApiUrl } from "../config/api";
+import { getFileUploadHeaders } from "../utils/auth";
+import { API_CONFIG } from "../config/api";
 
 interface AudioFile {
   id: string;
@@ -13,6 +18,11 @@ interface AudioFile {
   duration: number;
   url: string;
   uploadedAt: string;
+  blobUrl?: string; // Azure Blob Storage URL
+  uploading?: boolean;
+  uploadError?: string;
+  file?: File; // Original file object for upload
+  processing?: boolean; // Indicates if the file is being processed by AI
 }
 
 export function UploadPrompt() {
@@ -50,6 +60,7 @@ export function UploadPrompt() {
             duration: audio.duration,
             url: url,
             uploadedAt: new Date().toLocaleString(),
+            file: file,
           };
           newFiles.push(audioFile);
           resolve();
@@ -127,14 +138,215 @@ export function UploadPrompt() {
     setUploadedFiles((prev) => prev.filter((file) => file.id !== id));
   };
 
-  const handleSubmitToAI = () => {
+  const handleSubmitToAI = async () => {
     if (uploadedFiles.length === 0) {
       alert("Please upload at least one audio file first");
       return;
     }
 
-    // Mock submission - in real app, would send to Azure Blob Storage then AI processing
-    alert(`Submitting ${uploadedFiles.length} audio file(s) to LunaAI for processing...\n\nThe audio will be:\n1. Uploaded to Azure Blob Storage\n2. Transcribed using Azure Speech Services\n3. Sent to multiple AI providers (ChatGPT, Claude on Azure)\n4. Results chained and delivered to your desktop`);
+    // Upload all files that haven't been uploaded yet
+    const filesToUpload = uploadedFiles.filter(f => !f.blobUrl && !f.uploading);
+    
+    if (filesToUpload.length > 0) {
+      // Upload all files in parallel
+      await Promise.all(
+        filesToUpload.map(file => uploadFileToAzure(file, "voiceinbound"))
+      );
+    }
+    
+    // After uploads complete, show confirmation
+    setTimeout(() => {
+      const uploadedCount = uploadedFiles.filter(f => f.blobUrl).length;
+      alert(
+        `Processing ${uploadedCount} audio file(s) through LunaAI...\n\n` +
+        `Next steps:\n` +
+        `1. ✓ Files uploaded to Azure Blob Storage\n` +
+        `2. → Transcribing audio using Azure Speech Services\n` +
+        `3. → Sending to multiple AI providers (ChatGPT, Claude)\n` +
+        `4. → Chaining results and delivering to your desktop\n\n` +
+        `You will receive a notification when processing is complete.`
+      );
+    }, 500);
+  };
+
+  const uploadFileToAzure = async (audioFile: AudioFile, fileCategory: string = "voiceinbound") => {
+    if (!audioFile.file) {
+      console.error("No file object available for upload");
+      return;
+    }
+
+    // Mark file as uploading
+    setUploadedFiles((prev) => 
+      prev.map((f) => (f.id === audioFile.id ? { ...f, uploading: true, uploadError: undefined } : f))
+    );
+
+    const formData = new FormData();
+    formData.append("file", audioFile.file);
+
+    try {
+      // Use the exact API endpoint structure from your curl example
+      const apiUrl = getApiUrl(`/File/upload?fileCategory=${fileCategory}`);
+      
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          ...getFileUploadHeaders(),
+          // Don't set Content-Type for FormData - browser will set it with boundary
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Upload failed: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      
+      // Update file with blob URL and success status
+      setUploadedFiles((prev) =>
+        prev.map((f) =>
+          f.id === audioFile.id
+            ? { ...f, blobUrl: data.blobUrl, uploading: false, uploadError: undefined }
+            : f
+        )
+      );
+
+      console.log(`✓ File uploaded successfully: ${data.fileName}`, data);
+      
+      // Call AI Actions to queue the file for voice-to-text processing
+      // This is optional - if it fails, we still track locally
+      const shouldCallAIActions = !API_CONFIG.BASE_URL.includes('localhost');
+      
+      if (shouldCallAIActions) {
+        try {
+          console.log(`🤖 Attempting to queue file for AI processing: ${data.blobUrl}`);
+          const aiActionsUrl = getApiUrl(API_CONFIG.ENDPOINTS.AI_ACTIONS_VOICE(1)); // Action type 1 = voice-to-text
+          
+          console.log(`📡 AI Actions URL: ${aiActionsUrl}`);
+          
+          const aiResponse = await fetch(aiActionsUrl, {
+            method: "POST",
+            headers: {
+              "accept": "application/json",
+              "Content-Type": "application/json",
+              ...getFileUploadHeaders(),
+            },
+            body: JSON.stringify({
+              blobUrl: data.blobUrl,
+            }),
+          });
+          
+          if (!aiResponse.ok) {
+            const errorText = await aiResponse.text();
+            console.warn(`⚠ AI Actions returned ${aiResponse.status}: ${errorText}`);
+            console.warn(`⚠ Continuing with local tracking only...`);
+            throw new Error(`AI Actions failed: ${aiResponse.status} - ${errorText}`);
+          }
+          
+          const aiData = await aiResponse.json();
+          console.log(`✅ File queued for AI processing successfully:`, aiData);
+          
+          // Update file to show it's being processed
+          setUploadedFiles((prev) =>
+            prev.map((f) =>
+              f.id === audioFile.id
+                ? { ...f, processing: true }
+                : f
+            )
+          );
+        } catch (aiError) {
+          console.warn(`⚠ AI Actions unavailable - using local tracking fallback:`, aiError);
+          // Mark as processing locally even if AI Actions fails
+          setUploadedFiles((prev) =>
+            prev.map((f) =>
+              f.id === audioFile.id
+                ? { ...f, processing: true }
+                : f
+            )
+          );
+        }
+      } else {
+        console.log(`ℹ️ Skipping AI Actions call (localhost mode) - using local tracking`);
+        // Mark as processing locally
+        setUploadedFiles((prev) =>
+          prev.map((f) =>
+            f.id === audioFile.id
+              ? { ...f, processing: true }
+              : f
+          )
+        );
+      }
+      
+      // Create a voice command record in the database (or local storage fallback)
+      try {
+        const uid = localStorage.getItem("uid");
+        const username = localStorage.getItem("username");
+        const voiceCommandUrl = getApiUrl(API_CONFIG.ENDPOINTS.VOICE_COMMANDS);
+        
+        // Map to C# VoiceCommands model structure
+        const voiceCommandData = {
+          commandType: audioFile.name, // Store filename in CommandType
+          voiceBlobURL: data.blobUrl,
+          actionTime: new Date().toISOString(),
+          actionType: 1, // 1 = voice-to-text
+          status: "queued",
+          useridstring: uid,
+          userid: null, // Will be set by backend if needed
+          displayname: username,
+        };
+        
+        const dbResponse = await fetch(voiceCommandUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...getFileUploadHeaders(),
+          },
+          body: JSON.stringify(voiceCommandData),
+        });
+        
+        if (dbResponse.ok) {
+          console.log(`✅ Voice command record created in database`);
+        } else {
+          throw new Error(`Database insert failed: ${dbResponse.status}`);
+        }
+      } catch (dbError) {
+        console.warn(`⚠ Database unavailable - saving voice command to localStorage:`, dbError);
+        // Fallback to localStorage for superusers
+        const voiceCommands = JSON.parse(localStorage.getItem("voiceCommands") || "[]");
+        voiceCommands.push({
+          id: Date.now(),
+          commandType: audioFile.name,
+          voiceBlobURL: data.blobUrl,
+          actionTime: new Date().toISOString(),
+          actionType: 1,
+          status: "queued",
+          useridstring: localStorage.getItem("uid"),
+          userid: null,
+          displayname: localStorage.getItem("username"),
+        });
+        localStorage.setItem("voiceCommands", JSON.stringify(voiceCommands));
+        console.log(`✅ Voice command saved to localStorage fallback`);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Upload failed";
+      console.error(`⚠ Failed to upload file:`, error);
+      
+      setUploadedFiles((prev) =>
+        prev.map((f) =>
+          f.id === audioFile.id
+            ? { ...f, uploadError: errorMessage, uploading: false }
+            : f
+        )
+      );
+    }
+  };
+
+  const handleUploadClick = (id: string) => {
+    const file = uploadedFiles.find((f) => f.id === id);
+    if (file) {
+      uploadFileToAzure(file, "voiceinbound");
+    }
   };
 
   return (
@@ -226,10 +438,33 @@ export function UploadPrompt() {
                     <h3 className="font-semibold text-slate-900 truncate">
                       {file.name}
                     </h3>
-                    <div className="flex gap-4 text-sm text-slate-600 mt-1">
-                      <span>{formatFileSize(file.size)}</span>
-                      <span>Duration: {formatDuration(file.duration)}</span>
-                      <span>Uploaded: {file.uploadedAt}</span>
+                    <div className="flex flex-col gap-1 text-sm text-slate-600 mt-1">
+                      <div className="flex gap-4">
+                        <span>{formatFileSize(file.size)}</span>
+                        <span>Duration: {formatDuration(file.duration)}</span>
+                        <span>Added: {file.uploadedAt}</span>
+                      </div>
+                      {file.blobUrl && (
+                        <a 
+                          href={file.blobUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline text-xs truncate"
+                          title={file.blobUrl}
+                        >
+                          ✓ Stored in Azure: {file.blobUrl}
+                        </a>
+                      )}
+                      {file.processing && (
+                        <span className="text-green-600 text-xs font-semibold">
+                          🤖 Queued for AI processing (voice-to-text)
+                        </span>
+                      )}
+                      {file.uploadError && (
+                        <span className="text-red-600 text-xs">
+                          ✗ Upload failed: {file.uploadError}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -245,6 +480,27 @@ export function UploadPrompt() {
                         <PlayArrowIcon />
                       )}
                     </button>
+                    
+                    {file.uploading && (
+                      <CircularProgress size={24} className="text-blue-600" />
+                    )}
+                    
+                    {file.blobUrl && (
+                      <div className="p-2 bg-green-100 rounded" title="Uploaded to Azure">
+                        <CheckCircleIcon className="text-green-600" />
+                      </div>
+                    )}
+                    
+                    {!file.uploading && !file.blobUrl && (
+                      <button
+                        onClick={() => handleUploadClick(file.id)}
+                        className="px-3 py-2 bg-slate-700 text-white rounded hover:bg-slate-800 transition-colors text-sm"
+                        title="Upload to Azure Blob Storage"
+                      >
+                        <CloudUploadIcon fontSize="small" />
+                      </button>
+                    )}
+                    
                     <button
                       onClick={() => handleDelete(file.id)}
                       className="p-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"

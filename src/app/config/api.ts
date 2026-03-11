@@ -31,8 +31,9 @@ export const API_CONFIG = {
   // API Endpoints
   ENDPOINTS: {
     // User Management
-    USERS: '/users',
-    USER_BY_ID: (uid: string) => `/users/${uid}`,
+    USERS: '/User',
+    USER_BY_ID: (uid: string) => `/User/${uid}`,
+    USER_BY_USERNAME: (username: string) => `/User/username/${username}`,
     USER_LOGIN: '/users/login',
     USER_LOGOUT: '/users/logout',
     
@@ -106,9 +107,14 @@ export const API_CONFIG = {
     UPLOAD_PROMPT: '/upload/prompt',
     UPLOAD_FILE: '/upload/file',
     
+    // AI Actions
+    AI_ACTIONS_VOICE: (actionType: number) => `/aiactions/voice/${actionType}`,
+    
     // Voice/Recording
     VOICE_RECORDING: '/voice/recording',
     VOICE_PROCESS: '/voice/process',
+    VOICE_COMMANDS: '/Voicecommands',
+    VOICE_COMMAND_BY_ID: (id: string) => `/Voicecommands/${id}`,
     
     // Analytics/Visualizations
     ANALYTICS: '/analytics',

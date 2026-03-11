@@ -1,0 +1,52 @@
+[
+  {
+    "id": 1,
+    "uid": "user-003",
+    "question": "Who are the Atlanta Falcons",
+    "response": "The Atlanta Falcons are a professional American football team in the National Football League (NFL). Here are the basics:\n\n- Based in: Atlanta, Georgia\n- League/Division: NFL, NFC South\n- Home stadium: Mercedes-Benz Stadium\n- Founded: 1965\n- Colors: Red, black, white\n- Owner: Arthur Blank\n- Notable: Two Super Bowl appearances (1998 season and 2016 season) with no championships\n- Rivalries: New Orleans Saints, Tampa Bay Buccaneers, Carolina Panthers\n\nIf you want current news, scores, or season standings for the Falcons, I can pull that up.",
+    "timestamp": "2026-03-09T15:56:10.0249598",
+    "metadata": "{\"source\":\"LunaAI Web Interface\",\"userAgent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36\"}",
+    "expectedtokens": 136,
+    "expectedcost": 0.0013599999947473407
+  },
+  {
+    "id": 2,
+    "uid": "user-003",
+    "question": "who are the tottenham hotspurs",
+    "response": "Tottenham Hotspur Football Club, commonly known as Spurs, is a professional football club based in Tottenham, London, England.\n\n- They play in the Premier League, the top tier of English football.\n- Home ground: Tottenham Hotspur Stadium in North London.\n- Founded in 1882.\n- Nickname: Spurs. Rivalry: the North London Derby against Arsenal.\n- They have a history of success in domestic cups (e.g., FA Cup and League Cup) and European competition, including two UEFA Cup titles in the 1970s.\n\nIf you'd like current squad details or recent news about them, I can look that up.",
+    "timestamp": "2026-03-09T16:02:53.8106389",
+    "metadata": "{\"source\":\"LunaAI Home Page\",\"userAgent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36\"}",
+    "expectedtokens": 143,
+    "expectedcost": 0.0014299999456852674
+  },
+  {
+    "id": 3,
+    "uid": "user-003",
+    "question": "How many US Representatives are there?",
+    "response": "There are 435 voting U.S. Representatives in the House. In addition, the House includes 6 non-voting delegates (from D.C. and five territories), for a total of 441 members.",
+    "timestamp": "2026-03-10T15:00:50.5638388",
+    "metadata": "{\"source\":\"LunaAI Web Interface\",\"userAgent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0\"}",
+    "expectedtokens": 43,
+    "expectedcost": 0.0004299999854993075
+  },
+  {
+    "id": 4,
+    "uid": "user-004",
+    "question": "What is the weather this week?",
+    "response": "I don't have your location yet, and weather varies a lot by city. Could you tell me:\n\n- The city and country (and time zone if you know it)\n- Do you want a day-by-day 7-day forecast or a quick weekly summary (highs/lows and precipitation)?\n- Any other details you'd like (hourly updates, rain chances, etc.)?\n\nOnce you share your location, I can pull the latest 7-day forecast for that area and summarize it for you. If you'd rather, I can also guide you to a reliable local weather site or app.",
+    "timestamp": "2026-03-11T19:30:36.3939711",
+    "metadata": "{\"source\":\"LunaAI Web Interface\",\"userAgent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36\"}",
+    "expectedtokens": 123,
+    "expectedcost": 0.0012299999361857772
+  },
+  {
+    "id": 5,
+    "uid": "user-004",
+    "question": "What is the weather in Columbia, SC this week?",
+    "response": "I don't have live weather data here. If you'd like, I can fetch the latest forecast for Columbia, SC from a weather site—just say the word and I'll pull it up.\n\nIf you just want a quick sense of typical conditions this time of year: in March, Columbia usually has daytime highs in the 60s F (around 18–20 C) and nighttime lows in the 40s–50s F, with a reasonable chance of showers on some days. For the exact forecast this week, checking a source like weather.gov (Columbia, SC forecast) or a weather app would give you current highs/lows and rain chances.",
+    "timestamp": "2026-03-11T19:31:14.3432185",
+    "metadata": "{\"source\":\"LunaAI Web Interface\",\"userAgent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36\"}",
+    "expectedtokens": 139,
+    "expectedcost": 0.0013899999903514981
+  }
+]

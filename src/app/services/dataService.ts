@@ -125,7 +125,8 @@ function shouldUseSuperuserFallback(): boolean {
  */
 async function apiRequest<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  suppressErrors: boolean = false
 ): Promise<T> {
   const url = getApiUrl(endpoint);
   
@@ -141,6 +142,17 @@ async function apiRequest<T>(
 
     if (!response.ok) {
       const errorText = await response.text();
+      
+      // Only log detailed errors if not suppressing (i.e., when we don't have fallback)
+      if (!suppressErrors) {
+        console.error("❌ API Request Failed:");
+        console.error("  URL:", url);
+        console.error("  Method:", options.method || "GET");
+        console.error("  Status:", response.status, response.statusText);
+        console.error("  Response Body:", errorText);
+        console.error("  Request Body:", options.body);
+      }
+      
       throw new Error(`API Error: ${response.status} - ${errorText}`);
     }
 
@@ -148,7 +160,9 @@ async function apiRequest<T>(
   } catch (error) {
     // Check if it's a network error or IP restriction
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      console.error('Network error - API may be unreachable:', error);
+      if (!suppressErrors) {
+        console.error('Network error - API may be unreachable:', error);
+      }
     }
     throw error;
   }
@@ -181,20 +195,39 @@ export const UserService = {
    * Get user by ID
    */
   async getById(uid: string): Promise<User | null> {
+    // Suppress API errors for superusers since we have local fallback
+    const suppressErrors = shouldUseSuperuserFallback();
+    
     try {
-      const user = await apiRequest<User>(API_CONFIG.ENDPOINTS.USER_BY_ID(uid));
+      const user = await apiRequest<User>(API_CONFIG.ENDPOINTS.USER_BY_ID(uid), {}, suppressErrors);
       return user;
     } catch (error) {
-      // Silently fall back to local JSON for superusers
+      // Fall back to local JSON for superusers or when API fails
       if (shouldUseSuperuserFallback()) {
         const user = usersJson.find((u) => u.uid === uid);
         if (user) {
           console.log(`✓ Using local JSON fallback for user ${uid}`);
+          
+          // Check if there are any localStorage updates for this user
+          const localUpdatesKey = `user_updates_${uid}`;
+          const existingUpdates = localStorage.getItem(localUpdatesKey);
+          
+          if (existingUpdates) {
+            const updates = JSON.parse(existingUpdates);
+            const mergedUser = { ...user, ...updates } as User;
+            console.log(`✓ Applied localStorage updates to user ${uid}:`, updates);
+            return mergedUser;
+          }
+          
           return user as User;
+        } else {
+          // User not found even in local fallback
+          console.warn(`⚠ User ${uid} not found in local JSON fallback`);
+          return null;
         }
       }
-      // Only log error if we're not falling back or user not found
-      console.error(`⚠ User ${uid} not found in API or local fallback`);
+      // Only log error if we're not a superuser (no fallback available)
+      console.error(`⚠ User ${uid} not found in API and no local fallback available`);
       return null;
     }
   },
@@ -220,6 +253,9 @@ export const UserService = {
    */
   async update(uid: string, user: Partial<User>): Promise<User> {
     try {
+      console.log("📤 Attempting to update user via API:", uid);
+      console.log("📦 User data being sent:", JSON.stringify(user, null, 2));
+      
       const updatedUser = await apiRequest<User>(
         API_CONFIG.ENDPOINTS.USER_BY_ID(uid),
         {
@@ -230,6 +266,31 @@ export const UserService = {
       return updatedUser;
     } catch (error) {
       console.error(`Failed to update user ${uid}:`, error);
+      
+      // For superusers with string UIDs, save to localStorage instead
+      if (shouldUseSuperuserFallback()) {
+        console.log(`✓ Superuser fallback - saving update to localStorage for user ${uid}`);
+        
+        // Store the user updates in localStorage
+        const localUpdatesKey = `user_updates_${uid}`;
+        const existingUpdates = localStorage.getItem(localUpdatesKey);
+        const updates = existingUpdates ? JSON.parse(existingUpdates) : {};
+        
+        // Merge new updates with existing ones
+        const mergedUpdates = { ...updates, ...user };
+        localStorage.setItem(localUpdatesKey, JSON.stringify(mergedUpdates));
+        
+        // Return the updated user object (merged with existing data)
+        const existingUser = usersJson.find((u) => u.uid === uid);
+        if (existingUser) {
+          const mergedUser = { ...existingUser, ...mergedUpdates } as User;
+          console.log("✓ Returning merged user data with localStorage updates:", mergedUser);
+          return mergedUser;
+        }
+        // If not in local JSON, just return the partial update as a User
+        return user as User;
+      }
+      
       throw error;
     }
   },
