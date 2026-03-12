@@ -139,7 +139,7 @@ export function LoginModal({ open, onClose, onLoginSuccess }: LoginModalProps) {
         </Button>
 
         <div className="mt-4 text-center text-sm text-slate-600">
-          <p>Demo users: john, joe, brian, portia, joey</p>
+          <p>Demo users: john, marco, brian, portia, joey, jws</p>
           <p>Password: test12345</p>
         </div>
       </DialogContent>

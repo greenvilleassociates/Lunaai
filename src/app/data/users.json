@@ -16,7 +16,7 @@
   },
   {
     "uid": "user-002",
-    "username": "joe",
+    "username": "marco",
     "password": "test12345",
     "role": "user",
     "companyId": "comp-001",
@@ -76,7 +76,7 @@
   },
   {
     "uid": "user-006",
-    "username": "marco",
+    "username": "jws",
     "password": "test12345",
     "role": "superuser",
     "companyId": "comp-001",

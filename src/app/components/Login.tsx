@@ -140,6 +140,7 @@ export function Login() {
 
         // Store uid and session information in localStorage
         localStorage.setItem("uid", localUser.uid || localUser.id || localUser.userid?.toString() || "");
+        localStorage.setItem("userid", localUser.userid?.toString() || localUser.id?.toString() || "");
         localStorage.setItem("username", localUser.username || username);
         localStorage.setItem("role", localUser.role || "user");
         localStorage.setItem("loginTime", loginTime);
@@ -294,6 +295,7 @@ export function Login() {
 
       // Store uid and session information in localStorage
       localStorage.setItem("uid", user.uid || user.id || user.userid?.toString() || "");
+      localStorage.setItem("userid", user.userid?.toString() || user.id?.toString() || "");
       localStorage.setItem("username", user.username || username);
       localStorage.setItem("role", user.role || "user");
       localStorage.setItem("loginTime", loginTime);
@@ -436,7 +438,7 @@ export function Login() {
 
         <div className="mt-6 text-sm text-slate-600 text-center border-t border-slate-200 pt-4">
           <p className="mb-2">Test Users:</p>
-          <p>john, joe, brian, portia, joey</p>
+          <p>john, marco, brian, portia, joey, jws</p>
           <p>Password: test12345</p>
         </div>
       </div>

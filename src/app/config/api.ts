@@ -108,7 +108,7 @@ export const API_CONFIG = {
     UPLOAD_FILE: '/upload/file',
     
     // AI Actions
-    AI_ACTIONS_VOICE: (actionType: number) => `/aiactions/voice/${actionType}`,
+    AI_ACTIONS_VOICE: '/aiactions/voice/1',
     
     // Voice/Recording
     VOICE_RECORDING: '/voice/recording',

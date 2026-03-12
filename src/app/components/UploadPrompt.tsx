@@ -221,31 +221,57 @@ export function UploadPrompt() {
       if (shouldCallAIActions) {
         try {
           console.log(`🤖 Attempting to queue file for AI processing: ${data.blobUrl}`);
-          const aiActionsUrl = getApiUrl(API_CONFIG.ENDPOINTS.AI_ACTIONS_VOICE(1)); // Action type 1 = voice-to-text
+          const aiActionsUrl = getApiUrl(API_CONFIG.ENDPOINTS.AI_ACTIONS_VOICE); // POST to /api/aiactions/voice/1
           
           console.log(`📡 AI Actions URL: ${aiActionsUrl}`);
+          
+          // Get user information
+          const uid = localStorage.getItem("uid");
+          const username = localStorage.getItem("username");
+          const email = localStorage.getItem("email") || "user@capitoltechnology.net";
+          const userid = localStorage.getItem("userid"); // Get numeric user ID
+          
+          console.log(`👤 User Info - uid: ${uid}, userid: ${userid}, username: ${username}, email: ${email}`);
+          
+          const aiActionsPayload = {
+            blobUrl: data.blobUrl,
+            fileName: data.fileName || audioFile.name,
+            userId: userid ? parseInt(userid) : 1,
+            language: "english",
+            emailTo: email,
+            emailSubject: "UploadedFile",
+            emailBody: "You uploaded a voice prompt"
+          };
+          
+          console.log(`📦 AI Actions POST Payload:`, JSON.stringify(aiActionsPayload, null, 2));
           
           const aiResponse = await fetch(aiActionsUrl, {
             method: "POST",
             headers: {
               "accept": "application/json",
               "Content-Type": "application/json",
-              ...getFileUploadHeaders(),
+              ...(uid && { "Authorization": `Bearer ${uid}` }),
             },
-            body: JSON.stringify({
-              blobUrl: data.blobUrl,
-            }),
+            body: JSON.stringify(aiActionsPayload),
           });
           
+          console.log(`📥 AI Actions Response Status: ${aiResponse.status} ${aiResponse.statusText}`);
+          
           if (!aiResponse.ok) {
-            const errorText = await aiResponse.text();
-            console.warn(`⚠ AI Actions returned ${aiResponse.status}: ${errorText}`);
-            console.warn(`⚠ Continuing with local tracking only...`);
-            throw new Error(`AI Actions failed: ${aiResponse.status} - ${errorText}`);
+            let errorText = "";
+            try {
+              errorText = await aiResponse.text();
+              console.log(`❌ AI Actions Error Response Body:`, errorText);
+            } catch (e) {
+              console.log(`❌ Could not read error response body`);
+            }
+            console.log(`ℹ️ AI Actions returned ${aiResponse.status} - file uploaded successfully, using local tracking`);
+            // Don't throw - file is already uploaded successfully
+            return;
           }
           
           const aiData = await aiResponse.json();
-          console.log(`✅ File queued for AI processing successfully:`, aiData);
+          console.log(`✅ AI Actions queued successfully:`, aiData);
           
           // Update file to show it's being processed
           setUploadedFiles((prev) =>
