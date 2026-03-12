@@ -1,32 +1,6 @@
-import { useState, useEffect } from "react";
-import {
-  Button,
-  TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Alert,
-  Chip,
-  Typography,
-  Box,
-  Tabs,
-  Tab,
-} from "@mui/material";
 import { PersonAdd, Business, AddBusiness, Group } from "@mui/icons-material";
-import users from "../data/users.json";
-import companies from "../data/companies.json";
+import { DATA_URLS, fetchExternalData } from "../config/dataUrls";
+import { API_CONFIG, getApiUrl } from "../config/api";
 
 interface User {
   uid: string;
@@ -84,7 +58,8 @@ interface UserGroup {
 export function Administrator() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
-  const [userList, setUserList] = useState<User[]>(users as User[]);
+  const [userList, setUserList] = useState<User[]>([]);
+  const [companiesList, setCompaniesList] = useState<Company[]>([]);
   const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
   const [addBuDialogOpen, setAddBuDialogOpen] = useState(false);
   const [addCompanyDialogOpen, setAddCompanyDialogOpen] = useState(false);
@@ -141,18 +116,35 @@ export function Administrator() {
   });
 
   useEffect(() => {
-    // Load current user from localStorage
-    const uid = localStorage.getItem("uid");
-    const user = users.find((u) => u.uid === uid) as User | undefined;
-    if (user) {
-      setCurrentUser(user);
-      
-      // Find the company for this user
-      const company = companies.find((c) => c.companyId === user.companyId) as Company | undefined;
-      if (company) {
-        setCurrentCompany(company);
+    // Load users and companies from external JSONs
+    const loadData = async () => {
+      try {
+        const [fetchedUsers, fetchedCompanies] = await Promise.all([
+          fetchExternalData<User[]>(DATA_URLS.USERS),
+          fetchExternalData<Company[]>(DATA_URLS.COMPANIES),
+        ]);
+        
+        setUserList(fetchedUsers);
+        setCompaniesList(fetchedCompanies);
+        
+        // Load current user from localStorage
+        const uid = localStorage.getItem("uid");
+        const user = fetchedUsers.find((u) => u.uid === uid);
+        if (user) {
+          setCurrentUser(user);
+          
+          // Find the company for this user
+          const company = fetchedCompanies.find((c) => c.companyId === user.companyId);
+          if (company) {
+            setCurrentCompany(company);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load administrator data:", error);
       }
-    }
+    };
+    
+    loadData();
   }, []);
 
   // Filter users to show only those from the admin's company
@@ -511,7 +503,7 @@ export function Administrator() {
             </TableHead>
             <TableBody>
               {companyUsers.map((user) => {
-                const userCompany = companies.find((c) => c.companyId === user.companyId) as Company | undefined;
+                const userCompany = companiesList.find((c) => c.companyId === user.companyId);
                 return (
                   <TableRow key={user.uid}>
                     <TableCell>{user.username}</TableCell>
