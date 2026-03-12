@@ -24,6 +24,7 @@ import {
 } from "@mui/material";
 import { SupervisorAccount, Add } from "@mui/icons-material";
 import { API_CONFIG, getApiUrl } from "../config/api";
+import { DATA_URLS, fetchExternalData } from "../config/dataUrls";
 
 interface Manager {
   id: number;
@@ -156,24 +157,83 @@ export function ManagerManagement() {
   };
 
   const loadCompanies = async () => {
+    console.log("🔄 Starting loadCompanies...");
+    
     try {
       const uid = localStorage.getItem("uid");
-      if (!uid) return;
-
-      const url = getApiUrl(API_CONFIG.ENDPOINTS.COMPANY);
-      const response = await fetch(url, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${uid}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setCompanies(data);
+      if (!uid) {
+        console.warn("⚠️ No UID found, trying without auth...");
       }
+
+      // Strategy 1: Try Azure API /companies endpoint (plural, lowercase)
+      try {
+        const url = getApiUrl(API_CONFIG.ENDPOINTS.COMPANIES);
+        console.log("🔍 Attempt 1: Fetching from Azure API:", url);
+        
+        const response = await fetch(url, {
+          headers: {
+            "Content-Type": "application/json",
+            ...(uid && { Authorization: `Bearer ${uid}` }),
+          },
+        });
+
+        console.log("📡 Azure API /companies Response Status:", response.status);
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log("✅ SUCCESS: Companies loaded from Azure API /companies:", data);
+          setCompanies(data);
+          return; // Success, exit early
+        } else {
+          console.warn(`⚠️ Azure API /companies returned ${response.status}`);
+        }
+      } catch (err) {
+        console.warn("⚠️ Azure API /companies failed:", err);
+      }
+
+      // Strategy 2: Try Azure API /Company endpoint (singular, capitalized)
+      try {
+        const url = getApiUrl(API_CONFIG.ENDPOINTS.COMPANY);
+        console.log("🔍 Attempt 2: Fetching from Azure API:", url);
+        
+        const response = await fetch(url, {
+          headers: {
+            "Content-Type": "application/json",
+            ...(uid && { Authorization: `Bearer ${uid}` }),
+          },
+        });
+
+        console.log("📡 Azure API /Company Response Status:", response.status);
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log("✅ SUCCESS: Companies loaded from Azure API /Company:", data);
+          setCompanies(data);
+          return; // Success, exit early
+        } else {
+          console.warn(`⚠️ Azure API /Company returned ${response.status}`);
+        }
+      } catch (err) {
+        console.warn("⚠️ Azure API /Company failed:", err);
+      }
+
+      // Strategy 3: Fall back to local JSON
+      console.log("🔍 Attempt 3: Falling back to local/external JSON...");
+      const localData = await fetchExternalData<any[]>(DATA_URLS.COMPANIES);
+      console.log("✅ SUCCESS: Companies loaded from local/external JSON:", localData);
+      
+      // Map the local JSON structure to match the API structure
+      const mappedData = localData.map((company: any) => ({
+        id: parseInt(company.companyId) || 0,
+        companyname: company.companyName || "",
+      }));
+      
+      console.log("📦 Mapped company data:", mappedData);
+      setCompanies(mappedData);
+      
     } catch (err) {
-      console.error("Error loading companies:", err);
+      console.error("❌ FAILED: All strategies to load companies failed:", err);
+      setCompanies([]); // Set empty array as last resort
     }
   };
 
@@ -468,7 +528,7 @@ export function ManagerManagement() {
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>{editMode ? "Edit Manager" : "Add New Manager"}</DialogTitle>
         <DialogContent>
-          <Box className="space-y-4 pt-2">
+          <Box className="space-y-2.5 pt-2">
             <TextField
               fullWidth
               label="Full Name"
@@ -477,7 +537,7 @@ export function ManagerManagement() {
               required
             />
 
-            <Box className="grid grid-cols-2 gap-4">
+            <Box className="grid grid-cols-2 gap-2.5">
               <TextField
                 fullWidth
                 label="Employee ID"
@@ -554,7 +614,7 @@ export function ManagerManagement() {
               disabled
             />
 
-            <Box className="grid grid-cols-3 gap-4">
+            <Box className="grid grid-cols-3 gap-2.5">
               <TextField
                 fullWidth
                 label="Store City"

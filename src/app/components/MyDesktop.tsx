@@ -5,6 +5,7 @@ import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import SearchIcon from "@mui/icons-material/Search";
 import MicIcon from "@mui/icons-material/Mic";
 import AudioFileIcon from "@mui/icons-material/AudioFile";
+import { Switch, FormControlLabel, Box } from "@mui/material";
 import { API_CONFIG, getApiUrl } from "../config/api";
 import { DATA_URLS, fetchExternalData } from "../config/dataUrls";
 
@@ -36,11 +37,16 @@ export function MyDesktop() {
   const [voiceCommands, setVoiceCommands] = useState<VoiceCommand[]>([]);
   const [loading, setLoading] = useState(true);
   const [voiceLoading, setVoiceLoading] = useState(true);
+  const [showAllRecords, setShowAllRecords] = useState(false);
+  
+  // Check if user is superuser
+  const currentUserRole = localStorage.getItem("role");
+  const isSuperUser = currentUserRole === "superuser";
 
   useEffect(() => {
     loadRecentSearches();
     loadVoiceCommands();
-  }, []);
+  }, [showAllRecords]); // Reload when toggle changes
 
   const loadRecentSearches = async () => {
     try {
@@ -60,10 +66,19 @@ export function MyDesktop() {
 
       if (response.ok) {
         const data = await response.json();
-        // Filter by current user and get 5 most recent
-        const userSearches = data.filter((item: WebSearchResult) => item.uid === uid);
-        setSearchHistory(userSearches.slice(0, 5));
-        console.log("✅ Search history loaded from database");
+        
+        // For superusers with toggle ON: show all records
+        // For everyone else (or superusers with toggle OFF): show only their own records
+        let filteredSearches;
+        if (isSuperUser && showAllRecords) {
+          filteredSearches = data; // Show all records
+          console.log("✅ Search history loaded (ALL USERS - Superuser mode)");
+        } else {
+          filteredSearches = data.filter((item: WebSearchResult) => item.uid === uid);
+          console.log("✅ Search history loaded (MY RECORDS only)");
+        }
+        
+        setSearchHistory(filteredSearches.slice(0, 5));
       } else {
         throw new Error("Database unavailable");
       }
@@ -73,8 +88,15 @@ export function MyDesktop() {
       try {
         const fallbackData = await fetchExternalData<WebSearchResult[]>(DATA_URLS.WEBSEARCH);
         const uid = localStorage.getItem("uid");
-        const userSearches = fallbackData.filter((item: WebSearchResult) => item.uid === uid);
-        setSearchHistory(userSearches.slice(0, 5));
+        
+        let filteredSearches;
+        if (isSuperUser && showAllRecords) {
+          filteredSearches = fallbackData;
+        } else {
+          filteredSearches = fallbackData.filter((item: WebSearchResult) => item.uid === uid);
+        }
+        
+        setSearchHistory(filteredSearches.slice(0, 5));
         console.log("✅ Search history loaded from local JSON fallback");
       } catch (fallbackErr) {
         console.error("Failed to load fallback data:", fallbackErr);
@@ -102,9 +124,22 @@ export function MyDesktop() {
 
       if (response.ok) {
         const data = await response.json();
-        // Get the 5 most recent voice commands
-        setVoiceCommands(data.slice(0, 5));
-        console.log("✅ Voice commands loaded from database");
+        
+        // For superusers with toggle ON: show all records
+        // For everyone else (or superusers with toggle OFF): show only their own records
+        let filteredCommands;
+        if (isSuperUser && showAllRecords) {
+          filteredCommands = data; // Show all records
+          console.log("✅ Voice commands loaded (ALL USERS - Superuser mode)");
+        } else {
+          // Filter by userid or useridstring
+          filteredCommands = data.filter((item: VoiceCommand) => 
+            item.useridstring === uid || item.userid?.toString() === uid
+          );
+          console.log("✅ Voice commands loaded (MY RECORDS only)");
+        }
+        
+        setVoiceCommands(filteredCommands.slice(0, 5));
       } else {
         throw new Error("Database unavailable");
       }
@@ -138,10 +173,47 @@ export function MyDesktop() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <h2 className="text-3xl mb-6">My Desktop</h2>
-      <p className="text-slate-600 mb-8">
-        Your central workspace for managing LLM interactions, voice prompts, and AI workflows.
-      </p>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-3xl mb-2">My Desktop</h2>
+          <p className="text-slate-600">
+            Your central workspace for managing LLM interactions, voice prompts, and AI workflows.
+          </p>
+        </div>
+        
+        {/* Superuser Toggle */}
+        {isSuperUser && (
+          <Box>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={showAllRecords}
+                  onChange={(e) => setShowAllRecords(e.target.checked)}
+                  sx={{
+                    "& .MuiSwitch-switchBase.Mui-checked": {
+                      color: "#8B0000",
+                    },
+                    "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                      backgroundColor: "#8B0000",
+                    },
+                  }}
+                />
+              }
+              label={
+                <Box className="text-sm">
+                  <div className="font-semibold text-slate-900">
+                    {showAllRecords ? "All Users" : "My Records"}
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {showAllRecords ? "Viewing all records" : "Viewing only my records"}
+                  </div>
+                </Box>
+              }
+              labelPlacement="start"
+            />
+          </Box>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Features Quick Access */}

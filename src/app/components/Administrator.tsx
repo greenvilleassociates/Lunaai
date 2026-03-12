@@ -1,3 +1,27 @@
+import React, { useState, useEffect } from "react";
+import {
+  Box,
+  Button,
+  TextField,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Chip,
+  Alert,
+  Typography,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+} from "@mui/material";
 import { PersonAdd, Business, AddBusiness, Group } from "@mui/icons-material";
 import { DATA_URLS, fetchExternalData } from "../config/dataUrls";
 import { API_CONFIG, getApiUrl } from "../config/api";
@@ -139,6 +163,11 @@ export function Administrator() {
             setCurrentCompany(company);
           }
         }
+
+        // Load Business Units, API Companies, and User Groups from Azure API
+        await loadBusinessUnits();
+        await loadApiCompanies();
+        await loadUserGroups();
       } catch (error) {
         console.error("Failed to load administrator data:", error);
       }
@@ -146,6 +175,72 @@ export function Administrator() {
     
     loadData();
   }, []);
+
+  const loadBusinessUnits = async () => {
+    try {
+      const apiUrl = getApiUrl(API_CONFIG.ENDPOINTS.BUSINESS_UNITS);
+      const response = await fetch(apiUrl, {
+        headers: {
+          "accept": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("uid")}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setBusinessUnits(data);
+        console.log("✅ Business Units loaded from Azure API:", data.length);
+      } else {
+        console.warn(`⚠️ Business Units API returned ${response.status} - using empty state`);
+      }
+    } catch (error) {
+      console.warn("⚠️ Failed to load Business Units from API:", error);
+    }
+  };
+
+  const loadApiCompanies = async () => {
+    try {
+      const apiUrl = getApiUrl(API_CONFIG.ENDPOINTS.COMPANY);
+      const response = await fetch(apiUrl, {
+        headers: {
+          "accept": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("uid")}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setApiCompanies(data);
+        console.log("✅ Companies loaded from Azure API:", data.length);
+      } else {
+        console.warn(`⚠️ Companies API returned ${response.status} - using empty state`);
+      }
+    } catch (error) {
+      console.warn("⚠️ Failed to load Companies from API:", error);
+    }
+  };
+
+  const loadUserGroups = async () => {
+    try {
+      const apiUrl = getApiUrl(API_CONFIG.ENDPOINTS.USER_GROUPS);
+      const response = await fetch(apiUrl, {
+        headers: {
+          "accept": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("uid")}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUserGroups(data);
+        console.log("✅ User Groups loaded from Azure API:", data.length);
+      } else {
+        console.warn(`⚠️ User Groups API returned ${response.status} - using empty state`);
+      }
+    } catch (error) {
+      console.warn("⚠️ Failed to load User Groups from API:", error);
+    }
+  };
 
   // Filter users to show only those from the admin's company
   const companyUsers = userList.filter((user) => 
@@ -417,6 +512,7 @@ export function Administrator() {
   // Check if current user is admin for their company
   const isCompanyAdmin = currentCompany?.administratorUid === currentUser?.uid;
   const isSuperUser = currentUser?.role === "superuser";
+  const isAdmin = currentUser?.role === "admin";
 
   if (!currentUser) {
     return (
@@ -426,7 +522,7 @@ export function Administrator() {
     );
   }
 
-  if (!isCompanyAdmin && !isSuperUser) {
+  if (!isCompanyAdmin && !isSuperUser && !isAdmin) {
     return (
       <div className="max-w-6xl mx-auto">
         <Alert severity="warning">

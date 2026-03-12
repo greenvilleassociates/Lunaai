@@ -7,8 +7,27 @@
 
 import { API_CONFIG, getApiUrl } from "../config/api";
 import { getAuthHeaders } from "../utils/auth";
-import usersJson from "../data/users.json";
-import companiesJson from "../data/companies.json";
+import { DATA_URLS, fetchExternalData } from "../config/dataUrls";
+
+// Cache for external JSON data
+let usersJsonCache: any[] | null = null;
+let companiesJsonCache: any[] | null = null;
+
+// Load users from external URL on first use
+async function getUsersJson() {
+  if (!usersJsonCache) {
+    usersJsonCache = await fetchExternalData<any[]>(DATA_URLS.USERS);
+  }
+  return usersJsonCache;
+}
+
+// Load companies from external URL on first use
+async function getCompaniesJson() {
+  if (!companiesJsonCache) {
+    companiesJsonCache = await fetchExternalData<any[]>(DATA_URLS.COMPANIES);
+  }
+  return companiesJsonCache;
+}
 
 // ============================================================================
 // Type Definitions
@@ -184,7 +203,7 @@ export const UserService = {
       // Silently fall back to local JSON for superusers
       if (shouldUseSuperuserFallback()) {
         console.log("✓ Using local JSON fallback for users");
-        return usersJson as User[];
+        return await getUsersJson() as User[];
       }
       console.error("Failed to fetch users from API:", error);
       throw error;
@@ -195,18 +214,29 @@ export const UserService = {
    * Get user by ID
    */
   async getById(uid: string): Promise<User | null> {
-    // Suppress API errors for superusers since we have local fallback
-    const suppressErrors = shouldUseSuperuserFallback();
+    // Always try to get from external JSON first to check if user exists there
+    let usersJson: any[] = [];
+    try {
+      usersJson = await getUsersJson();
+    } catch (error) {
+      console.warn("Failed to load external users JSON:", error);
+    }
+    
+    // Check if user exists in external JSON (for fallback)
+    const userExistsInJson = usersJson.some((u) => u.uid === uid);
+    
+    // Suppress API errors if we have fallback available OR if user is superuser
+    const suppressErrors = userExistsInJson || shouldUseSuperuserFallback();
     
     try {
       const user = await apiRequest<User>(API_CONFIG.ENDPOINTS.USER_BY_ID(uid), {}, suppressErrors);
       return user;
     } catch (error) {
-      // Fall back to local JSON for superusers or when API fails
-      if (shouldUseSuperuserFallback()) {
+      // Fall back to external JSON if user exists there
+      if (userExistsInJson) {
         const user = usersJson.find((u) => u.uid === uid);
         if (user) {
-          console.log(`✓ Using local JSON fallback for user ${uid}`);
+          console.log(`✓ Using external JSON fallback for user ${uid}`);
           
           // Check if there are any localStorage updates for this user
           const localUpdatesKey = `user_updates_${uid}`;
@@ -220,14 +250,11 @@ export const UserService = {
           }
           
           return user as User;
-        } else {
-          // User not found even in local fallback
-          console.warn(`⚠ User ${uid} not found in local JSON fallback`);
-          return null;
         }
       }
-      // Only log error if we're not a superuser (no fallback available)
-      console.error(`⚠ User ${uid} not found in API and no local fallback available`);
+      
+      // User not found in API or external JSON
+      console.warn(`⚠ User ${uid} not found in API or external JSON`);
       return null;
     }
   },
@@ -281,7 +308,7 @@ export const UserService = {
         localStorage.setItem(localUpdatesKey, JSON.stringify(mergedUpdates));
         
         // Return the updated user object (merged with existing data)
-        const existingUser = usersJson.find((u) => u.uid === uid);
+        const existingUser = (await getUsersJson()).find((u) => u.uid === uid);
         if (existingUser) {
           const mergedUser = { ...existingUser, ...mergedUpdates } as User;
           console.log("✓ Returning merged user data with localStorage updates:", mergedUser);
@@ -321,7 +348,7 @@ export const UserService = {
     } catch (error) {
       console.error(`Failed to fetch users for company ${companyId}:`, error);
       if (shouldUseSuperuserFallback()) {
-        const users = usersJson.filter((u) => u.companyId === companyId);
+        const users = (await getUsersJson()).filter((u) => u.companyId === companyId);
         return users as User[];
       }
       throw error;
@@ -344,7 +371,7 @@ export const CompanyService = {
     } catch (error) {
       console.error("Failed to fetch companies from API:", error);
       console.log("Using local JSON fallback for companies");
-      return companiesJson as Company[];
+      return await getCompaniesJson() as Company[];
     }
   },
 
@@ -352,19 +379,39 @@ export const CompanyService = {
    * Get company by ID
    */
   async getById(companyId: string): Promise<Company | null> {
+    // Always try to get from external JSON first to check if company exists there
+    let companiesJson: any[] = [];
+    try {
+      companiesJson = await getCompaniesJson();
+    } catch (error) {
+      console.warn("Failed to load external companies JSON:", error);
+    }
+    
+    // Check if company exists in external JSON (for fallback)
+    const companyExistsInJson = companiesJson.some((c) => c.companyId === companyId);
+    
+    // Suppress API errors if we have fallback available
+    const suppressErrors = companyExistsInJson;
+    
     try {
       const company = await apiRequest<Company>(
-        API_CONFIG.ENDPOINTS.COMPANY_BY_ID(companyId)
+        API_CONFIG.ENDPOINTS.COMPANY_BY_ID(companyId),
+        {},
+        suppressErrors
       );
       return company;
     } catch (error) {
-      // Always fall back to local JSON for companies
-      const company = companiesJson.find((c) => c.companyId === companyId);
-      if (company) {
-        console.log(`✓ Using local JSON fallback for company ${companyId}`);
-        return company as Company;
+      // Fall back to external JSON if company exists there
+      if (companyExistsInJson) {
+        const company = companiesJson.find((c) => c.companyId === companyId);
+        if (company) {
+          console.log(`✓ Using external JSON fallback for company ${companyId}`);
+          return company as Company;
+        }
       }
-      console.error(`⚠ Company ${companyId} not found in API or local fallback`);
+      
+      // Company not found in API or external JSON
+      console.warn(`⚠ Company ${companyId} not found in API or external JSON`);
       return null;
     }
   },
