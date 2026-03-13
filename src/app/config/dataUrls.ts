@@ -1,8 +1,9 @@
 /**
  * External JSON Data URLs
  * 
- * All static JSON files are hosted on the webserver root
- * at luna.capitoltechnology.net/data/
+ * All static JSON files are hosted in /public/Data/ folder
+ * which will be automatically published with Vite build.
+ * External URLs point to luna.capitoltechnology.net/Data/
  */
 
 // Import local JSON files as fallback
@@ -10,10 +11,18 @@ import usersJsonFallback from "../data/users.json";
 import companiesJsonFallback from "../data/companies.json";
 import websearchJsonFallback from "../data/websearch.json";
 
+// Public folder URLs (Vite will serve from /Data/)
 export const DATA_URLS = {
-  USERS: "https://luna.capitoltechnology.net/data/users.json",
-  COMPANIES: "https://luna.capitoltechnology.net/data/companies.json",
-  WEBSEARCH: "https://luna.capitoltechnology.net/data/websearch.json",
+  USERS: "/Data/users.json",
+  COMPANIES: "/Data/companies.json",
+  WEBSEARCH: "/Data/websearch.json",
+} as const;
+
+// External production URLs
+export const EXTERNAL_DATA_URLS = {
+  USERS: "https://luna.capitoltechnology.net/Data/users.json",
+  COMPANIES: "https://luna.capitoltechnology.net/Data/companies.json",
+  WEBSEARCH: "https://luna.capitoltechnology.net/Data/websearch.json",
 } as const;
 
 // Map of local fallback data
@@ -24,18 +33,20 @@ const LOCAL_FALLBACKS: Record<string, any> = {
 };
 
 /**
- * Helper function to fetch JSON data from external URLs with local fallback
+ * Helper function to fetch JSON data with fallback strategy
  * 
  * Flow:
- * 1. Try external URL first (for production)
- * 2. If fails (CORS, network, or file not found), fall back to local JSON
+ * 1. Try public /Data/ folder (served by Vite)
+ * 2. If fails, fall back to imported local JSON from src/app/data/
  * 
- * This allows development to work locally while production uses external files
+ * This allows:
+ * - Development: Uses /public/Data/ JSON files
+ * - Production: Same /Data/ files are deployed with the app
+ * - Fallback: If public files missing, uses bundled JSON
  */
 export async function fetchExternalData<T>(url: string): Promise<T> {
   try {
     const response = await fetch(url, {
-      mode: 'cors',
       headers: {
         'Accept': 'application/json',
       },
@@ -49,10 +60,10 @@ export async function fetchExternalData<T>(url: string): Promise<T> {
     console.log(`✓ Successfully fetched data from ${url}`);
     return data;
   } catch (error) {
-    // Silently fall back to local data (expected in development)
+    // Fall back to bundled local data
     const fallbackData = LOCAL_FALLBACKS[url];
     if (fallbackData) {
-      console.log('✓ Using local JSON data');
+      console.log(`⚠ Failed to fetch ${url}, using bundled JSON fallback`);
       return fallbackData as T;
     }
     

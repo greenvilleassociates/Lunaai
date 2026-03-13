@@ -1,9 +1,12 @@
-import { Outlet, Link, useLocation, useNavigate } from "react-router";
+import { Link, Outlet, useLocation, useNavigate } from "react-router";
 import { useState, useEffect } from "react";
+import { Box } from "@mui/material";
 import DesktopWindowsIcon from "@mui/icons-material/DesktopWindows";
-import FeaturesIcon from "@mui/icons-material/AutoAwesome";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import BadgeIcon from "@mui/icons-material/Badge";
+import SettingsIcon from "@mui/icons-material/Settings";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
 import NotificationsIcon from "@mui/icons-material/Notifications";
@@ -14,9 +17,13 @@ import MicIcon from "@mui/icons-material/Mic";
 import PersonIcon from "@mui/icons-material/Person";
 import InfoIcon from "@mui/icons-material/Info";
 import ContactMailIcon from "@mui/icons-material/ContactMail";
+import ExtensionIcon from "@mui/icons-material/Extension";
+import ShieldIcon from "@mui/icons-material/Shield";
+import PublicIcon from "@mui/icons-material/Public";
 import { Alert, Drawer, Divider, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from "@mui/material";
 import lunaLogo from "figma:asset/97a2e4984c2367786c9db0dc16a816860615bd7e.png";
 import ctsLogo from "figma:asset/399d93660a307619ab55b61f935095fec4286492.png";
+import superLunaIcon from "figma:asset/cfadca739638cf837cbfaf51361c717172db777b.png";
 import { API_CONFIG, getApiUrl } from "../config/api";
 
 export function Root() {
@@ -29,6 +36,11 @@ export function Root() {
   const [ipAddress, setIpAddress] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  // Check if user is superuser
+  const currentUserRole = localStorage.getItem("role");
+  const isSuperUser = currentUserRole === "superuser";
+  const isAdmin = currentUserRole === "admin";
 
   // Check if viewport is mobile-sized (1000px or less)
   useEffect(() => {
@@ -59,7 +71,7 @@ export function Root() {
     setLatitude(localStorage.getItem("latitude") || "");
     setLongitude(localStorage.getItem("longitude") || "");
     setIpAddress(localStorage.getItem("ipAddress") || "");
-  }, []);
+  }, [location]); // Re-run when location changes (after login navigation)
 
   const handleLogout = async () => {
     // Get session token from localStorage
@@ -223,42 +235,132 @@ export function Root() {
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar Navigation - Desktop (10% width on large screens) */}
         <aside className="hidden lg:flex lg:w-[10%] bg-slate-800 text-white flex-col shadow-lg">
-          <nav className="flex flex-col p-4 gap-2">
+          <nav className="flex flex-col p-4 gap-1">
             <Link
               to="/mydesktop"
-              className={`flex flex-col items-center gap-2 p-4 rounded hover:bg-slate-700 transition-colors ${
+              className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
                 isActive("/mydesktop") ? "bg-slate-700 text-white" : "text-slate-300"
               }`}
             >
-              <DesktopWindowsIcon fontSize="medium" />
+              <DesktopWindowsIcon sx={{ fontSize: 25 }} />
               <span className="text-xs text-center">My Desktop</span>
             </Link>
             <Link
               to="/features"
-              className={`flex flex-col items-center gap-2 p-4 rounded hover:bg-slate-700 transition-colors ${
+              className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
                 isActive("/features") ? "bg-slate-700 text-white" : "text-slate-300"
               }`}
             >
-              <FeaturesIcon fontSize="medium" />
+              <AutoAwesomeIcon sx={{ fontSize: 25 }} />
               <span className="text-xs text-center">Features</span>
             </Link>
             <Link
               to="/visualizations"
-              className={`flex flex-col items-center gap-2 p-4 rounded hover:bg-slate-700 transition-colors ${
+              className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
                 isActive("/visualizations") ? "bg-slate-700 text-white" : "text-slate-300"
               }`}
             >
-              <BarChartIcon fontSize="medium" />
+              <BarChartIcon sx={{ fontSize: 25 }} />
               <span className="text-xs text-center">Visualizations</span>
             </Link>
             <Link
               to="/administrator"
-              className={`flex flex-col items-center gap-2 p-4 rounded hover:bg-slate-700 transition-colors ${
+              className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
                 isActive("/administrator") ? "bg-slate-700 text-white" : "text-slate-300"
               }`}
             >
-              <AdminPanelSettingsIcon fontSize="medium" />
+              <AdminPanelSettingsIcon sx={{ fontSize: 25 }} />
               <span className="text-xs text-center">Administrator</span>
+            </Link>
+            {(isSuperUser || isAdmin) && (
+              <Link
+                to="/hrmanager"
+                className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/hrmanager") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+              >
+                <BadgeIcon sx={{ fontSize: 25 }} />
+                <span className="text-xs text-center">HR Manager</span>
+              </Link>
+            )}
+            <Link
+              to="/lunamodules"
+              className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                isActive("/lunamodules") ? "bg-slate-700 text-white" : "text-slate-300"
+              }`}
+            >
+              <ExtensionIcon sx={{ fontSize: 25 }} />
+              <span className="text-xs text-center">Luna Modules</span>
+            </Link>
+            {(isSuperUser || isAdmin) && (
+              <Link
+                to="/security"
+                className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/security") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+                title="CTS Luna Enterprise(9) Security"
+              >
+                <Box sx={{ position: "relative" }}>
+                  <ShieldIcon sx={{ fontSize: 25 }} />
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: -4,
+                      right: -8,
+                      backgroundColor: "#8B0000",
+                      borderRadius: "50%",
+                      width: 14,
+                      height: 14,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "8px",
+                      fontWeight: "bold",
+                      color: "white",
+                      border: "1px solid white",
+                    }}
+                  >
+                    9
+                  </Box>
+                </Box>
+                <span className="text-xs text-center">Security(9)</span>
+              </Link>
+            )}
+            {(isSuperUser || isAdmin) && (
+              <Link
+                to="/gridlicensemanager"
+                className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/gridlicensemanager") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+                title="CTS Grid App License Manager"
+              >
+                <PublicIcon sx={{ fontSize: 25 }} />
+                <span className="text-xs text-center">Grid Licenses</span>
+              </Link>
+            )}
+            {isSuperUser && (
+              <Link
+                to="/settings"
+                className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/settings") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+              >
+                <SettingsIcon sx={{ fontSize: 25 }} />
+                <span className="text-xs text-center">Settings</span>
+              </Link>
+            )}
+            <Link
+              to="/superluna"
+              className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                isActive("/superluna") ? "bg-slate-700 text-white" : "text-slate-300"
+              }`}
+            >
+              <img 
+                src={superLunaIcon} 
+                alt="SuperLuna" 
+                className="h-12 w-12 rounded-full object-cover border-2 border-yellow-400"
+              />
+              <span className="text-xs text-center">SuperLuna</span>
             </Link>
           </nav>
         </aside>
@@ -284,7 +386,7 @@ export function Root() {
                   isActive("/features") ? "bg-slate-700 text-white" : "text-slate-300"
                 }`}
               >
-                <FeaturesIcon fontSize="small" />
+                <AutoAwesomeIcon fontSize="small" />
                 <span className="text-sm">Features</span>
               </Link>
               <Link
@@ -306,6 +408,102 @@ export function Root() {
               >
                 <AdminPanelSettingsIcon fontSize="small" />
                 <span className="text-sm">Administrator</span>
+              </Link>
+              {(isSuperUser || isAdmin) && (
+                <Link
+                  to="/hrmanager"
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                    isActive("/hrmanager") ? "bg-slate-700 text-white" : "text-slate-300"
+                  }`}
+                >
+                  <BadgeIcon fontSize="small" />
+                  <span className="text-sm">HR Manager</span>
+                </Link>
+              )}
+              <Link
+                to="/lunamodules"
+                onClick={() => setSidebarOpen(false)}
+                className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/lunamodules") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+              >
+                <ExtensionIcon fontSize="small" />
+                <span className="text-sm">Luna Modules</span>
+              </Link>
+              {(isSuperUser || isAdmin) && (
+                <Link
+                  to="/security"
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                    isActive("/security") ? "bg-slate-700 text-white" : "text-slate-300"
+                  }`}
+                  title="CTS Luna Enterprise(9) Security"
+                >
+                  <Box sx={{ position: "relative" }}>
+                    <ShieldIcon fontSize="small" />
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: -4,
+                        right: -8,
+                        backgroundColor: "#8B0000",
+                        borderRadius: "50%",
+                        width: 16,
+                        height: 16,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "9px",
+                        fontWeight: "bold",
+                        color: "white",
+                        border: "1px solid white",
+                      }}
+                    >
+                      9
+                    </Box>
+                  </Box>
+                  <span className="text-sm">Security(9)</span>
+                </Link>
+              )}
+              {(isSuperUser || isAdmin) && (
+                <Link
+                  to="/gridlicensemanager"
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                    isActive("/gridlicensemanager") ? "bg-slate-700 text-white" : "text-slate-300"
+                  }`}
+                  title="CTS Grid App License Manager"
+                >
+                  <PublicIcon fontSize="small" />
+                  <span className="text-sm">Grid Licenses</span>
+                </Link>
+              )}
+              {isSuperUser && (
+                <Link
+                  to="/settings"
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                    isActive("/settings") ? "bg-slate-700 text-white" : "text-slate-300"
+                  }`}
+                >
+                  <SettingsIcon fontSize="small" />
+                  <span className="text-sm">Settings</span>
+                </Link>
+              )}
+              <Link
+                to="/superluna"
+                onClick={() => setSidebarOpen(false)}
+                className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/superluna") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+              >
+                <img 
+                  src={superLunaIcon} 
+                  alt="SuperLuna" 
+                  className="h-6 w-6 rounded-full object-cover border-2 border-yellow-400"
+                />
+                <span className="text-sm">SuperLuna</span>
               </Link>
             </nav>
           </aside>
@@ -371,7 +569,7 @@ export function Root() {
                 }}
               >
                 <ListItemIcon sx={{ color: "white" }}>
-                  <FeaturesIcon />
+                  <AutoAwesomeIcon />
                 </ListItemIcon>
                 <ListItemText primary="Features" />
               </ListItemButton>
@@ -416,6 +614,166 @@ export function Root() {
                   <AdminPanelSettingsIcon />
                 </ListItemIcon>
                 <ListItemText primary="Administrator" />
+              </ListItemButton>
+            </ListItem>
+
+            {(isSuperUser || isAdmin) && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    navigate("/hrmanager");
+                    setSidebarOpen(false);
+                  }}
+                  selected={isActive("/hrmanager")}
+                  sx={{
+                    "&.Mui-selected": {
+                      backgroundColor: "#8B0000",
+                      "&:hover": { backgroundColor: "#a00" },
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: "white" }}>
+                    <BadgeIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="HR Manager" />
+                </ListItemButton>
+              </ListItem>
+            )}
+
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  navigate("/lunamodules");
+                  setSidebarOpen(false);
+                }}
+                selected={isActive("/lunamodules")}
+                sx={{
+                  "&.Mui-selected": {
+                    backgroundColor: "#8B0000",
+                    "&:hover": { backgroundColor: "#a00" },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: "white" }}>
+                  <ExtensionIcon />
+                </ListItemIcon>
+                <ListItemText primary="Luna Modules" />
+              </ListItemButton>
+            </ListItem>
+
+            {(isSuperUser || isAdmin) && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    navigate("/security");
+                    setSidebarOpen(false);
+                  }}
+                  selected={isActive("/security")}
+                  sx={{
+                    "&.Mui-selected": {
+                      backgroundColor: "#8B0000",
+                      "&:hover": { backgroundColor: "#a00" },
+                    },
+                  }}
+                >
+                  <Box sx={{ position: "relative" }}>
+                    <ListItemIcon sx={{ color: "white" }}>
+                      <ShieldIcon />
+                    </ListItemIcon>
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: -4,
+                        right: -8,
+                        backgroundColor: "#8B0000",
+                        borderRadius: "50%",
+                        width: 16,
+                        height: 16,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "9px",
+                        fontWeight: "bold",
+                        color: "white",
+                        border: "1px solid white",
+                      }}
+                    >
+                      9
+                    </Box>
+                  </Box>
+                  <ListItemText primary="Security(9)" />
+                </ListItemButton>
+              </ListItem>
+            )}
+
+            {(isSuperUser || isAdmin) && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    navigate("/gridlicensemanager");
+                    setSidebarOpen(false);
+                  }}
+                  selected={isActive("/gridlicensemanager")}
+                  sx={{
+                    "&.Mui-selected": {
+                      backgroundColor: "#8B0000",
+                      "&:hover": { backgroundColor: "#a00" },
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: "white" }}>
+                    <PublicIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Grid Licenses" />
+                </ListItemButton>
+              </ListItem>
+            )}
+
+            {isSuperUser && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    navigate("/settings");
+                    setSidebarOpen(false);
+                  }}
+                  selected={isActive("/settings")}
+                  sx={{
+                    "&.Mui-selected": {
+                      backgroundColor: "#8B0000",
+                      "&:hover": { backgroundColor: "#a00" },
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: "white" }}>
+                    <SettingsIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Settings" />
+                </ListItemButton>
+              </ListItem>
+            )}
+
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  navigate("/superluna");
+                  setSidebarOpen(false);
+                }}
+                selected={isActive("/superluna")}
+                sx={{
+                  "&.Mui-selected": {
+                    backgroundColor: "#8B0000",
+                    "&:hover": { backgroundColor: "#a00" },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: "white" }}>
+                  <img 
+                    src={superLunaIcon} 
+                    alt="SuperLuna" 
+                    className="h-6 w-6 rounded-full object-cover border-2 border-yellow-400"
+                  />
+                </ListItemIcon>
+                <ListItemText primary="SuperLuna" />
               </ListItemButton>
             </ListItem>
 

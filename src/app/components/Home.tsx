@@ -145,8 +145,7 @@ export function Home() {
             Welcome to LunaAI
           </h1>
           <p className="text-xl text-white/90 text-center mb-8 max-w-2xl mx-auto">
-            Your intelligent LLM orchestration platform. Process requests across multiple AI models
-            including ChatGPT and Claude AI on Azure.
+            Your intelligent LLM orchestration platform. Process requests across multiple AI models and Trust Zones using powerful combinations of models including Global and Enterprise Domains.
           </p>
 
           {/* Alert Messages */}
@@ -233,7 +232,7 @@ export function Home() {
             >
               <h3 className="text-xl font-semibold text-slate-900 mb-2">Multi-Model Processing</h3>
               <p className="text-slate-600 text-sm">
-                Chain requests across ChatGPT, Claude AI, and other providers for enhanced results.
+                Chain Results Across Multiple LLM and SLM Providers in Public and Enterprise Domains including ChatGPT, Claude, and Gemeni.
               </p>
             </Paper>
 
@@ -244,7 +243,7 @@ export function Home() {
             >
               <h3 className="text-xl font-semibold text-slate-900 mb-2">Enterprise Ready</h3>
               <p className="text-slate-600 text-sm">
-                Secure, scalable architecture deployed on Azure with comprehensive admin tools.
+                Secure, scalable architecture deployed on CTS Hybrid Grid Architecture with comprehensive admin tools.
               </p>
             </Paper>
 
