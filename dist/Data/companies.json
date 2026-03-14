@@ -1,0 +1,538 @@
+[
+  {
+    "companyId": "comp-001",
+    "companyName": "Capitol Technology Solutions",
+    "shippingAddress": {
+      "address1": "1200 Innovation Drive",
+      "address2": "Suite 500",
+      "city": "Durham",
+      "stateRegion": "NC",
+      "postalCode": "27703"
+    },
+    "billingAddress": {
+      "address1": "1200 Innovation Drive",
+      "address2": "Suite 500",
+      "city": "Durham",
+      "stateRegion": "NC",
+      "postalCode": "27703"
+    },
+    "billingTelephone": "+1-919-555-1000",
+    "corporateFax": "+1-919-555-1001",
+    "techContact": "James Mitchell",
+    "email": "support@capitoltechnology.net",
+    "administratorUid": "user-001",
+    "branches": [
+      {
+        "branchId": "br-001-001",
+        "branchName": "Durham HQ",
+        "address1": "1200 Innovation Drive",
+        "address2": "Suite 500",
+        "city": "Durham",
+        "stateRegion": "NC",
+        "postalCode": "27703",
+        "regionalHQ": true
+      },
+      {
+        "branchId": "br-001-002",
+        "branchName": "Raleigh Branch",
+        "address1": "500 Fayetteville Street",
+        "address2": "Floor 8",
+        "city": "Raleigh",
+        "stateRegion": "NC",
+        "postalCode": "27601",
+        "regionalHQ": false
+      },
+      {
+        "branchId": "br-001-003",
+        "branchName": "Charlotte Office",
+        "address1": "301 South Tryon Street",
+        "address2": "Suite 1200",
+        "city": "Charlotte",
+        "stateRegion": "NC",
+        "postalCode": "28202",
+        "regionalHQ": false
+      }
+    ],
+    "investorContact": {
+      "name": "David Anderson",
+      "title": "Investor Relations Director",
+      "address1": "1200 Innovation Drive",
+      "address2": "Suite 510",
+      "city": "Durham",
+      "stateRegion": "NC",
+      "postalCode": "27703",
+      "phone": "+1-919-555-1010",
+      "email": "investors@capitoltechnology.net"
+    },
+    "businessUnits": [
+      {
+        "unitId": "bu-001-001",
+        "unitName": "AI Solutions",
+        "headquarters": {
+          "address1": "1200 Innovation Drive",
+          "address2": "Suite 520",
+          "city": "Durham",
+          "stateRegion": "NC",
+          "postalCode": "27703"
+        }
+      },
+      {
+        "unitId": "bu-001-002",
+        "unitName": "Cloud Services",
+        "headquarters": {
+          "address1": "500 Fayetteville Street",
+          "address2": "Floor 8",
+          "city": "Raleigh",
+          "stateRegion": "NC",
+          "postalCode": "27601"
+        }
+      },
+      {
+        "unitId": "bu-001-003",
+        "unitName": "Enterprise Integration",
+        "headquarters": {
+          "address1": "301 South Tryon Street",
+          "address2": "Suite 1200",
+          "city": "Charlotte",
+          "stateRegion": "NC",
+          "postalCode": "28202"
+        }
+      }
+    ]
+  },
+  {
+    "companyId": "comp-002",
+    "companyName": "TechVision Enterprises",
+    "shippingAddress": {
+      "address1": "4500 Silicon Valley Parkway",
+      "address2": "Building A",
+      "city": "San Jose",
+      "stateRegion": "CA",
+      "postalCode": "95134"
+    },
+    "billingAddress": {
+      "address1": "PO Box 89432",
+      "address2": "",
+      "city": "San Jose",
+      "stateRegion": "CA",
+      "postalCode": "95134"
+    },
+    "billingTelephone": "+1-408-555-2000",
+    "corporateFax": "+1-408-555-2002",
+    "techContact": "Sarah Chen",
+    "email": "tech@techvision.com",
+    "administratorUid": "user-002",
+    "branches": [
+      {
+        "branchId": "br-002-001",
+        "branchName": "San Jose HQ",
+        "address1": "4500 Silicon Valley Parkway",
+        "address2": "Building A",
+        "city": "San Jose",
+        "stateRegion": "CA",
+        "postalCode": "95134",
+        "regionalHQ": true
+      },
+      {
+        "branchId": "br-002-002",
+        "branchName": "San Francisco Office",
+        "address1": "100 Market Street",
+        "address2": "Suite 2500",
+        "city": "San Francisco",
+        "stateRegion": "CA",
+        "postalCode": "94105",
+        "regionalHQ": true
+      },
+      {
+        "branchId": "br-002-003",
+        "branchName": "Los Angeles Branch",
+        "address1": "777 South Figueroa Street",
+        "address2": "Floor 40",
+        "city": "Los Angeles",
+        "stateRegion": "CA",
+        "postalCode": "90017",
+        "regionalHQ": false
+      },
+      {
+        "branchId": "br-002-004",
+        "branchName": "Austin Office",
+        "address1": "301 Congress Avenue",
+        "address2": "Suite 1950",
+        "city": "Austin",
+        "stateRegion": "TX",
+        "postalCode": "78701",
+        "regionalHQ": true
+      }
+    ],
+    "investorContact": {
+      "name": "Jennifer Wu",
+      "title": "VP Investor Relations",
+      "address1": "4500 Silicon Valley Parkway",
+      "address2": "Building A, Executive Suite",
+      "city": "San Jose",
+      "stateRegion": "CA",
+      "postalCode": "95134",
+      "phone": "+1-408-555-2020",
+      "email": "jenniferw@techvision.com"
+    },
+    "businessUnits": [
+      {
+        "unitId": "bu-002-001",
+        "unitName": "Product Development",
+        "headquarters": {
+          "address1": "4500 Silicon Valley Parkway",
+          "address2": "Building B",
+          "city": "San Jose",
+          "stateRegion": "CA",
+          "postalCode": "95134"
+        }
+      },
+      {
+        "unitId": "bu-002-002",
+        "unitName": "Customer Success",
+        "headquarters": {
+          "address1": "100 Market Street",
+          "address2": "Suite 2500",
+          "city": "San Francisco",
+          "stateRegion": "CA",
+          "postalCode": "94105"
+        }
+      },
+      {
+        "unitId": "bu-002-003",
+        "unitName": "Research & Innovation",
+        "headquarters": {
+          "address1": "301 Congress Avenue",
+          "address2": "Suite 1950",
+          "city": "Austin",
+          "stateRegion": "TX",
+          "postalCode": "78701"
+        }
+      },
+      {
+        "unitId": "bu-002-004",
+        "unitName": "Sales & Marketing",
+        "headquarters": {
+          "address1": "777 South Figueroa Street",
+          "address2": "Floor 40",
+          "city": "Los Angeles",
+          "stateRegion": "CA",
+          "postalCode": "90017"
+        }
+      }
+    ]
+  },
+  {
+    "companyId": "comp-003",
+    "companyName": "Global AI Systems Inc",
+    "shippingAddress": {
+      "address1": "850 Massachusetts Avenue",
+      "address2": "Floor 12",
+      "city": "Cambridge",
+      "stateRegion": "MA",
+      "postalCode": "02139"
+    },
+    "billingAddress": {
+      "address1": "850 Massachusetts Avenue",
+      "address2": "Accounting Department",
+      "city": "Cambridge",
+      "stateRegion": "MA",
+      "postalCode": "02139"
+    },
+    "billingTelephone": "+1-617-555-3000",
+    "corporateFax": "+1-617-555-3003",
+    "techContact": "Dr. Robert Kim",
+    "email": "support@globalai.com",
+    "administratorUid": "user-003",
+    "branches": [
+      {
+        "branchId": "br-003-001",
+        "branchName": "Cambridge HQ",
+        "address1": "850 Massachusetts Avenue",
+        "address2": "Floor 12",
+        "city": "Cambridge",
+        "stateRegion": "MA",
+        "postalCode": "02139",
+        "regionalHQ": true
+      },
+      {
+        "branchId": "br-003-002",
+        "branchName": "Boston Office",
+        "address1": "1 International Place",
+        "address2": "Suite 900",
+        "city": "Boston",
+        "stateRegion": "MA",
+        "postalCode": "02110",
+        "regionalHQ": false
+      },
+      {
+        "branchId": "br-003-003",
+        "branchName": "New York Branch",
+        "address1": "200 Park Avenue",
+        "address2": "Floor 22",
+        "city": "New York",
+        "stateRegion": "NY",
+        "postalCode": "10166",
+        "regionalHQ": true
+      }
+    ],
+    "investorContact": {
+      "name": "Michael Schneider",
+      "title": "Chief Financial Officer",
+      "address1": "850 Massachusetts Avenue",
+      "address2": "Floor 14",
+      "city": "Cambridge",
+      "stateRegion": "MA",
+      "postalCode": "02139",
+      "phone": "+1-617-555-3030",
+      "email": "mschneider@globalai.com"
+    },
+    "businessUnits": [
+      {
+        "unitId": "bu-003-001",
+        "unitName": "Machine Learning",
+        "headquarters": {
+          "address1": "850 Massachusetts Avenue",
+          "address2": "Floor 12",
+          "city": "Cambridge",
+          "stateRegion": "MA",
+          "postalCode": "02139"
+        }
+      },
+      {
+        "unitId": "bu-003-002",
+        "unitName": "Natural Language Processing",
+        "headquarters": {
+          "address1": "850 Massachusetts Avenue",
+          "address2": "Floor 13",
+          "city": "Cambridge",
+          "stateRegion": "MA",
+          "postalCode": "02139"
+        }
+      },
+      {
+        "unitId": "bu-003-003",
+        "unitName": "Enterprise Solutions",
+        "headquarters": {
+          "address1": "200 Park Avenue",
+          "address2": "Floor 22",
+          "city": "New York",
+          "stateRegion": "NY",
+          "postalCode": "10166"
+        }
+      }
+    ]
+  },
+  {
+    "companyId": "comp-004",
+    "companyName": "DataStream Analytics LLC",
+    "shippingAddress": {
+      "address1": "2100 West Loop South",
+      "address2": "Tower 3, Suite 800",
+      "city": "Houston",
+      "stateRegion": "TX",
+      "postalCode": "77027"
+    },
+    "billingAddress": {
+      "address1": "2100 West Loop South",
+      "address2": "Tower 3, Suite 800",
+      "city": "Houston",
+      "stateRegion": "TX",
+      "postalCode": "77027"
+    },
+    "billingTelephone": "+1-713-555-4000",
+    "corporateFax": "+1-713-555-4004",
+    "techContact": "Maria Rodriguez",
+    "email": "it@datastream.com",
+    "administratorUid": "user-004",
+    "branches": [
+      {
+        "branchId": "br-004-001",
+        "branchName": "Houston HQ",
+        "address1": "2100 West Loop South",
+        "address2": "Tower 3, Suite 800",
+        "city": "Houston",
+        "stateRegion": "TX",
+        "postalCode": "77027",
+        "regionalHQ": true
+      },
+      {
+        "branchId": "br-004-002",
+        "branchName": "Dallas Office",
+        "address1": "1201 Elm Street",
+        "address2": "Suite 4000",
+        "city": "Dallas",
+        "stateRegion": "TX",
+        "postalCode": "75270",
+        "regionalHQ": false
+      },
+      {
+        "branchId": "br-004-003",
+        "branchName": "Denver Branch",
+        "address1": "1675 Broadway",
+        "address2": "Suite 2200",
+        "city": "Denver",
+        "stateRegion": "CO",
+        "postalCode": "80202",
+        "regionalHQ": true
+      },
+      {
+        "branchId": "br-004-004",
+        "branchName": "Phoenix Office",
+        "address1": "2398 East Camelback Road",
+        "address2": "Suite 1100",
+        "city": "Phoenix",
+        "stateRegion": "AZ",
+        "postalCode": "85016",
+        "regionalHQ": false
+      }
+    ],
+    "investorContact": {
+      "name": "Thomas Jefferson",
+      "title": "Director of Investor Relations",
+      "address1": "2100 West Loop South",
+      "address2": "Tower 3, Suite 820",
+      "city": "Houston",
+      "stateRegion": "TX",
+      "postalCode": "77027",
+      "phone": "+1-713-555-4040",
+      "email": "tjefferson@datastream.com"
+    },
+    "businessUnits": [
+      {
+        "unitId": "bu-004-001",
+        "unitName": "Data Analytics",
+        "headquarters": {
+          "address1": "2100 West Loop South",
+          "address2": "Tower 3, Suite 850",
+          "city": "Houston",
+          "stateRegion": "TX",
+          "postalCode": "77027"
+        }
+      },
+      {
+        "unitId": "bu-004-002",
+        "unitName": "Business Intelligence",
+        "headquarters": {
+          "address1": "1201 Elm Street",
+          "address2": "Suite 4000",
+          "city": "Dallas",
+          "stateRegion": "TX",
+          "postalCode": "75270"
+        }
+      },
+      {
+        "unitId": "bu-004-003",
+        "unitName": "Predictive Modeling",
+        "headquarters": {
+          "address1": "1675 Broadway",
+          "address2": "Suite 2200",
+          "city": "Denver",
+          "stateRegion": "CO",
+          "postalCode": "80202"
+        }
+      }
+    ]
+  },
+  {
+    "companyId": "comp-005",
+    "companyName": "CloudFirst Technologies",
+    "shippingAddress": {
+      "address1": "600 Tech Center Drive",
+      "address2": "",
+      "city": "Seattle",
+      "stateRegion": "WA",
+      "postalCode": "98109"
+    },
+    "billingAddress": {
+      "address1": "PO Box 12567",
+      "address2": "",
+      "city": "Seattle",
+      "stateRegion": "WA",
+      "postalCode": "98111"
+    },
+    "billingTelephone": "+1-206-555-5000",
+    "corporateFax": "+1-206-555-5005",
+    "techContact": "Kevin Park",
+    "email": "techsupport@cloudfirst.io",
+    "administratorUid": "user-005",
+    "branches": [
+      {
+        "branchId": "br-005-001",
+        "branchName": "Seattle HQ",
+        "address1": "600 Tech Center Drive",
+        "address2": "",
+        "city": "Seattle",
+        "stateRegion": "WA",
+        "postalCode": "98109",
+        "regionalHQ": true
+      },
+      {
+        "branchId": "br-005-002",
+        "branchName": "Portland Office",
+        "address1": "1000 SW Broadway",
+        "address2": "Suite 1800",
+        "city": "Portland",
+        "stateRegion": "OR",
+        "postalCode": "97205",
+        "regionalHQ": true
+      },
+      {
+        "branchId": "br-005-003",
+        "branchName": "San Diego Branch",
+        "address1": "501 West Broadway",
+        "address2": "Suite 800",
+        "city": "San Diego",
+        "stateRegion": "CA",
+        "postalCode": "92101",
+        "regionalHQ": false
+      }
+    ],
+    "investorContact": {
+      "name": "Amanda Chen",
+      "title": "VP Corporate Finance",
+      "address1": "600 Tech Center Drive",
+      "address2": "Executive Floor",
+      "city": "Seattle",
+      "stateRegion": "WA",
+      "postalCode": "98109",
+      "phone": "+1-206-555-5050",
+      "email": "achen@cloudfirst.io"
+    },
+    "businessUnits": [
+      {
+        "unitId": "bu-005-001",
+        "unitName": "Cloud Infrastructure",
+        "headquarters": {
+          "address1": "600 Tech Center Drive",
+          "address2": "Building 1",
+          "city": "Seattle",
+          "stateRegion": "WA",
+          "postalCode": "98109"
+        }
+      },
+      {
+        "unitId": "bu-005-002",
+        "unitName": "DevOps Services",
+        "headquarters": {
+          "address1": "1000 SW Broadway",
+          "address2": "Suite 1800",
+          "city": "Portland",
+          "stateRegion": "OR",
+          "postalCode": "97205"
+        }
+      },
+      {
+        "unitId": "bu-005-003",
+        "unitName": "Security Solutions",
+        "headquarters": {
+          "address1": "600 Tech Center Drive",
+          "address2": "Building 2",
+          "city": "Seattle",
+          "stateRegion": "WA",
+          "postalCode": "98109"
+        }
+      }
+    ]
+  }
+]
