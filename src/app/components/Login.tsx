@@ -102,13 +102,16 @@ export function Login() {
           } else if (createResponse.status === 409) {
             // 409 Conflict means user already exists - this is fine
             console.log("✓ User already exists in database");
+          } else if (createResponse.status === 404) {
+            // 404 means the API endpoint doesn't exist - use local fallback
+            console.log("ℹ️ API endpoint not available - using local user data");
           } else {
             const errorText = await createResponse.text();
-            console.warn("⚠ Failed to create user in database:", createResponse.status, errorText);
+            console.log(`ℹ️ Could not sync user to database (${createResponse.status}) - using local user data`);
           }
         } catch (error) {
-          // Don't block login if user creation fails
-          console.warn("⚠ Failed to create user in database (API may be restricted):", error);
+          // Don't block login if user creation fails - just use local data
+          console.log("ℹ️ API not available - using local user data");
         }
         
         // Get current time
@@ -143,12 +146,14 @@ export function Login() {
         localStorage.setItem("userid", localUser.userid?.toString() || localUser.id?.toString() || "");
         localStorage.setItem("username", localUser.username || username);
         localStorage.setItem("role", localUser.role || "user");
+        localStorage.setItem("companyId", localUser.companyId || "comp-001");
         localStorage.setItem("loginTime", loginTime);
         localStorage.setItem("latitude", latitude);
         localStorage.setItem("longitude", longitude);
         localStorage.setItem("ipAddress", ipAddress);
         
         console.log("LocalStorage updated with uid:", localStorage.getItem("uid"));
+        console.log("LocalStorage updated with companyId:", localStorage.getItem("companyId"));
         
         // Post login log to Azure API
         try {

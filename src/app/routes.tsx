@@ -20,6 +20,12 @@ import { Register } from "./components/Register";
 import { Root } from "./components/Root";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { NetworkInfo } from "./components/NetworkInfo";
+import { HRManager } from "./components/HRManager";
+import { Settings } from "./components/Settings";
+import { SuperLuna } from "./components/SuperLuna";
+import { LunaModules } from "./components/LunaModules";
+import { Enterprise9Security } from "./components/Enterprise9Security";
+import { GridLicenseManager } from "./components/GridLicenseManager";
 
 export const router = createBrowserRouter([
   {
@@ -30,33 +36,28 @@ export const router = createBrowserRouter([
       { path: "home", element: <Home /> },
       { path: "login", element: <Login /> },
       { path: "register", element: <Register /> },
-    ],
-  },
-  {
-    element: <ProtectedRoute />,
-    children: [
-      {
-        path: "/",
-        element: <Root />,
-        children: [
-          { path: "about", element: <About /> },
-          { path: "contact", element: <Contact /> },
-          { path: "profile", element: <Profile /> },
-          { path: "mydesktop", element: <MyDesktop /> },
-          { path: "features", element: <Features /> },
-          { path: "visualizations", element: <Visualizations /> },
-          { path: "administrator", element: <AdministratorTabbed /> },
-          { path: "transactions", element: <Transactions /> },
-          { path: "voiceprompt", element: <VoicePrompt /> },
-          { path: "uploadprompt", element: <UploadPrompt /> },
-          { path: "startrecording", element: <StartRecording /> },
-          { path: "textsearch", element: <TextSearch /> },
-          { path: "aisearch", element: <AISearch /> },
-          { path: "userhelp", element: <UserHelp /> },
-          { path: "usernotifications", element: <UserNotifications /> },
-          { path: "networkinfo", element: <NetworkInfo /> },
-        ],
-      },
+      { path: "about", element: <ProtectedRoute><About /></ProtectedRoute> },
+      { path: "contact", element: <ProtectedRoute><Contact /></ProtectedRoute> },
+      { path: "profile", element: <ProtectedRoute><Profile /></ProtectedRoute> },
+      { path: "mydesktop", element: <ProtectedRoute><MyDesktop /></ProtectedRoute> },
+      { path: "features", element: <ProtectedRoute><Features /></ProtectedRoute> },
+      { path: "visualizations", element: <ProtectedRoute><Visualizations /></ProtectedRoute> },
+      { path: "administrator", element: <ProtectedRoute><AdministratorTabbed /></ProtectedRoute> },
+      { path: "transactions", element: <ProtectedRoute><Transactions /></ProtectedRoute> },
+      { path: "voiceprompt", element: <ProtectedRoute><VoicePrompt /></ProtectedRoute> },
+      { path: "uploadprompt", element: <ProtectedRoute><UploadPrompt /></ProtectedRoute> },
+      { path: "startrecording", element: <ProtectedRoute><StartRecording /></ProtectedRoute> },
+      { path: "textsearch", element: <ProtectedRoute><TextSearch /></ProtectedRoute> },
+      { path: "aisearch", element: <ProtectedRoute><AISearch /></ProtectedRoute> },
+      { path: "userhelp", element: <ProtectedRoute><UserHelp /></ProtectedRoute> },
+      { path: "usernotifications", element: <ProtectedRoute><UserNotifications /></ProtectedRoute> },
+      { path: "networkinfo", element: <ProtectedRoute><NetworkInfo /></ProtectedRoute> },
+      { path: "hrmanager", element: <ProtectedRoute><HRManager /></ProtectedRoute> },
+      { path: "lunamodules", element: <ProtectedRoute><LunaModules /></ProtectedRoute> },
+      { path: "security", element: <ProtectedRoute><Enterprise9Security /></ProtectedRoute> },
+      { path: "settings", element: <ProtectedRoute><Settings /></ProtectedRoute> },
+      { path: "superluna", element: <ProtectedRoute><SuperLuna /></ProtectedRoute> },
+      { path: "gridlicensemanager", element: <ProtectedRoute><GridLicenseManager /></ProtectedRoute> },
     ],
   },
 ]);

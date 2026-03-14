@@ -422,8 +422,14 @@ export function Administrator() {
     // Add to company list
     setApiCompanies([...apiCompanies, companyToAdd]);
     
+    // Auto-create Corporate HQ store for the new company
+    createCorporateHQStore(newId, newCompany.companyname);
+    
+    // Auto-create default Business Units for the new company
+    createDefaultBusinessUnits(newId, newCompany.companyname);
+    
     // Show success message
-    setSuccessMessage(`Company "${newCompany.companyname}" added successfully!`);
+    setSuccessMessage(`Company "${newCompany.companyname}" added successfully with Corporate HQ store and default Business Units!`);
     
     // Reset form
     setNewCompany({
@@ -440,6 +446,93 @@ export function Administrator() {
 
     // Clear success message after 3 seconds
     setTimeout(() => setSuccessMessage(""), 3000);
+  };
+
+  const createCorporateHQStore = async (companyId: number, companyName: string) => {
+    try {
+      const uid = localStorage.getItem("uid");
+      const url = getApiUrl("/api/stores");
+      
+      const storePayload = {
+        storename: "Corporate HQ",
+        storeaddress: "",
+        storecity: "",
+        storestate: "",
+        storezip: "",
+        companyid: companyId,
+        iscorporatehq: true,
+      };
+      
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(uid && { Authorization: `Bearer ${uid}` }),
+        },
+        body: JSON.stringify(storePayload),
+      });
+
+      if (response.ok) {
+        console.log(`✅ Corporate HQ store auto-created for company "${companyName}"`);
+      } else {
+        console.warn(`⚠️ Failed to auto-create Corporate HQ store for company "${companyName}"`);
+      }
+    } catch (err) {
+      console.error("Failed to auto-create Corporate HQ store:", err);
+    }
+  };
+
+  const createDefaultBusinessUnits = async (companyId: number, companyName: string) => {
+    try {
+      const uid = localStorage.getItem("uid");
+      const url = getApiUrl("/api/businessunits");
+      
+      const defaultBusinessUnits = [
+        {
+          buname: "Executive Offices",
+          buhqaddress1: "",
+          buhqaddress2: "",
+          buhqcity: "",
+          buhqstate: "",
+          buhqpostal: "",
+          companyid: companyId,
+          instanceid: "",
+        },
+        {
+          buname: "Corporate Employees",
+          buhqaddress1: "",
+          buhqaddress2: "",
+          buhqcity: "",
+          buhqstate: "",
+          buhqpostal: "",
+          companyid: companyId,
+          instanceid: "",
+        },
+      ];
+      
+      // Create both business units
+      for (const bu of defaultBusinessUnits) {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(uid && { Authorization: `Bearer ${uid}` }),
+          },
+          body: JSON.stringify(bu),
+        });
+
+        if (response.ok) {
+          const createdBU = await response.json();
+          // Add to local state
+          setBusinessUnits(prev => [...prev, createdBU]);
+          console.log(`✅ Business Unit "${bu.buname}" auto-created for company "${companyName}"`);
+        } else {
+          console.warn(`⚠️ Failed to auto-create Business Unit "${bu.buname}" for company "${companyName}"`);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to auto-create default Business Units:", err);
+    }
   };
 
   const handleDeleteCompany = (id: number) => {

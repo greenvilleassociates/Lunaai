@@ -5,7 +5,10 @@ import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import SearchIcon from "@mui/icons-material/Search";
 import MicIcon from "@mui/icons-material/Mic";
 import AudioFileIcon from "@mui/icons-material/AudioFile";
-import { Switch, FormControlLabel, Box } from "@mui/material";
+import PersonIcon from "@mui/icons-material/Person";
+import GroupIcon from "@mui/icons-material/Group";
+import BusinessIcon from "@mui/icons-material/Business";
+import { Switch, FormControlLabel, Box, Tabs, Tab } from "@mui/material";
 import { API_CONFIG, getApiUrl } from "../config/api";
 import { DATA_URLS, fetchExternalData } from "../config/dataUrls";
 
@@ -32,21 +35,43 @@ interface VoiceCommand {
   displayname?: string | null;
 }
 
+interface User {
+  uid: string;
+  username: string;
+  role: string;
+  companyId: string;
+  managerId?: string;
+}
+
+type DesktopView = "individual" | "team" | "company";
+
 export function MyDesktop() {
   const [searchHistory, setSearchHistory] = useState<WebSearchResult[]>([]);
   const [voiceCommands, setVoiceCommands] = useState<VoiceCommand[]>([]);
   const [loading, setLoading] = useState(true);
   const [voiceLoading, setVoiceLoading] = useState(true);
-  const [showAllRecords, setShowAllRecords] = useState(false);
+  const [currentView, setCurrentView] = useState<DesktopView>("individual");
+  const [teamMembers, setTeamMembers] = useState<User[]>([]);
+  const [companyUsers, setCompanyUsers] = useState<User[]>([]);
   
-  // Check if user is superuser
+  // Check user role and permissions
   const currentUserRole = localStorage.getItem("role");
+  const currentUid = localStorage.getItem("uid");
+  const currentCompanyId = localStorage.getItem("companyId") || "";
   const isSuperUser = currentUserRole === "superuser";
+  const isAdmin = currentUserRole === "admin";
+  const isManager = currentUserRole === "manager" || isAdmin || isSuperUser;
 
   useEffect(() => {
     loadRecentSearches();
     loadVoiceCommands();
-  }, [showAllRecords]); // Reload when toggle changes
+    if (isManager) {
+      loadTeamMembers();
+    }
+    if (isAdmin || isSuperUser) {
+      loadCompanyUsers();
+    }
+  }, [currentView]); // Reload when view changes
 
   const loadRecentSearches = async () => {
     try {
@@ -70,9 +95,14 @@ export function MyDesktop() {
         // For superusers with toggle ON: show all records
         // For everyone else (or superusers with toggle OFF): show only their own records
         let filteredSearches;
-        if (isSuperUser && showAllRecords) {
+        if (isSuperUser && currentView === "company") {
           filteredSearches = data; // Show all records
           console.log("✅ Search history loaded (ALL USERS - Superuser mode)");
+        } else if (isManager && currentView === "team") {
+          filteredSearches = data.filter((item: WebSearchResult) => 
+            teamMembers.some(member => member.uid === item.uid)
+          );
+          console.log("✅ Search history loaded (TEAM RECORDS only)");
         } else {
           filteredSearches = data.filter((item: WebSearchResult) => item.uid === uid);
           console.log("✅ Search history loaded (MY RECORDS only)");
@@ -90,8 +120,12 @@ export function MyDesktop() {
         const uid = localStorage.getItem("uid");
         
         let filteredSearches;
-        if (isSuperUser && showAllRecords) {
+        if (isSuperUser && currentView === "company") {
           filteredSearches = fallbackData;
+        } else if (isManager && currentView === "team") {
+          filteredSearches = fallbackData.filter((item: WebSearchResult) => 
+            teamMembers.some(member => member.uid === item.uid)
+          );
         } else {
           filteredSearches = fallbackData.filter((item: WebSearchResult) => item.uid === uid);
         }
@@ -128,9 +162,14 @@ export function MyDesktop() {
         // For superusers with toggle ON: show all records
         // For everyone else (or superusers with toggle OFF): show only their own records
         let filteredCommands;
-        if (isSuperUser && showAllRecords) {
+        if (isSuperUser && currentView === "company") {
           filteredCommands = data; // Show all records
           console.log("✅ Voice commands loaded (ALL USERS - Superuser mode)");
+        } else if (isManager && currentView === "team") {
+          filteredCommands = data.filter((item: VoiceCommand) => 
+            teamMembers.some(member => member.uid === item.useridstring || item.userid?.toString() === member.uid)
+          );
+          console.log("✅ Voice commands loaded (TEAM RECORDS only)");
         } else {
           // Filter by userid or useridstring
           filteredCommands = data.filter((item: VoiceCommand) => 
@@ -154,6 +193,96 @@ export function MyDesktop() {
     }
   };
 
+  const loadTeamMembers = async () => {
+    try {
+      const uid = localStorage.getItem("uid");
+      if (!uid) {
+        return;
+      }
+
+      // Try API first
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.USERS);
+      const response = await fetch(url, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${uid}`,
+        },
+      });
+
+      if (response.ok) {
+        const allUsers = await response.json();
+        // Filter to get team members where current user is the manager
+        const myTeam = allUsers.filter((user: User) => user.managerId === uid);
+        setTeamMembers(myTeam);
+        console.log("✅ Team members loaded from API:", myTeam.length);
+      } else {
+        throw new Error("Database unavailable");
+      }
+    } catch (err) {
+      console.warn("⚠ Database unavailable - using mock team data:", err);
+      // Fallback to mock data for now
+      // In a real scenario, this would load from localStorage or local JSON
+      const mockTeam: User[] = [
+        { uid: "user-002", username: "marco", role: "user", companyId: currentCompanyId, managerId: currentUid || "" },
+        { uid: "user-007", username: "sarah", role: "user", companyId: currentCompanyId, managerId: currentUid || "" },
+      ];
+      setTeamMembers(mockTeam);
+      console.log("✅ Mock team members loaded:", mockTeam.length);
+    }
+  };
+
+  const loadCompanyUsers = async () => {
+    try {
+      const uid = localStorage.getItem("uid");
+      if (!uid) {
+        return;
+      }
+
+      // Try API first
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.USERS);
+      const response = await fetch(url, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${uid}`,
+        },
+      });
+
+      if (response.ok) {
+        const allUsers = await response.json();
+        // Filter to get all users in the same company
+        const companyId = localStorage.getItem("companyId");
+        const companyUsersList = allUsers.filter((user: User) => user.companyId === companyId);
+        setCompanyUsers(companyUsersList);
+        console.log(" Company users loaded from API:", companyUsersList.length);
+      } else {
+        throw new Error("Database unavailable");
+      }
+    } catch (err) {
+      console.warn("⚠ Database unavailable - loading users from local JSON:", err);
+      // Fallback to local JSON data
+      try {
+        const usersResponse = await fetch("/src/app/data/users.json");
+        const allUsers = await usersResponse.json();
+        const companyId = localStorage.getItem("companyId");
+        const companyUsersList = allUsers.filter((user: User) => user.companyId === companyId);
+        setCompanyUsers(companyUsersList);
+        console.log("✅ Company users loaded from local JSON:", companyUsersList.length);
+      } catch (fallbackErr) {
+        console.error("Failed to load company users:", fallbackErr);
+        // Use the users from the imported data as last resort
+        const mockCompanyUsers: User[] = [
+          { uid: "user-001", username: "john", role: "superuser", companyId: currentCompanyId },
+          { uid: "user-002", username: "marco", role: "user", companyId: currentCompanyId },
+          { uid: "user-003", username: "brian", role: "admin", companyId: currentCompanyId },
+          { uid: "user-004", username: "portia", role: "superuser", companyId: currentCompanyId },
+          { uid: "user-006", username: "jws", role: "superuser", companyId: currentCompanyId },
+        ];
+        setCompanyUsers(mockCompanyUsers);
+        console.log("✅ Mock company users loaded:", mockCompanyUsers.length);
+      }
+    }
+  };
+
   const formatDate = (timestamp: string) => {
     return new Date(timestamp).toLocaleDateString("en-US", {
       month: "short",
@@ -173,65 +302,134 @@ export function MyDesktop() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-3xl mb-2">My Desktop</h2>
-          <p className="text-slate-600">
-            Your central workspace for managing LLM interactions, voice prompts, and AI workflows.
-          </p>
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h2 className="text-3xl mb-2">My Desktop</h2>
+            <p className="text-slate-600">
+              Your central workspace for managing LLM interactions, voice prompts, and AI workflows.
+            </p>
+          </div>
         </div>
         
-        {/* Superuser Toggle */}
-        {isSuperUser && (
-          <Box>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={showAllRecords}
-                  onChange={(e) => setShowAllRecords(e.target.checked)}
-                  sx={{
-                    "& .MuiSwitch-switchBase.Mui-checked": {
-                      color: "#8B0000",
-                    },
-                    "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                      backgroundColor: "#8B0000",
-                    },
-                  }}
-                />
-              }
-              label={
-                <Box className="text-sm">
-                  <div className="font-semibold text-slate-900">
-                    {showAllRecords ? "All Users" : "My Records"}
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    {showAllRecords ? "Viewing all records" : "Viewing only my records"}
-                  </div>
-                </Box>
-              }
-              labelPlacement="start"
+        {/* View Tabs */}
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs
+            value={currentView}
+            onChange={(e, newValue) => setCurrentView(newValue as DesktopView)}
+            sx={{
+              '& .MuiTab-root': {
+                textTransform: 'none',
+                minHeight: '48px',
+              },
+              '& .Mui-selected': {
+                color: '#8B0000',
+              },
+              '& .MuiTabs-indicator': {
+                backgroundColor: '#8B0000',
+              },
+            }}
+          >
+            <Tab
+              icon={<PersonIcon />}
+              iconPosition="start"
+              label="Individual View"
+              value="individual"
             />
-          </Box>
-        )}
+            {isManager && (
+              <Tab
+                icon={<GroupIcon />}
+                iconPosition="start"
+                label="Team View"
+                value="team"
+              />
+            )}
+            {(isAdmin || isSuperUser) && (
+              <Tab
+                icon={<BusinessIcon />}
+                iconPosition="start"
+                label="Company View"
+                value="company"
+              />
+            )}
+          </Tabs>
+        </Box>
+
+        {/* View Description */}
+        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-900">
+            {currentView === "individual" && (
+              <>
+                <strong>Individual View:</strong> Viewing your personal AI activities, searches, and voice commands.
+              </>
+            )}
+            {currentView === "team" && (
+              <>
+                <strong>Team View:</strong> Viewing your team's AI activities. You manage {teamMembers.length} team member{teamMembers.length !== 1 ? 's' : ''}.
+              </>
+            )}
+            {currentView === "company" && (
+              <>
+                <strong>Company View:</strong> Viewing all company-wide AI activities. Company has {companyUsers.length} total user{companyUsers.length !== 1 ? 's' : ''}.
+              </>
+            )}
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Features Quick Access */}
-        <Link
-          to="/features"
-          className="p-8 border border-slate-200 rounded-lg hover:shadow-lg transition-all bg-white group"
-        >
+        {/* AI Text Search History */}
+        <div className="p-8 border border-slate-200 rounded-lg bg-white">
           <div className="flex items-center gap-4 mb-4">
-            <AutoAwesomeIcon sx={{ fontSize: 48 }} className="text-slate-700 group-hover:text-slate-900" />
-            <h3 className="text-2xl">Features</h3>
+            <SearchIcon sx={{ fontSize: 48 }} className="text-slate-700" />
+            <h3 className="text-2xl">AI Text Search History</h3>
           </div>
           <p className="text-slate-600 mb-4">
-            Access voice recording, file upload, text search, and desktop entry review tools.
+            Your most recent AI-powered text search queries and responses.
           </p>
-          <div className="flex items-center text-slate-700 group-hover:text-slate-900 transition-colors">
-            <span className="text-sm font-medium">Open Features →</span>
+          <div className="space-y-2">
+            {loading ? (
+              <div className="p-3 bg-slate-50 rounded text-sm text-center text-slate-500">
+                Loading...
+              </div>
+            ) : searchHistory.length === 0 ? (
+              <div className="p-3 bg-slate-50 rounded text-sm text-center text-slate-500">
+                No search history yet.{" "}
+                <Link to="/aisearch" className="text-blue-600 hover:underline">
+                  Try AI Search
+                </Link>
+              </div>
+            ) : (
+              searchHistory.map((item) => (
+                <div key={item.id} className="p-3 bg-slate-50 rounded text-sm">
+                  <p className="font-medium text-slate-900 mb-1">
+                    {truncateText(item.question, 60)}
+                  </p>
+                  <p className="text-slate-600 text-xs mb-1">
+                    {truncateText(item.response || "Processing...", 80)}
+                  </p>
+                  <div className="flex items-center gap-3 text-xs text-slate-500">
+                    <span>{formatDate(item.timestamp)}</span>
+                    <span>•</span>
+                    <span>{item.expectedtokens} tokens</span>
+                    <span>•</span>
+                    <span>{formatCost(item.expectedcost)}</span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-        </Link>
+          {searchHistory.length > 0 && (
+            <div className="mt-4 text-center">
+              <Link
+                to="/aisearch"
+                className="text-sm text-blue-600 hover:underline"
+              >
+                View all searches →
+              </Link>
+            </div>
+          )}
+        </div>
 
         {/* Voice Commands History */}
         <div className="p-8 border border-slate-200 rounded-lg bg-white">
@@ -311,59 +509,6 @@ export function MyDesktop() {
           )}
         </div>
 
-        {/* AI Text Search History */}
-        <div className="p-8 border border-slate-200 rounded-lg bg-white">
-          <div className="flex items-center gap-4 mb-4">
-            <SearchIcon sx={{ fontSize: 48 }} className="text-slate-700" />
-            <h3 className="text-2xl">AI Text Search History</h3>
-          </div>
-          <p className="text-slate-600 mb-4">
-            Your most recent AI-powered text search queries and responses.
-          </p>
-          <div className="space-y-2">
-            {loading ? (
-              <div className="p-3 bg-slate-50 rounded text-sm text-center text-slate-500">
-                Loading...
-              </div>
-            ) : searchHistory.length === 0 ? (
-              <div className="p-3 bg-slate-50 rounded text-sm text-center text-slate-500">
-                No search history yet.{" "}
-                <Link to="/aisearch" className="text-blue-600 hover:underline">
-                  Try AI Search
-                </Link>
-              </div>
-            ) : (
-              searchHistory.map((item) => (
-                <div key={item.id} className="p-3 bg-slate-50 rounded text-sm">
-                  <p className="font-medium text-slate-900 mb-1">
-                    {truncateText(item.question, 60)}
-                  </p>
-                  <p className="text-slate-600 text-xs mb-1">
-                    {truncateText(item.response || "Processing...", 80)}
-                  </p>
-                  <div className="flex items-center gap-3 text-xs text-slate-500">
-                    <span>{formatDate(item.timestamp)}</span>
-                    <span>•</span>
-                    <span>{item.expectedtokens} tokens</span>
-                    <span>•</span>
-                    <span>{formatCost(item.expectedcost)}</span>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-          {searchHistory.length > 0 && (
-            <div className="mt-4 text-center">
-              <Link
-                to="/aisearch"
-                className="text-sm text-blue-600 hover:underline"
-              >
-                View all searches →
-              </Link>
-            </div>
-          )}
-        </div>
-
         {/* Quick Stats */}
         <div className="p-8 border border-slate-200 rounded-lg bg-white">
           <h3 className="text-2xl mb-4">Quick Stats</h3>
@@ -408,6 +553,23 @@ export function MyDesktop() {
             </button>
           </div>
         </div>
+
+        {/* Features Quick Access */}
+        <Link
+          to="/features"
+          className="p-8 border border-slate-200 rounded-lg hover:shadow-lg transition-all bg-white group"
+        >
+          <div className="flex items-center gap-4 mb-4">
+            <AutoAwesomeIcon sx={{ fontSize: 48 }} className="text-slate-700 group-hover:text-slate-900" />
+            <h3 className="text-2xl">Features</h3>
+          </div>
+          <p className="text-slate-600 mb-4">
+            Access voice recording, file upload, text search, and desktop entry review tools.
+          </p>
+          <div className="flex items-center text-slate-700 group-hover:text-slate-900 transition-colors">
+            <span className="text-sm font-medium">Open Features →</span>
+          </div>
+        </Link>
       </div>
     </div>
   );
