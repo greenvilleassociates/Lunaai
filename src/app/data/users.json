@@ -88,5 +88,20 @@
     "phone": "919-555-0601",
     "cell": "919-555-0602",
     "profilePicture": ""
+  },
+{
+    "uid": "user-007",
+    "username": "guest",
+    "password": "guest",
+    "role": "registered",
+    "companyId": "comp-001",
+    "address1": "987 Cedar Lane",
+    "address2": "Apt 9A",
+    "city": "Durham",
+    "state": "NC",
+    "zip": "27705",
+    "phone": "919-555-0601",
+    "cell": "919-555-0602",
+    "profilePicture": ""
   }
 ]
