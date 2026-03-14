@@ -37,6 +37,7 @@ function generateSessionToken(): string {
 
 export function Login() {
   const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -241,6 +242,7 @@ export function Login() {
         },
         body: JSON.stringify({
           username,
+          password,
         }),
       });
 
@@ -250,7 +252,7 @@ export function Login() {
 
       if (!loginResponse.ok) {
         // Invalid credentials
-        throw new Error("Invalid username");
+        throw new Error("Invalid username or password");
       } else {
         const apiResponse = await loginResponse.json();
         // Azure API returns { user: {...}, token: "..." }
@@ -375,6 +377,20 @@ export function Login() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                className="w-full px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900"
+                required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm mb-2 text-slate-700">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900"
                 required
               />
