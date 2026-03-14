@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router";
 import { API_CONFIG, getApiUrl } from "../config/api";
 import { DATA_URLS, fetchExternalData } from "../config/dataUrls";
+import lunaLogo from "figma:asset/97a2e4984c2367786c9db0dc16a816860615bd7e.png";
 
 /**
  * Login Component
@@ -353,56 +354,151 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-2xl mb-6 text-center">LunaAI Login</h2>
-        
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label htmlFor="username" className="block text-sm mb-2 text-slate-700">
-              Username
-            </label>
-            <input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900"
-              required
-            />
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
+      <div className="w-full h-[800px] flex flex-col items-center">
+        {/* Login Form */}
+        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+          {/* Luna Logo inside form */}
+          <div className="flex justify-center mb-6">
+            <img src={lunaLogo} alt="LunaAI Logo" className="w-[60px] h-[60px] rounded-lg object-cover" />
           </div>
 
-          {error && (
-            <div className="text-red-600 text-sm text-center">
-              {error}
+          <h2 className="text-2xl mb-6 text-center">LunaAI Login</h2>
+          
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label htmlFor="username" className="block text-sm mb-2 text-slate-700">
+                Username
+              </label>
+              <input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900"
+                required
+              />
             </div>
-          )}
 
-          <button
-            type="submit"
-            className="w-full bg-slate-900 text-white py-2 rounded-md hover:bg-slate-800 transition-colors"
-            disabled={loading}
-          >
-            {loading ? "Logging in..." : "Login"}
-          </button>
-        </form>
+            {error && (
+              <div className="text-red-600 text-sm text-center">
+                {error}
+              </div>
+            )}
 
-        {/* Registration Link */}
-        <div className="mt-4 text-center">
-          <p className="text-sm text-slate-600">
-            Don't have an account?{" "}
-            <Link
-              to="/register"
-              className="text-slate-900 hover:text-slate-700 font-semibold underline"
+            <button
+              type="submit"
+              className="w-full bg-slate-900 text-white py-2 rounded-md hover:bg-slate-800 transition-colors"
+              disabled={loading}
             >
-              Register here
-            </Link>
-          </p>
+              {loading ? "Logging in..." : "Login"}
+            </button>
+          </form>
+
+          {/* Registration Link */}
+          <div className="mt-4 text-center">
+            <p className="text-sm text-slate-600">
+              Don't have an account?{" "}
+              <Link
+                to="/register"
+                className="text-slate-900 hover:text-slate-700 font-semibold underline"
+              >
+                Register here
+              </Link>
+            </p>
+          </div>
+
+          <div className="mt-6 text-sm text-slate-600 text-center border-t border-slate-200 pt-4">
+            <p className="mb-2">Test Users:</p>
+            <p>john, marco, brian, portia, joey, jws</p>
+            <p className="mt-3 text-xs bg-blue-50 p-2 rounded border border-blue-200">
+              <strong>Guest Access:</strong> Username: <code className="bg-white px-1 rounded">guest</code> / Password: <code className="bg-white px-1 rounded">guest</code>
+            </p>
+          </div>
         </div>
 
-        <div className="mt-6 text-sm text-slate-600 text-center border-t border-slate-200 pt-4">
-          <p className="mb-2">Test Users:</p>
-          <p>john, marco, brian, portia, joey, jws</p>
+        {/* System Messages Panel - Row Layout */}
+        <div className="w-full mt-[100px] max-h-[350px] bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-lg shadow-lg text-white overflow-auto">
+          <div className="border-b border-slate-600 pb-3 mb-4">
+            <h3 className="text-xl font-bold text-center flex items-center justify-center gap-2">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              System Messages
+            </h3>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-4">
+            {/* Current Build Version */}
+            <div className="bg-slate-700 bg-opacity-50 p-4 rounded-lg border border-slate-600">
+              <div className="flex items-center gap-2 mb-2">
+                <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h4 className="font-semibold text-green-400">Current Build</h4>
+              </div>
+              <p className="text-2xl font-bold text-white mb-1">Version 9.0</p>
+              <p className="text-xs text-slate-400">Released: March 14, 2026</p>
+            </div>
+
+            {/* System Status */}
+            <div className="bg-slate-700 bg-opacity-50 p-4 rounded-lg border border-slate-600">
+              <div className="flex items-center gap-2 mb-3">
+                <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h4 className="font-semibold text-blue-400">System Status</h4>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-300">API Status:</span>
+                  <span className="flex items-center gap-1 text-green-400">
+                    <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                    Online
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-300">Database:</span>
+                  <span className="flex items-center gap-1 text-green-400">
+                    <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                    Connected
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-300">AI Providers:</span>
+                  <span className="text-green-400">Active</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Latest Updates */}
+            <div className="bg-slate-700 bg-opacity-50 p-4 rounded-lg border border-slate-600">
+              <div className="flex items-center gap-2 mb-3">
+                <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                </svg>
+                <h4 className="font-semibold text-purple-400">What's New</h4>
+              </div>
+              <ul className="text-xs text-slate-300 space-y-2">
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-400 mt-0.5">•</span>
+                  <span>Enhanced security features</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-400 mt-0.5">•</span>
+                  <span>Improved GridApps management</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-400 mt-0.5">•</span>
+                  <span>New guest user access mode</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-400 mt-0.5">•</span>
+                  <span>Performance optimizations</span>
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </div>

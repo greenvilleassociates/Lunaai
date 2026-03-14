@@ -43,7 +43,9 @@ export function Root() {
   const currentUserRole = localStorage.getItem("role");
   const isSuperUser = currentUserRole === "superuser";
   const isAdmin = currentUserRole === "admin";
-  const isManager = isSuperUser || isAdmin; // Managers can see all features
+  const isGuest = currentUserRole === "guest";
+  const isSiteAdmin = currentUserRole === "Luna Site Administrator";
+  const isManager = isSuperUser || isAdmin || isSiteAdmin; // Managers can see all features
 
   // Check if viewport is mobile-sized (1000px or less)
   useEffect(() => {
@@ -266,25 +268,29 @@ export function Root() {
               <BarChartIcon sx={{ fontSize: 25 }} />
               <span className="text-xs text-center">Visualizations</span>
             </Link>
-            <Link
-              to="/empowr"
-              className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
-                isActive("/empowr") ? "bg-slate-700 text-white" : "text-slate-300"
-              }`}
-              title="Empowr for Enterprise Queries"
-            >
-              <SearchIcon sx={{ fontSize: 25 }} />
-              <span className="text-xs text-center">Empowr</span>
-            </Link>
-            <Link
-              to="/settings"
-              className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
-                isActive("/settings") ? "bg-slate-700 text-white" : "text-slate-300"
-              }`}
-            >
-              <SettingsIcon sx={{ fontSize: 25 }} />
-              <span className="text-xs text-center">Settings</span>
-            </Link>
+            {!isGuest && (
+              <Link
+                to="/empowr"
+                className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/empowr") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+                title="Empowr for Enterprise Queries"
+              >
+                <SearchIcon sx={{ fontSize: 25 }} />
+                <span className="text-xs text-center">Empowr</span>
+              </Link>
+            )}
+            {!isGuest && (
+              <Link
+                to="/settings"
+                className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/settings") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+              >
+                <SettingsIcon sx={{ fontSize: 25 }} />
+                <span className="text-xs text-center">Settings</span>
+              </Link>
+            )}
             {isManager && (
               <Link
                 to="/administrator"
@@ -373,7 +379,7 @@ export function Root() {
                 title="CTS Grid App License Manager"
               >
                 <PublicIcon sx={{ fontSize: 25 }} />
-                <span className="text-xs text-center">Grid Licenses</span>
+                <span className="text-xs text-center">GridApps</span>
               </Link>
             )}
             {isManager && (
@@ -428,27 +434,31 @@ export function Root() {
                 <BarChartIcon fontSize="small" />
                 <span className="text-sm">Visualizations</span>
               </Link>
-              <Link
-                to="/empowr"
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
-                  isActive("/empowr") ? "bg-slate-700 text-white" : "text-slate-300"
-                }`}
-                title="Empowr for Enterprise Queries"
-              >
-                <SearchIcon fontSize="small" />
-                <span className="text-sm">Empowr</span>
-              </Link>
-              <Link
-                to="/settings"
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
-                  isActive("/settings") ? "bg-slate-700 text-white" : "text-slate-300"
-                }`}
-              >
-                <SettingsIcon fontSize="small" />
-                <span className="text-sm">Settings</span>
-              </Link>
+              {!isGuest && (
+                <Link
+                  to="/empowr"
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                    isActive("/empowr") ? "bg-slate-700 text-white" : "text-slate-300"
+                  }`}
+                  title="Empowr for Enterprise Queries"
+                >
+                  <SearchIcon fontSize="small" />
+                  <span className="text-sm">Empowr</span>
+                </Link>
+              )}
+              {!isGuest && (
+                <Link
+                  to="/settings"
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                    isActive("/settings") ? "bg-slate-700 text-white" : "text-slate-300"
+                  }`}
+                >
+                  <SettingsIcon fontSize="small" />
+                  <span className="text-sm">Settings</span>
+                </Link>
+              )}
               {isManager && (
                 <Link
                   to="/administrator"
@@ -543,7 +553,7 @@ export function Root() {
                   title="CTS Grid App License Manager"
                 >
                   <PublicIcon fontSize="small" />
-                  <span className="text-sm">Grid Licenses</span>
+                  <span className="text-sm">GridApps</span>
                 </Link>
               )}
               {isManager && (
@@ -653,47 +663,51 @@ export function Root() {
               </ListItemButton>
             </ListItem>
 
-            <ListItem disablePadding>
-              <ListItemButton
-                onClick={() => {
-                  navigate("/empowr");
-                  setSidebarOpen(false);
-                }}
-                selected={isActive("/empowr")}
-                sx={{
-                  "&.Mui-selected": {
-                    backgroundColor: "#8B0000",
-                    "&:hover": { backgroundColor: "#a00" },
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ color: "white" }}>
-                  <SearchIcon />
-                </ListItemIcon>
-                <ListItemText primary="Empowr for Enterprise Queries" />
-              </ListItemButton>
-            </ListItem>
+            {!isGuest && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    navigate("/empowr");
+                    setSidebarOpen(false);
+                  }}
+                  selected={isActive("/empowr")}
+                  sx={{
+                    "&.Mui-selected": {
+                      backgroundColor: "#8B0000",
+                      "&:hover": { backgroundColor: "#a00" },
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: "white" }}>
+                    <SearchIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Empowr for Enterprise Queries" />
+                </ListItemButton>
+              </ListItem>
+            )}
 
-            <ListItem disablePadding>
-              <ListItemButton
-                onClick={() => {
-                  navigate("/settings");
-                  setSidebarOpen(false);
-                }}
-                selected={isActive("/settings")}
-                sx={{
-                  "&.Mui-selected": {
-                    backgroundColor: "#8B0000",
-                    "&:hover": { backgroundColor: "#a00" },
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ color: "white" }}>
-                  <SettingsIcon />
-                </ListItemIcon>
-                <ListItemText primary="Settings" />
-              </ListItemButton>
-            </ListItem>
+            {!isGuest && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    navigate("/settings");
+                    setSidebarOpen(false);
+                  }}
+                  selected={isActive("/settings")}
+                  sx={{
+                    "&.Mui-selected": {
+                      backgroundColor: "#8B0000",
+                      "&:hover": { backgroundColor: "#a00" },
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: "white" }}>
+                    <SettingsIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Settings" />
+                </ListItemButton>
+              </ListItem>
+            )}
 
             {isManager && (
               <ListItem disablePadding>
@@ -850,7 +864,7 @@ export function Root() {
                   <ListItemIcon sx={{ color: "white" }}>
                     <PublicIcon />
                   </ListItemIcon>
-                  <ListItemText primary="Grid Licenses" />
+                  <ListItemText primary="GridApps" />
                 </ListItemButton>
               </ListItem>
             )}

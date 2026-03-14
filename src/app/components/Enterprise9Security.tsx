@@ -387,6 +387,7 @@ export function Enterprise9Security() {
             <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
               {/* Shield outline */}
               <path
+                key="shield-outline"
                 d="M32 4 L8 12 L8 28 Q8 44 32 60 Q56 44 56 28 L56 12 Z"
                 fill="none"
                 stroke="#333"
@@ -394,11 +395,13 @@ export function Enterprise9Security() {
               />
               {/* Top-left quadrant - Blue */}
               <path
+                key="quad-tl"
                 d="M32 4 L8 12 L8 28 Q8 32 12 36 L32 32 Z"
                 fill="#1976d2"
               />
               {/* Top-right quadrant - White */}
               <path
+                key="quad-tr"
                 d="M32 4 L56 12 L56 28 Q56 32 52 36 L32 32 Z"
                 fill="#ffffff"
                 stroke="#ccc"
@@ -406,6 +409,7 @@ export function Enterprise9Security() {
               />
               {/* Bottom-left quadrant - White */}
               <path
+                key="quad-bl"
                 d="M32 32 L12 36 Q8 36 8 28 Q8 44 32 60 Z"
                 fill="#ffffff"
                 stroke="#ccc"
@@ -413,12 +417,13 @@ export function Enterprise9Security() {
               />
               {/* Bottom-right quadrant - Blue */}
               <path
+                key="quad-br"
                 d="M32 32 L52 36 Q56 36 56 28 Q56 44 32 60 Z"
                 fill="#1976d2"
               />
               {/* Center divider lines */}
-              <line x1="32" y1="4" x2="32" y2="60" stroke="#333" strokeWidth="1" />
-              <line x1="8" y1="28" x2="56" y2="28" stroke="#333" strokeWidth="1" />
+              <line key="line-v" x1="32" y1="4" x2="32" y2="60" stroke="#333" strokeWidth="1" />
+              <line key="line-h" x1="8" y1="28" x2="56" y2="28" stroke="#333" strokeWidth="1" />
             </svg>
             
             {/* Badge with "9" */}
