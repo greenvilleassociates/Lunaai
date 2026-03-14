@@ -35,6 +35,7 @@ import {
   Warning,
   Error,
   CheckCircle,
+  AccessTime,
 } from "@mui/icons-material";
 import { API_CONFIG, getApiUrl } from "../config/api";
 
@@ -48,6 +49,19 @@ interface LogEntry {
   location?: string;
   severity: "info" | "warning" | "error" | "success";
   category: string;
+}
+
+interface UserSession {
+  sessionid: number;
+  uid: number;
+  username: string;
+  token: string;
+  sessionstart: string;
+  sessionend?: string;
+  sessioncomplete: number;
+  ipaddress?: string;
+  latitude?: string;
+  longitude?: string;
 }
 
 interface TabPanelProps {
@@ -111,9 +125,11 @@ export function Enterprise9Security() {
   const [userActions, setUserActions] = useState<LogEntry[]>(MOCK_USER_ACTIONS);
   const [authNotices, setAuthNotices] = useState<LogEntry[]>(MOCK_AUTH_NOTICES);
   const [sysAdminLogs, setSysAdminLogs] = useState<LogEntry[]>(MOCK_SYSADMIN_LOGS);
+  const [userSessions, setUserSessions] = useState<UserSession[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterSeverity, setFilterSeverity] = useState<string>("all");
   const [loading, setLoading] = useState(false);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
 
   const username = localStorage.getItem("username") || "User";
   const uid = localStorage.getItem("uid");
@@ -122,6 +138,38 @@ export function Enterprise9Security() {
   const isAdmin = userRole === "admin";
 
   const hasAccess = isSuperUser || isAdmin;
+
+  // Load user sessions from API
+  useEffect(() => {
+    if (hasAccess && currentTab === 4) {
+      loadUserSessions();
+    }
+  }, [hasAccess, currentTab]);
+
+  const loadUserSessions = async () => {
+    setSessionsLoading(true);
+    try {
+      const sessionUrl = getApiUrl(API_CONFIG.ENDPOINTS.USER_SESSION);
+      const response = await fetch(sessionUrl, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${uid}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUserSessions(data);
+        console.log("✅ Loaded user sessions from API:", data.length);
+      } else {
+        console.warn("⚠️ Failed to load user sessions from API");
+      }
+    } catch (error) {
+      console.error("❌ Error loading user sessions:", error);
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setCurrentTab(newValue);
@@ -463,6 +511,13 @@ export function Enterprise9Security() {
             id="security-tab-3"
             aria-controls="security-tabpanel-3"
           />
+          <Tab
+            icon={<AccessTime />}
+            iconPosition="start"
+            label="User Sessions"
+            id="security-tab-4"
+            aria-controls="security-tabpanel-4"
+          />
         </Tabs>
 
         <TabPanel value={currentTab} index={0}>
@@ -479,6 +534,131 @@ export function Enterprise9Security() {
 
         <TabPanel value={currentTab} index={3}>
           {renderLogTable(sysAdminLogs, "System Administrator Logs")}
+        </TabPanel>
+
+        <TabPanel value={currentTab} index={4}>
+          <Box>
+            <Box className="flex items-center justify-between mb-4">
+              <Typography variant="h6" className="flex items-center gap-2">
+                <AccessTime sx={{ color: "#8B0000" }} />
+                User Sessions
+              </Typography>
+              <Box className="flex gap-2">
+                <TextField
+                  size="small"
+                  placeholder="Search sessions..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Search fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{ width: "250px" }}
+                />
+                <Tooltip title="Refresh">
+                  <IconButton onClick={loadUserSessions} color="primary" size="small">
+                    <Refresh />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Export">
+                  <IconButton color="primary" size="small">
+                    <Download />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Box>
+
+            {sessionsLoading ? (
+              <Box className="text-center py-8">
+                <Typography variant="body2" color="text.secondary">
+                  Loading user sessions...
+                </Typography>
+              </Box>
+            ) : (
+              <TableContainer component={Paper} elevation={2}>
+                <Table size="small" sx={{ "& .MuiTableCell-root": { fontSize: "9pt" } }}>
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: "#1e293b" }}>
+                      <TableCell sx={{ color: "white", fontWeight: "bold" }}>Session ID</TableCell>
+                      <TableCell sx={{ color: "white", fontWeight: "bold" }}>User ID</TableCell>
+                      <TableCell sx={{ color: "white", fontWeight: "bold" }}>Username</TableCell>
+                      <TableCell sx={{ color: "white", fontWeight: "bold" }}>Token</TableCell>
+                      <TableCell sx={{ color: "white", fontWeight: "bold" }}>Start Time</TableCell>
+                      <TableCell sx={{ color: "white", fontWeight: "bold" }}>End Time</TableCell>
+                      <TableCell sx={{ color: "white", fontWeight: "bold" }}>Status</TableCell>
+                      <TableCell sx={{ color: "white", fontWeight: "bold" }}>IP Address</TableCell>
+                      <TableCell sx={{ color: "white", fontWeight: "bold" }}>Location</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {userSessions.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            No user sessions found
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      userSessions.map((session, index) => (
+                        <TableRow
+                          key={session.sessionid}
+                          sx={{
+                            backgroundColor: index % 2 === 0 ? "#f8fafc" : "white",
+                            "&:hover": { backgroundColor: "#e2e8f0" },
+                          }}
+                        >
+                          <TableCell sx={{ fontFamily: "monospace", fontSize: "8pt" }}>
+                            {session.sessionid}
+                          </TableCell>
+                          <TableCell sx={{ fontSize: "9pt", fontWeight: 500 }}>
+                            {session.uid}
+                          </TableCell>
+                          <TableCell sx={{ fontSize: "9pt", fontWeight: 600 }}>
+                            {session.username}
+                          </TableCell>
+                          <TableCell sx={{ fontFamily: "monospace", fontSize: "7pt" }}>
+                            {session.token.substring(0, 16)}...
+                          </TableCell>
+                          <TableCell sx={{ fontFamily: "monospace", fontSize: "8pt" }}>
+                            {new Date(session.sessionstart).toLocaleString()}
+                          </TableCell>
+                          <TableCell sx={{ fontFamily: "monospace", fontSize: "8pt" }}>
+                            {session.sessionend ? new Date(session.sessionend).toLocaleString() : "-"}
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={session.sessioncomplete ? "Complete" : "Active"}
+                              size="small"
+                              color={session.sessioncomplete ? "default" : "success"}
+                              sx={{ fontSize: "8pt" }}
+                            />
+                          </TableCell>
+                          <TableCell sx={{ fontFamily: "monospace", fontSize: "8pt" }}>
+                            {session.ipaddress || "-"}
+                          </TableCell>
+                          <TableCell sx={{ fontSize: "9pt" }}>
+                            {session.latitude && session.longitude
+                              ? `${session.latitude}, ${session.longitude}`
+                              : "-"}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+
+            <Box className="mt-3 flex items-center justify-between">
+              <Typography variant="caption" color="text.secondary">
+                Showing {userSessions.length} user sessions
+              </Typography>
+            </Box>
+          </Box>
         </TabPanel>
       </Paper>
 
