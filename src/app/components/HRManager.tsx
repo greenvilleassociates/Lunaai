@@ -1,14 +1,11 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
-  Tabs,
-  Tab,
+  Typography,
   Button,
   TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Card,
+  CardContent,
   Table,
   TableBody,
   TableCell,
@@ -16,37 +13,45 @@ import {
   TableHead,
   TableRow,
   Paper,
+  IconButton,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Tabs,
+  Tab,
   Alert,
   CircularProgress,
-  Typography,
-  Select,
-  MenuItem,
+  Breadcrumbs,
   FormControl,
   InputLabel,
-  Chip,
-  IconButton,
-  Card,
-  CardContent,
-  Breadcrumbs,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import {
   Add,
   Edit,
   Delete,
   People,
+  Group,
+  Store,
+  Business,
   CalendarToday,
   AccessTime,
   Description,
   Upload,
-  Business,
-  Group,
-  Store,
   NavigateNext,
   AccountCircle,
 } from "@mui/icons-material";
 import { API_CONFIG, getApiUrl } from "../config/api";
+import { employeeApi } from "../services/apiService";
 
-// HR Manager Component - Employee, Store, and Team Management
+/**
+ * HR Manager Component - Employee, Store, and Team Management
+ * Manages employees, stores, business units, PTO requests, timesheets, and documents
+ * @version 2.0.0 - Updated to use Employee API
+ */
 interface Employee {
   id: number;
   employeeid?: string;
@@ -307,28 +312,16 @@ export function HRManager() {
   const loadEmployees = async () => {
     setLoading(true);
     try {
-      const uid = localStorage.getItem("uid");
-      const url = getApiUrl("/api/employees");
+      // Use employeeApi from apiService
+      const data = await employeeApi.getAll();
       
-      const response = await fetch(url, {
-        headers: {
-          "Content-Type": "application/json",
-          ...(uid && { Authorization: `Bearer ${uid}` }),
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Filter by company if needed
-        const filteredData = currentCompanyId 
-          ? data.filter((emp: Employee) => emp.companyid?.toString() === currentCompanyId)
-          : data;
-        setEmployees(filteredData);
-        console.log("✅ Employees loaded from API");
-      } else {
-        console.warn("⚠️ API unavailable, using empty data");
-        setEmployees([]);
-      }
+      // Filter by company if needed
+      const filteredData = currentCompanyId 
+        ? data.filter((emp: Employee) => emp.companyid?.toString() === currentCompanyId)
+        : data;
+      
+      setEmployees(filteredData);
+      console.log("✅ Employees loaded from Employee API:", filteredData.length);
     } catch (err) {
       console.error("Failed to load employees:", err);
       setEmployees([]);
@@ -455,9 +448,6 @@ export function HRManager() {
     }
 
     try {
-      const uid = localStorage.getItem("uid");
-      const url = getApiUrl("/api/employees");
-      
       // Get default Corporate HQ store if no store selected
       let storeId = newEmployee.storeid;
       if (!storeId) {
@@ -465,32 +455,29 @@ export function HRManager() {
         storeId = corporateHQ?.id;
       }
       
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(uid && { Authorization: `Bearer ${uid}` }),
-        },
-        body: JSON.stringify({
-          ...newEmployee,
-          companyid: currentCompanyId,
-          storeid: storeId,
-          hiredate: newEmployee.hiredate || new Date().toISOString().split('T')[0],
-          status: newEmployee.status || "active",
-          ismanager: newEmployee.ismanager || false,
-        }),
-      });
-
-      if (response.ok) {
-        setSuccess("Employee added successfully!");
-        setEmployeeDialogOpen(false);
-        setNewEmployee({});
-        loadEmployees();
-        loadManagers(); // Refresh managers if new employee is a manager
-      } else {
-        setError("Failed to add employee");
-      }
+      // Prepare employee data (exclude 'id' - MSSQL auto-generates)
+      const employeeData = {
+        ...newEmployee,
+        companyid: currentCompanyId ? Number(currentCompanyId) : undefined,
+        storeid: storeId,
+        hiredate: newEmployee.hiredate || new Date().toISOString().split('T')[0],
+        status: newEmployee.status || "active",
+        ismanager: newEmployee.ismanager || false,
+      };
+      
+      // Remove id from payload (MSSQL auto-generates)
+      const { id, ...createData } = employeeData as any;
+      
+      // Use employeeApi from apiService
+      await employeeApi.create(createData);
+      
+      setSuccess("Employee added successfully!");
+      setEmployeeDialogOpen(false);
+      setNewEmployee({});
+      loadEmployees();
+      loadManagers(); // Refresh managers if new employee is a manager
     } catch (err) {
+      console.error("Failed to add employee:", err);
       setError("Failed to add employee: " + err);
     }
   };

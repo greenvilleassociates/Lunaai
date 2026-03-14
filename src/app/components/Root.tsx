@@ -20,6 +20,8 @@ import ContactMailIcon from "@mui/icons-material/ContactMail";
 import ExtensionIcon from "@mui/icons-material/Extension";
 import ShieldIcon from "@mui/icons-material/Shield";
 import PublicIcon from "@mui/icons-material/Public";
+import CampaignIcon from "@mui/icons-material/Campaign";
+import SearchIcon from "@mui/icons-material/Search";
 import { Alert, Drawer, Divider, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from "@mui/material";
 import lunaLogo from "figma:asset/97a2e4984c2367786c9db0dc16a816860615bd7e.png";
 import ctsLogo from "figma:asset/399d93660a307619ab55b61f935095fec4286492.png";
@@ -37,10 +39,11 @@ export function Root() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Check if user is superuser
+  // Check if user is manager (superuser or admin)
   const currentUserRole = localStorage.getItem("role");
   const isSuperUser = currentUserRole === "superuser";
   const isAdmin = currentUserRole === "admin";
+  const isManager = isSuperUser || isAdmin; // Managers can see all features
 
   // Check if viewport is mobile-sized (1000px or less)
   useEffect(() => {
@@ -264,15 +267,36 @@ export function Root() {
               <span className="text-xs text-center">Visualizations</span>
             </Link>
             <Link
-              to="/administrator"
+              to="/empowr"
               className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
-                isActive("/administrator") ? "bg-slate-700 text-white" : "text-slate-300"
+                isActive("/empowr") ? "bg-slate-700 text-white" : "text-slate-300"
+              }`}
+              title="Empowr for Enterprise Queries"
+            >
+              <SearchIcon sx={{ fontSize: 25 }} />
+              <span className="text-xs text-center">Empowr</span>
+            </Link>
+            <Link
+              to="/settings"
+              className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                isActive("/settings") ? "bg-slate-700 text-white" : "text-slate-300"
               }`}
             >
-              <AdminPanelSettingsIcon sx={{ fontSize: 25 }} />
-              <span className="text-xs text-center">Administrator</span>
+              <SettingsIcon sx={{ fontSize: 25 }} />
+              <span className="text-xs text-center">Settings</span>
             </Link>
-            {(isSuperUser || isAdmin) && (
+            {isManager && (
+              <Link
+                to="/administrator"
+                className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/administrator") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+              >
+                <AdminPanelSettingsIcon sx={{ fontSize: 25 }} />
+                <span className="text-xs text-center">Administrator</span>
+              </Link>
+            )}
+            {isManager && (
               <Link
                 to="/hrmanager"
                 className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
@@ -283,16 +307,30 @@ export function Root() {
                 <span className="text-xs text-center">HR Manager</span>
               </Link>
             )}
-            <Link
-              to="/lunamodules"
-              className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
-                isActive("/lunamodules") ? "bg-slate-700 text-white" : "text-slate-300"
-              }`}
-            >
-              <ExtensionIcon sx={{ fontSize: 25 }} />
-              <span className="text-xs text-center">Luna Modules</span>
-            </Link>
-            {(isSuperUser || isAdmin) && (
+            {isManager && (
+              <Link
+                to="/lunamodules"
+                className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/lunamodules") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+              >
+                <ExtensionIcon sx={{ fontSize: 25 }} />
+                <span className="text-xs text-center">Luna Modules</span>
+              </Link>
+            )}
+            {isManager && (
+              <Link
+                to="/lunaadbasepro"
+                className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/lunaadbasepro") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+                title="Luna AdBase Pro"
+              >
+                <CampaignIcon sx={{ fontSize: 25 }} />
+                <span className="text-xs text-center">AdBase Pro</span>
+              </Link>
+            )}
+            {isManager && (
               <Link
                 to="/security"
                 className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
@@ -326,7 +364,7 @@ export function Root() {
                 <span className="text-xs text-center">Security(9)</span>
               </Link>
             )}
-            {(isSuperUser || isAdmin) && (
+            {isManager && (
               <Link
                 to="/gridlicensemanager"
                 className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
@@ -338,30 +376,21 @@ export function Root() {
                 <span className="text-xs text-center">Grid Licenses</span>
               </Link>
             )}
-            {isSuperUser && (
+            {isManager && (
               <Link
-                to="/settings"
+                to="/superluna"
                 className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
-                  isActive("/settings") ? "bg-slate-700 text-white" : "text-slate-300"
+                  isActive("/superluna") ? "bg-slate-700 text-white" : "text-slate-300"
                 }`}
               >
-                <SettingsIcon sx={{ fontSize: 25 }} />
-                <span className="text-xs text-center">Settings</span>
+                <img 
+                  src={superLunaIcon} 
+                  alt="SuperLuna" 
+                  className="h-12 w-12 rounded-full object-cover border-2 border-yellow-400"
+                />
+                <span className="text-xs text-center">SuperLuna</span>
               </Link>
             )}
-            <Link
-              to="/superluna"
-              className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
-                isActive("/superluna") ? "bg-slate-700 text-white" : "text-slate-300"
-              }`}
-            >
-              <img 
-                src={superLunaIcon} 
-                alt="SuperLuna" 
-                className="h-12 w-12 rounded-full object-cover border-2 border-yellow-400"
-              />
-              <span className="text-xs text-center">SuperLuna</span>
-            </Link>
           </nav>
         </aside>
 
@@ -400,16 +429,39 @@ export function Root() {
                 <span className="text-sm">Visualizations</span>
               </Link>
               <Link
-                to="/administrator"
+                to="/empowr"
                 onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
-                  isActive("/administrator") ? "bg-slate-700 text-white" : "text-slate-300"
+                  isActive("/empowr") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+                title="Empowr for Enterprise Queries"
+              >
+                <SearchIcon fontSize="small" />
+                <span className="text-sm">Empowr</span>
+              </Link>
+              <Link
+                to="/settings"
+                onClick={() => setSidebarOpen(false)}
+                className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/settings") ? "bg-slate-700 text-white" : "text-slate-300"
                 }`}
               >
-                <AdminPanelSettingsIcon fontSize="small" />
-                <span className="text-sm">Administrator</span>
+                <SettingsIcon fontSize="small" />
+                <span className="text-sm">Settings</span>
               </Link>
-              {(isSuperUser || isAdmin) && (
+              {isManager && (
+                <Link
+                  to="/administrator"
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                    isActive("/administrator") ? "bg-slate-700 text-white" : "text-slate-300"
+                  }`}
+                >
+                  <AdminPanelSettingsIcon fontSize="small" />
+                  <span className="text-sm">Administrator</span>
+                </Link>
+              )}
+              {isManager && (
                 <Link
                   to="/hrmanager"
                   onClick={() => setSidebarOpen(false)}
@@ -421,17 +473,32 @@ export function Root() {
                   <span className="text-sm">HR Manager</span>
                 </Link>
               )}
-              <Link
-                to="/lunamodules"
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
-                  isActive("/lunamodules") ? "bg-slate-700 text-white" : "text-slate-300"
-                }`}
-              >
-                <ExtensionIcon fontSize="small" />
-                <span className="text-sm">Luna Modules</span>
-              </Link>
-              {(isSuperUser || isAdmin) && (
+              {isManager && (
+                <Link
+                  to="/lunamodules"
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                    isActive("/lunamodules") ? "bg-slate-700 text-white" : "text-slate-300"
+                  }`}
+                >
+                  <ExtensionIcon fontSize="small" />
+                  <span className="text-sm">Luna Modules</span>
+                </Link>
+              )}
+              {isManager && (
+                <Link
+                  to="/lunaadbasepro"
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                    isActive("/lunaadbasepro") ? "bg-slate-700 text-white" : "text-slate-300"
+                  }`}
+                  title="Luna AdBase Pro - Marketing Campaign Management"
+                >
+                  <CampaignIcon fontSize="small" />
+                  <span className="text-sm">Luna AdBase Pro</span>
+                </Link>
+              )}
+              {isManager && (
                 <Link
                   to="/security"
                   onClick={() => setSidebarOpen(false)}
@@ -466,7 +533,7 @@ export function Root() {
                   <span className="text-sm">Security(9)</span>
                 </Link>
               )}
-              {(isSuperUser || isAdmin) && (
+              {isManager && (
                 <Link
                   to="/gridlicensemanager"
                   onClick={() => setSidebarOpen(false)}
@@ -479,32 +546,22 @@ export function Root() {
                   <span className="text-sm">Grid Licenses</span>
                 </Link>
               )}
-              {isSuperUser && (
+              {isManager && (
                 <Link
-                  to="/settings"
+                  to="/superluna"
                   onClick={() => setSidebarOpen(false)}
                   className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
-                    isActive("/settings") ? "bg-slate-700 text-white" : "text-slate-300"
+                    isActive("/superluna") ? "bg-slate-700 text-white" : "text-slate-300"
                   }`}
                 >
-                  <SettingsIcon fontSize="small" />
-                  <span className="text-sm">Settings</span>
+                  <img 
+                    src={superLunaIcon} 
+                    alt="SuperLuna" 
+                    className="h-6 w-6 rounded-full object-cover border-2 border-yellow-400"
+                  />
+                  <span className="text-sm">SuperLuna</span>
                 </Link>
               )}
-              <Link
-                to="/superluna"
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
-                  isActive("/superluna") ? "bg-slate-700 text-white" : "text-slate-300"
-                }`}
-              >
-                <img 
-                  src={superLunaIcon} 
-                  alt="SuperLuna" 
-                  className="h-6 w-6 rounded-full object-cover border-2 border-yellow-400"
-                />
-                <span className="text-sm">SuperLuna</span>
-              </Link>
             </nav>
           </aside>
         )}
@@ -599,10 +656,10 @@ export function Root() {
             <ListItem disablePadding>
               <ListItemButton
                 onClick={() => {
-                  navigate("/administrator");
+                  navigate("/empowr");
                   setSidebarOpen(false);
                 }}
-                selected={isActive("/administrator")}
+                selected={isActive("/empowr")}
                 sx={{
                   "&.Mui-selected": {
                     backgroundColor: "#8B0000",
@@ -611,13 +668,57 @@ export function Root() {
                 }}
               >
                 <ListItemIcon sx={{ color: "white" }}>
-                  <AdminPanelSettingsIcon />
+                  <SearchIcon />
                 </ListItemIcon>
-                <ListItemText primary="Administrator" />
+                <ListItemText primary="Empowr for Enterprise Queries" />
               </ListItemButton>
             </ListItem>
 
-            {(isSuperUser || isAdmin) && (
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  navigate("/settings");
+                  setSidebarOpen(false);
+                }}
+                selected={isActive("/settings")}
+                sx={{
+                  "&.Mui-selected": {
+                    backgroundColor: "#8B0000",
+                    "&:hover": { backgroundColor: "#a00" },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: "white" }}>
+                  <SettingsIcon />
+                </ListItemIcon>
+                <ListItemText primary="Settings" />
+              </ListItemButton>
+            </ListItem>
+
+            {isManager && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    navigate("/administrator");
+                    setSidebarOpen(false);
+                  }}
+                  selected={isActive("/administrator")}
+                  sx={{
+                    "&.Mui-selected": {
+                      backgroundColor: "#8B0000",
+                      "&:hover": { backgroundColor: "#a00" },
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: "white" }}>
+                    <AdminPanelSettingsIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Administrator" />
+                </ListItemButton>
+              </ListItem>
+            )}
+
+            {isManager && (
               <ListItem disablePadding>
                 <ListItemButton
                   onClick={() => {
@@ -640,28 +741,53 @@ export function Root() {
               </ListItem>
             )}
 
-            <ListItem disablePadding>
-              <ListItemButton
-                onClick={() => {
-                  navigate("/lunamodules");
-                  setSidebarOpen(false);
-                }}
-                selected={isActive("/lunamodules")}
-                sx={{
-                  "&.Mui-selected": {
-                    backgroundColor: "#8B0000",
-                    "&:hover": { backgroundColor: "#a00" },
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ color: "white" }}>
-                  <ExtensionIcon />
-                </ListItemIcon>
-                <ListItemText primary="Luna Modules" />
-              </ListItemButton>
-            </ListItem>
+            {isManager && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    navigate("/lunamodules");
+                    setSidebarOpen(false);
+                  }}
+                  selected={isActive("/lunamodules")}
+                  sx={{
+                    "&.Mui-selected": {
+                      backgroundColor: "#8B0000",
+                      "&:hover": { backgroundColor: "#a00" },
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: "white" }}>
+                    <ExtensionIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Luna Modules" />
+                </ListItemButton>
+              </ListItem>
+            )}
 
-            {(isSuperUser || isAdmin) && (
+            {isManager && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    navigate("/lunaadbasepro");
+                    setSidebarOpen(false);
+                  }}
+                  selected={isActive("/lunaadbasepro")}
+                  sx={{
+                    "&.Mui-selected": {
+                      backgroundColor: "#8B0000",
+                      "&:hover": { backgroundColor: "#a00" },
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: "white" }}>
+                    <CampaignIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="AdBase Pro" />
+                </ListItemButton>
+              </ListItem>
+            )}
+
+            {isManager && (
               <ListItem disablePadding>
                 <ListItemButton
                   onClick={() => {
@@ -706,7 +832,7 @@ export function Root() {
               </ListItem>
             )}
 
-            {(isSuperUser || isAdmin) && (
+            {isManager && (
               <ListItem disablePadding>
                 <ListItemButton
                   onClick={() => {
@@ -729,14 +855,14 @@ export function Root() {
               </ListItem>
             )}
 
-            {isSuperUser && (
+            {isManager && (
               <ListItem disablePadding>
                 <ListItemButton
                   onClick={() => {
-                    navigate("/settings");
+                    navigate("/superluna");
                     setSidebarOpen(false);
                   }}
-                  selected={isActive("/settings")}
+                  selected={isActive("/superluna")}
                   sx={{
                     "&.Mui-selected": {
                       backgroundColor: "#8B0000",
@@ -745,37 +871,16 @@ export function Root() {
                   }}
                 >
                   <ListItemIcon sx={{ color: "white" }}>
-                    <SettingsIcon />
+                    <img 
+                      src={superLunaIcon} 
+                      alt="SuperLuna" 
+                      className="h-6 w-6 rounded-full object-cover border-2 border-yellow-400"
+                    />
                   </ListItemIcon>
-                  <ListItemText primary="Settings" />
+                  <ListItemText primary="SuperLuna" />
                 </ListItemButton>
               </ListItem>
             )}
-
-            <ListItem disablePadding>
-              <ListItemButton
-                onClick={() => {
-                  navigate("/superluna");
-                  setSidebarOpen(false);
-                }}
-                selected={isActive("/superluna")}
-                sx={{
-                  "&.Mui-selected": {
-                    backgroundColor: "#8B0000",
-                    "&:hover": { backgroundColor: "#a00" },
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ color: "white" }}>
-                  <img 
-                    src={superLunaIcon} 
-                    alt="SuperLuna" 
-                    className="h-6 w-6 rounded-full object-cover border-2 border-yellow-400"
-                  />
-                </ListItemIcon>
-                <ListItemText primary="SuperLuna" />
-              </ListItemButton>
-            </ListItem>
 
             <Divider sx={{ backgroundColor: "#475569", my: 1 }} />
 

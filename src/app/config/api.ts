@@ -30,99 +30,112 @@ export const API_CONFIG = {
   
   // API Endpoints
   ENDPOINTS: {
-    // User Management
-    USERS: '/User',
-    USER_BY_ID: (uid: string) => `/User/${uid}`,
-    USER_BY_USERNAME: (username: string) => `/User/username/${username}`,
-    USER_LOGIN: '/users/login',
-    USER_LOGOUT: '/users/logout',
-    
-    // Company Management
-    COMPANIES: '/companies',
-    COMPANY: '/Company',
-    COMPANY_BY_ID: (id: string) => `/companies/${id}`,
-    COMPANY_USERS: (companyId: string) => `/companies/${companyId}/users`,
-    
-    // Business Unit Management
-    BUSINESS_UNITS: '/Bu',
-    BUSINESS_UNIT_BY_ID: (id: string) => `/Bu/${id}`,
-    BUSINESS_UNITS_BY_COMPANY: (companyId: string) => `/Bu/company/${companyId}`,
-    
-    // User Groups Management
-    USER_GROUPS: '/Usergroups',
-    USER_GROUP_BY_ID: (id: string) => `/Usergroups/${id}`,
-    
-    // Store Management
-    STORES: '/Store',
-    STORE_BY_ID: (id: string) => `/Store/${id}`,
-    
-    // Role Management
-    ROLES: '/Role',
-    ROLE_BY_ID: (id: string) => `/Role/${id}`,
-    
-    // Region Management
-    REGIONS: '/Region',
-    REGION_BY_ID: (id: string) => `/Region/${id}`,
-    
-    // Manager Management
-    MANAGERS: '/Manager',
-    MANAGER_BY_ID: (id: string) => `/Manager/${id}`,
-    
-    // Company Events Management
-    COMPANY_EVENTS: '/Companyevents',
-    COMPANY_EVENT_BY_ID: (id: string) => `/Companyevents/${id}`,
-    
-    // Instance Management
-    INSTANCES: '/Instance',
-    INSTANCE_BY_ID: (id: string) => `/Instance/${id}`,
-    
-    // Web Search / AI Lookup
-    WEB_SEARCH: '/Websearch',
-    WEB_SEARCH_BY_ID: (id: string) => `/Websearch/${id}`,
-    
-    // User Help / Trouble Tickets
-    USER_HELP: '/Userhelp',
-    USER_HELP_BY_ID: (id: string) => `/Userhelp/${id}`,
-    
-    // User Logs
-    USER_LOG: '/Userlog',
-    USER_LOG_BY_ID: (id: string) => `/Userlog/${id}`,
-    
-    // User Sessions
-    USER_SESSION: '/Usersession',
-    USER_SESSION_BY_ID: (id: string) => `/Usersession/${id}`,
-    
-    // Authentication
+    // Authentication (uses /api/Auth)
+    AUTH_LOGIN_LOCAL: '/Auth/loginLocal',
     AUTH_LOGIN: '/Auth/login',
-    AUTH_VERIFY: '/auth/verify',
-    AUTH_REFRESH: '/auth/refresh',
+    AUTH_SIGNUP_LOCAL: '/Auth/signupLocal',
     AUTH_SIGNUP: '/Auth/signup',
+    AUTH_FORGOT_PASSWORD_LOCAL: '/Auth/forgotPasswordLocal',
+    AUTH_FORGOT_PASSWORD: '/Auth/forgotPassword',
+    AUTH_RESET_PASSWORD_PROFILE: '/Auth/resetPasswordProfile',
+    AUTH_RESET_PASSWORD_LOCAL: '/Auth/resetPasswordLocal',
+    AUTH_RESET_PASSWORD: '/Auth/resetPassword',
     
-    // LLM Processing
-    LLM_PROCESS: '/llm/process',
-    LLM_CHAIN: '/llm/chain',
-    LLM_STATUS: (jobId: string) => `/llm/status/${jobId}`,
+    // User Management (uses /api/Users)
+    USERS: '/Users',
+    USER_BY_ID: (id: number) => `/Users/${id}`,
+    USER_LOGOUT: (token: string) => `/Users/logout/${token}`,
+    USER_JOIN: '/Users/userjoin',
     
-    // File Upload
-    UPLOAD_PROMPT: '/upload/prompt',
-    UPLOAD_FILE: '/upload/file',
+    // Company Management (uses /api/Company)
+    COMPANIES: '/Company',
+    COMPANY_BY_ID: (id: number) => `/Company/${id}`,
     
-    // AI Actions
-    AI_ACTIONS_VOICE: '/aiactions/voice/1',
+    // Business Unit Management (uses /api/Bu)
+    BUSINESS_UNITS: '/Bu',
+    BUSINESS_UNIT_BY_ID: (id: number) => `/Bu/${id}`,
     
-    // Voice/Recording
-    VOICE_RECORDING: '/voice/recording',
-    VOICE_PROCESS: '/voice/process',
+    // User Groups Management (uses /api/Usergroups)
+    USER_GROUPS: '/Usergroups',
+    USER_GROUP_BY_ID: (id: number) => `/Usergroups/${id}`,
+    
+    // Store Management (uses /api/Store)
+    STORES: '/Store',
+    STORE_BY_ID: (id: number) => `/Store/${id}`,
+    
+    // Role Management (uses /api/Role)
+    ROLES: '/Role',
+    ROLE_BY_ID: (id: number) => `/Role/${id}`,
+    
+    // Region Management (uses /api/Region)
+    REGIONS: '/Region',
+    REGION_BY_ID: (id: number) => `/Region/${id}`,
+    
+    // Manager Management (uses /api/Manager)
+    MANAGERS: '/Manager',
+    MANAGER_BY_ID: (id: number) => `/Manager/${id}`,
+    
+    // Employee Management (uses /api/Employee)
+    EMPLOYEES: '/Employee',
+    EMPLOYEE_BY_ID: (id: number) => `/Employee/${id}`,
+    
+    // Instance Management (uses /api/Instance)
+    INSTANCES: '/Instance',
+    INSTANCE_BY_ID: (id: number) => `/Instance/${id}`,
+    
+    // Company Events Management (uses /api/Companyevents)
+    COMPANY_EVENTS: '/Companyevents',
+    COMPANY_EVENT_BY_ID: (id: number) => `/Companyevents/${id}`,
+    
+    // Web Search / AI Lookup (uses /api/Websearch)
+    WEB_SEARCH: '/Websearch',
+    WEB_SEARCH_BY_ID: (id: number) => `/Websearch/${id}`,
+    
+    // User Help / Trouble Tickets (uses /api/Userhelp)
+    USER_HELP: '/Userhelp',
+    USER_HELP_BY_ID: (id: number) => `/Userhelp/${id}`,
+    
+    // User Logs (uses /api/Userlog)
+    USER_LOG: '/Userlog',
+    USER_LOG_BY_ID: (id: number) => `/Userlog/${id}`,
+    
+    // User Sessions (uses /api/Usersession)
+    USER_SESSION: '/Usersession',
+    USER_SESSION_BY_ID: (id: number) => `/Usersession/${id}`,
+    
+    // AI Agents (uses /api/Aiagent)
+    AI_AGENTS: '/Aiagent',
+    AI_AGENT_BY_ID: (id: number) => `/Aiagent/${id}`,
+    
+    // Voice Commands (uses /api/Voicecommands)
     VOICE_COMMANDS: '/Voicecommands',
-    VOICE_COMMAND_BY_ID: (id: string) => `/Voicecommands/${id}`,
+    VOICE_COMMAND_BY_ID: (id: number) => `/Voicecommands/${id}`,
     
-    // Analytics/Visualizations
-    ANALYTICS: '/analytics',
-    VISUALIZATIONS: '/visualizations',
+    // AI Actions (uses /api/aiactions)
+    AI_ACTIONS_VOICE: (command: string) => `/aiactions/voice/${command}`,
+    AI_ACTIONS_STATUS: (mapId: string) => `/aiactions/status/${mapId}`,
     
-    // Transactions
-    TRANSACTIONS: '/transactions',
-    TRANSACTION_BY_ID: (id: string) => `/transactions/${id}`,
+    // Batch Processing (uses /api/Batch)
+    BATCHES: '/Batch',
+    BATCH_BY_ID: (id: number) => `/Batch/${id}`,
+    BATCH_TYPES: '/Batchtype',
+    BATCH_TYPE_BY_ID: (id: number) => `/Batchtype/${id}`,
+    
+    // Batch Transcription (uses /api/BatchTranscription)
+    BATCH_TRANSCRIPTION_UPLOAD: '/BatchTranscription/upload',
+    BATCH_TRANSCRIPTION_RUN: '/BatchTranscription/run',
+    
+    // Activity Details (uses /api/Activitydetail)
+    ACTIVITY_DETAILS: '/Activitydetail',
+    ACTIVITY_DETAIL_BY_ID: (id: number) => `/Activitydetail/${id}`,
+    
+    // Addbase (uses /api/Addbase)
+    ADDBASE: '/Addbase',
+    ADDBASE_BY_ID: (id: number) => `/Addbase/${id}`,
+    
+    // Timesheet (uses /api/Timesheet)
+    TIMESHEETS: '/Timesheet',
+    TIMESHEET_BY_ID: (id: number) => `/Timesheet/${id}`,
   },
 };
 

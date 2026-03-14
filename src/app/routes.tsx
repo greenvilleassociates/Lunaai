@@ -26,6 +26,8 @@ import { SuperLuna } from "./components/SuperLuna";
 import { LunaModules } from "./components/LunaModules";
 import { Enterprise9Security } from "./components/Enterprise9Security";
 import { GridLicenseManager } from "./components/GridLicenseManager";
+import { LunaAdBasePro } from "./components/LunaAdBasePro";
+import { Empowr } from "./components/Empowr";
 
 export const router = createBrowserRouter([
   {
@@ -58,6 +60,8 @@ export const router = createBrowserRouter([
       { path: "settings", element: <ProtectedRoute><Settings /></ProtectedRoute> },
       { path: "superluna", element: <ProtectedRoute><SuperLuna /></ProtectedRoute> },
       { path: "gridlicensemanager", element: <ProtectedRoute><GridLicenseManager /></ProtectedRoute> },
+      { path: "lunaadbasepro", element: <ProtectedRoute><LunaAdBasePro /></ProtectedRoute> },
+      { path: "empowr", element: <ProtectedRoute><Empowr /></ProtectedRoute> },
     ],
   },
 ]);

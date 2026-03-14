@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
 import {
   Box,
   Typography,
@@ -189,6 +190,19 @@ const DEFAULT_MODULES: Module[] = [
     licenseType: "Unlimited",
     isActive: true,
     features: ["Offline Access", "GPS Tracking", "Mobile Payments", "Photo/Document Upload"],
+  },
+  {
+    id: "luna-adbase-pro",
+    name: "Luna AdBase Pro",
+    vendor: "CTS",
+    description: "Marketing campaign tracking and analytics platform with ROI monitoring and multi-platform advertising management",
+    icon: <Campaign fontSize="large" />,
+    maxUsers: 25,
+    currentUsers: 8,
+    licenseType: "Professional",
+    isActive: true,
+    availableForSale: true,
+    features: ["Campaign Analytics", "ROI Tracking", "Multi-Platform Support", "Geolocation Tracking", "Cost Management", "Real-time Reporting"],
   },
   {
     id: "proximity-one",
@@ -488,6 +502,7 @@ const DEFAULT_MODULES: Module[] = [
 ];
 
 export function LunaModules() {
+  const navigate = useNavigate();
   const [modules, setModules] = useState<Module[]>(DEFAULT_MODULES);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -516,12 +531,16 @@ export function LunaModules() {
       const storedModules = localStorage.getItem("lunaModulesConfig");
       if (storedModules) {
         const parsedModules = JSON.parse(storedModules);
-        // Ensure all modules have availableForSale property
-        const modulesWithSale = parsedModules.map((m: Module) => ({
-          ...m,
-          availableForSale: m.availableForSale !== undefined ? m.availableForSale : true,
-        }));
-        setModules(modulesWithSale);
+        // Merge with DEFAULT_MODULES to restore icons (which can't be serialized to JSON)
+        const modulesWithIconsAndSale = parsedModules.map((m: Module) => {
+          const defaultModule = DEFAULT_MODULES.find(dm => dm.id === m.id);
+          return {
+            ...m,
+            icon: defaultModule?.icon || m.icon, // Restore icon from DEFAULT_MODULES
+            availableForSale: m.availableForSale !== undefined ? m.availableForSale : true,
+          };
+        });
+        setModules(modulesWithIconsAndSale);
         setLoading(false);
         return;
       }
@@ -536,11 +555,16 @@ export function LunaModules() {
 
       if (response.ok) {
         const data = await response.json();
-        const modulesWithSale = data.map((m: Module) => ({
-          ...m,
-          availableForSale: m.availableForSale !== undefined ? m.availableForSale : true,
-        }));
-        setModules(modulesWithSale);
+        // Merge with DEFAULT_MODULES to restore icons
+        const modulesWithIconsAndSale = data.map((m: Module) => {
+          const defaultModule = DEFAULT_MODULES.find(dm => dm.id === m.id);
+          return {
+            ...m,
+            icon: defaultModule?.icon || m.icon,
+            availableForSale: m.availableForSale !== undefined ? m.availableForSale : true,
+          };
+        });
+        setModules(modulesWithIconsAndSale);
       } else {
         // Fallback to default modules with availableForSale = true
         const modulesWithSale = DEFAULT_MODULES.map(m => ({
@@ -548,7 +572,6 @@ export function LunaModules() {
           availableForSale: true,
         }));
         setModules(modulesWithSale);
-        localStorage.setItem("lunaModulesConfig", JSON.stringify(modulesWithSale));
       }
     } catch (err) {
       console.error("Failed to load modules:", err);
@@ -557,13 +580,18 @@ export function LunaModules() {
         availableForSale: true,
       }));
       setModules(modulesWithSale);
-      localStorage.setItem("lunaModulesConfig", JSON.stringify(modulesWithSale));
     } finally {
       setLoading(false);
     }
   };
 
   const handleViewDetails = (module: Module) => {
+    // Special handling for Luna AdBase Pro - navigate to dedicated page
+    if (module.id === "luna-adbase-pro") {
+      navigate("/lunaadbasepro");
+      return;
+    }
+    
     setSelectedModule({ ...module });
     setDetailDialogOpen(true);
   };
@@ -586,7 +614,10 @@ export function LunaModules() {
         : m
     );
     setModules(updatedModules);
-    localStorage.setItem("lunaModulesConfig", JSON.stringify(updatedModules));
+    
+    // Save to localStorage without icons (icons can't be serialized to JSON)
+    const modulesForStorage = updatedModules.map(({ icon, ...rest }) => rest);
+    localStorage.setItem("lunaModulesConfig", JSON.stringify(modulesForStorage));
     
     const module = updatedModules.find(m => m.id === moduleId);
     setSuccess(`Module "${module?.name}" is now ${module?.availableForSale ? 'available' : 'unavailable'} for sale`);

@@ -1,7 +1,5 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router";
-import { IconButton, InputAdornment } from "@mui/material";
-import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { API_CONFIG, getApiUrl } from "../config/api";
 import { DATA_URLS, fetchExternalData } from "../config/dataUrls";
 
@@ -19,7 +17,7 @@ import { DATA_URLS, fetchExternalData } from "../config/dataUrls";
  * │    │   └─ POST /api/Usersession to create session ✓        │
  * │    └─ Not found → Try API authentication                   │
  * │                                                             │
- * │ 2. POST /api/Auth/login {username, plainPassword}          │
+ * │ 2. POST /api/Auth/login {username}                         │
  * │    ├─ Success → Get {user, token}                          │
  * │    │   ├─ Store authToken                                  │
  * │    │   └─ Session auto-created by Azure ✓                  │
@@ -38,19 +36,9 @@ function generateSessionToken(): string {
 
 export function Login() {
   const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
-  const handleClickShowPassword = () => {
-    setShowPassword(!showPassword);
-  };
-
-  const handleMouseDownPassword = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +49,7 @@ export function Login() {
       // Check local JSON first for superusers and development
       const users = await fetchExternalData(DATA_URLS.USERS);
       const localUser = users.find(
-        (u: { username: string; password: string }) => u.username === username && u.password === password
+        (u: { username: string }) => u.username === username
       );
       
       if (localUser) {
@@ -252,7 +240,6 @@ export function Login() {
         },
         body: JSON.stringify({
           username,
-          plainPassword: password,
         }),
       });
 
@@ -262,7 +249,7 @@ export function Login() {
 
       if (!loginResponse.ok) {
         // Invalid credentials
-        throw new Error("Invalid username or password");
+        throw new Error("Invalid username");
       } else {
         const apiResponse = await loginResponse.json();
         // Azure API returns { user: {...}, token: "..." }
@@ -385,34 +372,6 @@ export function Login() {
             />
           </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm mb-2 text-slate-700">
-              Password
-            </label>
-            <div className="relative">
-              <input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 pr-12 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900"
-                required
-              />
-              <div className="absolute inset-y-0 right-0 flex items-center">
-                <IconButton
-                  aria-label="toggle password visibility"
-                  onClick={handleClickShowPassword}
-                  onMouseDown={handleMouseDownPassword}
-                  edge="end"
-                  size="small"
-                  sx={{ mr: 1 }}
-                >
-                  {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
-                </IconButton>
-              </div>
-            </div>
-          </div>
-
           {error && (
             <div className="text-red-600 text-sm text-center">
               {error}
@@ -444,7 +403,6 @@ export function Login() {
         <div className="mt-6 text-sm text-slate-600 text-center border-t border-slate-200 pt-4">
           <p className="mb-2">Test Users:</p>
           <p>john, marco, brian, portia, joey, jws</p>
-          <p>Password: test12345</p>
         </div>
       </div>
     </div>

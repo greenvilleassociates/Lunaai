@@ -8,6 +8,7 @@ import { ManagerManagement } from "./ManagerManagement";
 import { CompanyEvents } from "./CompanyEvents";
 import { InstanceManagement } from "./InstanceManagement";
 import { Administrator as UsersBuCompaniesGroups } from "./Administrator";
+import { AdminReports } from "./AdminReports";
 import { UserService, CompanyService, User, Company } from "../services/dataService";
 
 interface TabPanelProps {
@@ -159,6 +160,7 @@ export function AdministratorTabbed() {
           <Tab label="Managers" />
           <Tab label="Instances" />
           {isSuperUser && <Tab label="Events" />}
+          <Tab label="Reports" />
         </Tabs>
       </Paper>
 
@@ -206,6 +208,12 @@ export function AdministratorTabbed() {
           </div>
         </TabPanel>
       )}
+
+      <TabPanel value={activeTab} index={7}>
+        <div className="space-y-6">
+          <AdminReports isSuperUser={isSuperUser} currentCompanyId={currentCompany?.companyId} />
+        </div>
+      </TabPanel>
     </div>
   );
 }
