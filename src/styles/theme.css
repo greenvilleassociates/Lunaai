@@ -1,5 +1,15 @@
 @custom-variant dark (&:is(.dark *));
 
+/* Flash animation for Luna logo - 1 flash per 2 seconds */
+@keyframes flash {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
 :root {
   --font-size: 10pt;
   --font-size-heading: 12pt;

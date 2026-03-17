@@ -217,7 +217,11 @@ export function Home() {
                   <Link to="/login" className="text-blue-600 hover:underline font-medium">
                     log in
                   </Link>{" "}
-                  to submit questions to LunaAI
+                  or{" "}
+                  <Link to="/register" className="text-blue-600 hover:underline font-medium">
+                    register
+                  </Link>{" "}
+                  for an account to submit questions to LunaAI
                 </p>
               </Box>
             )}
