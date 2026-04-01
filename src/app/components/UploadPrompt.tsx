@@ -221,7 +221,7 @@ export function UploadPrompt() {
       if (shouldCallAIActions) {
         try {
           console.log(`🤖 Attempting to queue file for AI processing: ${data.blobUrl}`);
-          const aiActionsUrl = getApiUrl(API_CONFIG.ENDPOINTS.AI_ACTIONS_VOICE); // POST to /api/aiactions/voice/1
+          const aiActionsUrl = getApiUrl(API_CONFIG.ENDPOINTS.AI_ACTIONS_VOICE("1")); // POST to /api/aiactions/voice/1
           
           console.log(`📡 AI Actions URL: ${aiActionsUrl}`);
           

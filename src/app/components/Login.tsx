@@ -470,8 +470,8 @@ export function Login() {
                 </svg>
                 <h4 className="font-semibold text-green-400">Current Build</h4>
               </div>
-              <p className="text-2xl font-bold text-white mb-1">Version 10.0</p>
-              <p className="text-xs text-slate-400">Released: March 17, 2026</p>
+              <p className="text-2xl font-bold text-white mb-1">Version 11.0</p>
+              <p className="text-xs text-slate-400">Released: April 1, 2026</p>
             </div>
 
             {/* System Status */}
@@ -515,11 +515,11 @@ export function Login() {
               <ul className="text-xs text-slate-300 space-y-2">
                 <li className="flex items-start gap-2">
                   <span className="text-purple-400 mt-0.5">•</span>
-                  <span>Registration changes</span>
+                  <span>Updated Azure Function Calls</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-purple-400 mt-0.5">•</span>
-                  <span>Bug fixes</span>
+                  <span>Improved Voice Processing</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-purple-400 mt-0.5">•</span>
