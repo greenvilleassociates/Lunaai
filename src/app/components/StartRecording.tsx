@@ -38,6 +38,7 @@ export function StartRecording() {
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const mimeTypeRef = useRef<string>('audio/mp4');
   const timerRef = useRef<number | null>(null);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -60,7 +61,15 @@ export function StartRecording() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
       
-      const mediaRecorder = new MediaRecorder(stream);
+      const mimeType = MediaRecorder.isTypeSupported('audio/mp4')
+        ? 'audio/mp4'
+        : MediaRecorder.isTypeSupported('audio/mpeg')
+        ? 'audio/mpeg'
+        : MediaRecorder.isTypeSupported('audio/x-ms-wma')
+        ? 'audio/x-ms-wma'
+        : 'audio/wav';
+      mimeTypeRef.current = mimeType;
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -71,7 +80,7 @@ export function StartRecording() {
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         const url = URL.createObjectURL(audioBlob);
         setAudioURL(url);
         
@@ -185,7 +194,7 @@ export function StartRecording() {
       url: audioURL,
       duration: recordingTime,
       createdAt: new Date().toLocaleString(),
-      blob: new Blob(audioChunksRef.current, { type: "audio/webm" }),
+      blob: new Blob(audioChunksRef.current, { type: mimeTypeRef.current }),
     };
 
     setRecordings((prev) => [...prev, recording]);
@@ -226,7 +235,8 @@ export function StartRecording() {
     );
 
     // Convert blob to File object
-    const file = new File([recording.blob], `${recording.name}.webm`, { type: "audio/webm" });
+    const ext = mimeTypeRef.current === 'audio/mp4' ? 'mp4' : mimeTypeRef.current === 'audio/mpeg' ? 'mp3' : mimeTypeRef.current === 'audio/x-ms-wma' ? 'wma' : 'wav';
+    const file = new File([recording.blob], `${recording.name}.${ext}`, { type: mimeTypeRef.current });
 
     const formData = new FormData();
     formData.append("file", file);
@@ -268,7 +278,7 @@ export function StartRecording() {
       if (shouldCallAIActions) {
         try {
           console.log(`🤖 Attempting to queue file for AI processing: ${data.blobUrl}`);
-          const aiActionsUrl = getApiUrl(API_CONFIG.ENDPOINTS.AI_ACTIONS_VOICE);
+          const aiActionsUrl = getApiUrl(API_CONFIG.ENDPOINTS.AI_ACTIONS_VOICE("1"));
 
           // Get user information
           const uid = localStorage.getItem("uid");
@@ -278,7 +288,7 @@ export function StartRecording() {
 
           const aiActionsPayload = {
             blobUrl: data.blobUrl,
-            fileName: data.fileName || `${recording.name}.webm`,
+            fileName: data.fileName || `${recording.name}.${ext}`,
             userId: userid ? parseInt(userid) : 1,
             language: "english",
             emailTo: email,
