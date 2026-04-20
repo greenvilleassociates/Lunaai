@@ -70,52 +70,57 @@ export function detectPlatform(): PlatformInfo {
 
 /**
  * Get platform-optimized audio format priority list
+ * WAV format is prioritized as the default for best Azure Speech-to-Text accuracy
  */
 export function getPlatformOptimizedFormats(platform: PlatformInfo): AudioFormatConfig[] {
   const formats: AudioFormatConfig[] = [];
 
-  // iOS/Safari - prefer MP4/AAC (best compatibility)
+  // All platforms - prefer WAV/PCM for best speech-to-text accuracy
+  // WAV is Microsoft's recommended format for Azure Speech Services
+
+  // iOS/Safari
   if (platform.os === 'ios' || platform.browser === 'safari') {
     formats.push(
+      { mimeType: 'audio/wav', fileExtension: 'wav', description: 'WAV/PCM 16kHz', quality: 'Lossless' },
       { mimeType: 'audio/mp4', fileExtension: 'mp4', description: 'MP4/AAC', quality: 'High' },
       { mimeType: 'audio/mp4;codecs=mp4a.40.2', fileExtension: 'mp4', description: 'MP4/AAC (LC)', quality: 'High' },
-      { mimeType: 'audio/wav', fileExtension: 'wav', description: 'WAV/PCM', quality: 'Lossless' },
       { mimeType: 'audio/webm;codecs=opus', fileExtension: 'webm', description: 'WebM/Opus', quality: 'High' }
     );
   }
-  // Android - prefer WebM/Opus
+  // Android
   else if (platform.os === 'android') {
     formats.push(
+      { mimeType: 'audio/wav', fileExtension: 'wav', description: 'WAV/PCM 16kHz', quality: 'Lossless' },
       { mimeType: 'audio/webm;codecs=opus', fileExtension: 'webm', description: 'WebM/Opus', quality: 'High' },
       { mimeType: 'audio/webm', fileExtension: 'webm', description: 'WebM', quality: 'High' },
       { mimeType: 'audio/mp4', fileExtension: 'mp4', description: 'MP4/AAC', quality: 'High' },
       { mimeType: 'audio/ogg;codecs=opus', fileExtension: 'ogg', description: 'OGG/Opus', quality: 'High' }
     );
   }
-  // Chrome/Edge on desktop - prefer WebM/Opus
+  // Chrome/Edge on desktop
   else if (platform.browser === 'chrome' || platform.browser === 'edge') {
     formats.push(
+      { mimeType: 'audio/wav', fileExtension: 'wav', description: 'WAV/PCM 16kHz', quality: 'Lossless' },
       { mimeType: 'audio/webm;codecs=opus', fileExtension: 'webm', description: 'WebM/Opus', quality: 'High' },
       { mimeType: 'audio/webm', fileExtension: 'webm', description: 'WebM', quality: 'High' },
-      { mimeType: 'audio/wav', fileExtension: 'wav', description: 'WAV/PCM', quality: 'Lossless' },
       { mimeType: 'audio/ogg;codecs=opus', fileExtension: 'ogg', description: 'OGG/Opus', quality: 'High' }
     );
   }
-  // Firefox - prefer OGG/Opus
+  // Firefox
   else if (platform.browser === 'firefox') {
     formats.push(
+      { mimeType: 'audio/wav', fileExtension: 'wav', description: 'WAV/PCM 16kHz', quality: 'Lossless' },
       { mimeType: 'audio/ogg;codecs=opus', fileExtension: 'ogg', description: 'OGG/Opus', quality: 'High' },
-      { mimeType: 'audio/webm;codecs=opus', fileExtension: 'webm', description: 'WebM/Opus', quality: 'High' },
-      { mimeType: 'audio/wav', fileExtension: 'wav', description: 'WAV/PCM', quality: 'Lossless' }
+      { mimeType: 'audio/webm;codecs=opus', fileExtension: 'webm', description: 'WebM/Opus', quality: 'High' }
     );
   }
   // Default fallback
   else {
     formats.push(
+      { mimeType: 'audio/wav', fileExtension: 'wav', description: 'WAV/PCM 16kHz', quality: 'Lossless' },
       { mimeType: 'audio/webm;codecs=opus', fileExtension: 'webm', description: 'WebM/Opus', quality: 'High' },
       { mimeType: 'audio/webm', fileExtension: 'webm', description: 'WebM', quality: 'Medium' },
       { mimeType: 'audio/ogg;codecs=opus', fileExtension: 'ogg', description: 'OGG/Opus', quality: 'High' },
-      { mimeType: 'audio/wav', fileExtension: 'wav', description: 'WAV/PCM', quality: 'Lossless' },
       { mimeType: 'audio/mp4', fileExtension: 'mp4', description: 'MP4/AAC', quality: 'High' }
     );
   }
