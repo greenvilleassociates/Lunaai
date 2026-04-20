@@ -486,8 +486,8 @@ export function Login() {
                 </svg>
                 <h4 className="font-semibold text-green-400">Current Build</h4>
               </div>
-              <p className="text-2xl font-bold text-white mb-1">Version 11.0</p>
-              <p className="text-xs text-slate-400 mb-2">Released: March 17, 2026</p>
+              <p className="text-2xl font-bold text-white mb-1">Version 13.0</p>
+              <p className="text-xs text-slate-400 mb-2">Released: April 20, 2026</p>
               <a 
                 href="/versionhistory.html" 
                 target="_blank" 
@@ -542,11 +542,11 @@ export function Login() {
               <ul className="text-xs text-slate-300 space-y-2">
                 <li className="flex items-start gap-2">
                   <span className="text-purple-400 mt-0.5">•</span>
-                  <span>Registration changes</span>
+                  <span>Voice Codec Improvements</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-purple-400 mt-0.5">•</span>
-                  <span>Bug fixes</span>
+                  <span>Stability Update</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-purple-400 mt-0.5">•</span>
