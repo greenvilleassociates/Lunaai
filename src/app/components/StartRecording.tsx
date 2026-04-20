@@ -9,10 +9,13 @@ import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import AudioFileIcon from "@mui/icons-material/AudioFile";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import { CircularProgress } from "@mui/material";
+import InfoIcon from "@mui/icons-material/Info";
+import { CircularProgress, Chip } from "@mui/material";
 import { getApiUrl } from "../config/api";
 import { getFileUploadHeaders } from "../utils/auth";
 import { API_CONFIG } from "../config/api";
+import { getBestAudioFormat, detectPlatform, getSupportedFormats, type AudioFormatConfig } from "../utils/audioFormatDetection";
+import { createVoiceToTextPayload, mapToSupportedMediaType } from "../utils/mediaTypeMapper";
 
 interface Recording {
   id: string;
@@ -35,15 +38,31 @@ export function StartRecording() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [permissionError, setPermissionError] = useState<string | null>(null);
-  
+  const [currentFormat, setCurrentFormat] = useState<AudioFormatConfig | null>(null);
+  const [platformInfo, setPlatformInfo] = useState<ReturnType<typeof detectPlatform> | null>(null);
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const mimeTypeRef = useRef<string>('audio/mp4');
   const timerRef = useRef<number | null>(null);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
+    // Detect platform and set format on mount
+    const platform = detectPlatform();
+    setPlatformInfo(platform);
+
+    // Get user preference from settings
+    const userPreference = localStorage.getItem("voiceEncodingFormat");
+    const bestFormat = getBestAudioFormat(userPreference || undefined);
+    setCurrentFormat(bestFormat);
+
+    console.log('🎙️ Recording initialized:', {
+      platform,
+      userPreference,
+      selectedFormat: bestFormat
+    });
+
     return () => {
       // Cleanup on unmount
       if (timerRef.current) {
@@ -58,18 +77,34 @@ export function StartRecording() {
   const startRecording = async () => {
     try {
       setPermissionError(null); // Clear any previous errors
+
+      // Get the best audio format for this platform
+      const userPreference = localStorage.getItem("voiceEncodingFormat");
+      const format = getBestAudioFormat(userPreference || undefined);
+      setCurrentFormat(format);
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
-      
-      const mimeType = MediaRecorder.isTypeSupported('audio/mp4')
-        ? 'audio/mp4'
-        : MediaRecorder.isTypeSupported('audio/mpeg')
-        ? 'audio/mpeg'
-        : MediaRecorder.isTypeSupported('audio/x-ms-wma')
-        ? 'audio/x-ms-wma'
-        : 'audio/wav';
-      mimeTypeRef.current = mimeType;
-      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+
+      // Create MediaRecorder with the selected format
+      let mediaRecorder: MediaRecorder;
+      try {
+        mediaRecorder = new MediaRecorder(stream, {
+          mimeType: format.mimeType || undefined
+        });
+        console.log('✓ Recording with format:', format);
+      } catch (formatError) {
+        // Fallback to default if specific format fails
+        console.warn('⚠️ Selected format not supported, using browser default:', formatError);
+        mediaRecorder = new MediaRecorder(stream);
+        setCurrentFormat({
+          mimeType: '',
+          fileExtension: 'webm',
+          description: 'Browser Default',
+          quality: 'Unknown'
+        });
+      }
+
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -80,10 +115,12 @@ export function StartRecording() {
       };
 
       mediaRecorder.onstop = () => {
+        const actualFormat = currentFormat || format;
+        const mimeType = actualFormat.mimeType || 'audio/webm';
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         const url = URL.createObjectURL(audioBlob);
         setAudioURL(url);
-        
+
         // Store the blob for upload later
         const recording: Recording = {
           id: Date.now().toString(),
@@ -93,9 +130,9 @@ export function StartRecording() {
           createdAt: new Date().toLocaleString(),
           blob: audioBlob,
         };
-        
+
         // We'll save this to the recordings list when user clicks "Save"
-        
+
         // Stop all tracks
         if (streamRef.current) {
           streamRef.current.getTracks().forEach(track => track.stop());
@@ -112,16 +149,19 @@ export function StartRecording() {
         setRecordingTime((prev) => prev + 1);
       }, 1000);
     } catch (error: any) {
-      console.error("Error accessing microphone:", error);
-      
+      // Only log unexpected errors to console
+      if (error.name !== "NotAllowedError" && error.name !== "PermissionDeniedError") {
+        console.error("Error accessing microphone:", error);
+      }
+
       let errorMsg = "Unable to access microphone. ";
-      
+
       if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
         errorMsg += "Please allow microphone access in your browser settings:\n\n";
-        errorMsg += "Chrome/Edge: Click the camera icon in the address bar, select 'Always allow', then click 'Done'\n";
+        errorMsg += "Chrome/Edge: Click the camera/microphone icon in the address bar, select 'Allow', then click 'Done'\n";
         errorMsg += "Firefox: Click the microphone icon in the address bar and select 'Allow'\n";
         errorMsg += "Safari: Go to Safari > Settings > Websites > Microphone, then select 'Allow'\n\n";
-        errorMsg += "After granting permission, click 'Retry' or refresh the page.";
+        errorMsg += "After granting permission, click 'Retry' below.";
       } else if (error.name === "NotFoundError") {
         errorMsg += "No microphone detected. Please connect a microphone and try again.";
       } else if (error.name === "NotReadableError") {
@@ -129,7 +169,7 @@ export function StartRecording() {
       } else {
         errorMsg += `Error: ${error.message}`;
       }
-      
+
       setPermissionError(errorMsg);
     }
   };
@@ -188,17 +228,24 @@ export function StartRecording() {
   const saveRecording = () => {
     if (!audioURL) return;
 
+    const format = currentFormat || {
+      mimeType: 'audio/webm',
+      fileExtension: 'webm',
+      description: 'Browser Default',
+      quality: 'Unknown'
+    };
+
     const recording: Recording = {
       id: Date.now().toString(),
       name: `Recording ${new Date().toLocaleString()}`,
       url: audioURL,
       duration: recordingTime,
       createdAt: new Date().toLocaleString(),
-      blob: new Blob(audioChunksRef.current, { type: mimeTypeRef.current }),
+      blob: new Blob(audioChunksRef.current, { type: format.mimeType || 'audio/webm' }),
     };
 
     setRecordings((prev) => [...prev, recording]);
-    
+
     // Reset for new recording
     setAudioURL(null);
     setRecordingTime(0);
@@ -234,16 +281,25 @@ export function StartRecording() {
       prev.map((r) => (r.id === recording.id ? { ...r, uploading: true, uploadError: undefined } : r))
     );
 
+    // Determine file extension and MIME type from the blob
+    const blobType = recording.blob.type || 'audio/webm';
+    const format = currentFormat || { fileExtension: 'webm', mimeType: blobType };
+    const fileExtension = format.fileExtension || 'webm';
+
+    // Map to supported MediaType for Azure
+    const supportedMediaType = mapToSupportedMediaType(blobType);
+    console.log(`📤 Uploading to Azure: ${blobType} → ${supportedMediaType}`);
+
     // Convert blob to File object
-    const ext = mimeTypeRef.current === 'audio/mp4' ? 'mp4' : mimeTypeRef.current === 'audio/mpeg' ? 'mp3' : mimeTypeRef.current === 'audio/x-ms-wma' ? 'wma' : 'wav';
-    const file = new File([recording.blob], `${recording.name}.${ext}`, { type: mimeTypeRef.current });
+    const file = new File([recording.blob], `${recording.name}.${fileExtension}`, { type: blobType });
 
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("mediaType", supportedMediaType);
 
     try {
-      // Use the exact API endpoint structure
-      const apiUrl = getApiUrl(`/File/upload?fileCategory=${fileCategory}`);
+      // Use the exact API endpoint structure with mediaType parameter
+      const apiUrl = getApiUrl(`/File/upload?fileCategory=${fileCategory}&mediaType=${encodeURIComponent(supportedMediaType)}`);
 
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -278,7 +334,7 @@ export function StartRecording() {
       if (shouldCallAIActions) {
         try {
           console.log(`🤖 Attempting to queue file for AI processing: ${data.blobUrl}`);
-          const aiActionsUrl = getApiUrl(API_CONFIG.ENDPOINTS.AI_ACTIONS_VOICE("1"));
+          const aiActionsUrl = getApiUrl(API_CONFIG.ENDPOINTS.AI_ACTIONS_VOICE);
 
           // Get user information
           const uid = localStorage.getItem("uid");
@@ -286,15 +342,16 @@ export function StartRecording() {
           const email = localStorage.getItem("email") || "user@capitoltechnology.net";
           const userid = localStorage.getItem("userid");
 
-          const aiActionsPayload = {
+          // Create Service Bus payload using helper
+          const aiActionsPayload = createVoiceToTextPayload({
             blobUrl: data.blobUrl,
-            fileName: data.fileName || `${recording.name}.${ext}`,
+            fileName: data.fileName || `${recording.name}.${fileExtension}`,
+            mimeType: blobType,
             userId: userid ? parseInt(userid) : 1,
-            language: "english",
-            emailTo: email,
-            emailSubject: "RecordedVoicePrompt",
-            emailBody: "You recorded a voice prompt"
-          };
+            language: "english"
+          });
+
+          console.log(`📦 Service Bus Payload (${blobType} → ${aiActionsPayload.MediaType}):`, JSON.stringify(aiActionsPayload, null, 2));
 
           const aiResponse = await fetch(aiActionsUrl, {
             method: "POST",
@@ -657,6 +714,67 @@ export function StartRecording() {
           </div>
         )}
 
+        {/* Platform & Format Info */}
+        {platformInfo && currentFormat && (
+          <div className="bg-slate-50 border border-slate-300 rounded-lg p-6 mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <InfoIcon className="text-slate-700" />
+              <h3 className="font-semibold text-slate-900">Recording Configuration</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-slate-600 mb-2">Platform Detected</p>
+                <div className="flex gap-2 flex-wrap">
+                  <Chip
+                    label={platformInfo.os.toUpperCase()}
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                  <Chip
+                    label={platformInfo.browser.toUpperCase()}
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                  {platformInfo.isMobile && (
+                    <Chip
+                      label="MOBILE"
+                      size="small"
+                      color="secondary"
+                      variant="outlined"
+                    />
+                  )}
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-slate-600 mb-2">Audio Format</p>
+                <div className="flex gap-2 flex-wrap">
+                  <Chip
+                    label={currentFormat.description}
+                    size="small"
+                    color="success"
+                  />
+                  <Chip
+                    label={`Quality: ${currentFormat.quality}`}
+                    size="small"
+                    variant="outlined"
+                  />
+                </div>
+                {currentFormat.mimeType && (
+                  <p className="text-xs text-slate-500 mt-1 font-mono">
+                    {currentFormat.mimeType}
+                  </p>
+                )}
+              </div>
+            </div>
+            <p className="text-xs text-slate-600 mt-3">
+              Format automatically selected based on your platform and browser capabilities.
+              {localStorage.getItem("voiceEncodingFormat") && " User preference applied from Settings."}
+            </p>
+          </div>
+        )}
+
         {/* Info Section */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
           <h3 className="font-semibold text-blue-900 mb-3">Browser-Based Recording</h3>
@@ -680,6 +798,10 @@ export function StartRecording() {
             <li className="flex items-start gap-2">
               <span className="font-bold">•</span>
               <span>Save multiple recordings and submit them all to LunaAI for AI processing</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="font-bold">•</span>
+              <span>Configure your preferred audio format in Settings → System Settings</span>
             </li>
           </ul>
         </div>

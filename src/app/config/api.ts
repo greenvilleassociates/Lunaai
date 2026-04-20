@@ -98,7 +98,15 @@ export const API_CONFIG = {
     // User Logs (uses /api/Userlog)
     USER_LOG: '/Userlog',
     USER_LOG_BY_ID: (id: number) => `/Userlog/${id}`,
-    
+
+    // Admin Logs (uses /api/Adminlogs)
+    ADMIN_LOGS: '/Adminlogs',
+    ADMIN_LOG_BY_ID: (id: number) => `/Adminlogs/${id}`,
+
+    // API Logs (uses /api/Apilogs)
+    API_LOGS: '/Apilogs',
+    API_LOG_BY_ID: (id: number) => `/Apilogs/${id}`,
+
     // User Sessions (uses /api/Usersession)
     USER_SESSION: '/Usersession',
     USER_SESSION_BY_ID: (id: number) => `/Usersession/${id}`,

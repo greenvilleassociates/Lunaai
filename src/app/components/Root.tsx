@@ -133,6 +133,14 @@ export function Root() {
     return location.pathname.startsWith(path);
   };
 
+  // Check if we're on login or register page - show minimal layout
+  const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
+
+  // If on auth page, just render the outlet without layout
+  if (isAuthPage) {
+    return <Outlet />;
+  }
+
   return (
     <div className="size-full flex flex-col min-h-[1000px]">
       {/* Mobile Warning Banner */}

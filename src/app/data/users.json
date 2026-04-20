@@ -91,10 +91,12 @@
   },
   {
     "uid": "user-007",
+    "userid": 901,
     "username": "guest",
     "password": "guest",
     "role": "guest",
     "companyId": "comp-001",
+    "email": "guest@capitoltechnology.net",
     "address1": "Guest Access",
     "address2": "",
     "city": "Remote",

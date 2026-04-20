@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router";
+import { IconButton } from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { API_CONFIG, getApiUrl } from "../config/api";
 import { DATA_URLS, fetchExternalData } from "../config/dataUrls";
 import lunaLogo from "figma:asset/97a2e4984c2367786c9db0dc16a816860615bd7e.png";
@@ -42,6 +44,7 @@ export function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showWarmupLoader, setShowWarmupLoader] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleWarmupComplete = async () => {
@@ -141,12 +144,15 @@ export function Login() {
         localStorage.setItem("username", localUser.username || username);
         localStorage.setItem("role", localUser.role || "user");
         localStorage.setItem("companyId", localUser.companyId || "comp-001");
+        localStorage.setItem("email", localUser.email || `${localUser.username}@capitoltechnology.net`);
         localStorage.setItem("loginTime", loginTime);
         localStorage.setItem("latitude", latitude);
         localStorage.setItem("longitude", longitude);
         localStorage.setItem("ipAddress", ipAddress);
         
         console.log("LocalStorage updated with uid:", localStorage.getItem("uid"));
+        console.log("LocalStorage updated with userid:", localStorage.getItem("userid"));
+        console.log("LocalStorage updated with email:", localStorage.getItem("email"));
         console.log("LocalStorage updated with companyId:", localStorage.getItem("companyId"));
         
         // Post login log to Azure API
@@ -376,7 +382,7 @@ export function Login() {
     <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
       <div className="w-full h-[800px] flex flex-col items-center">
         {/* Login Form */}
-        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg">
           {/* Luna Logo inside form */}
           <div className="flex justify-center mb-6">
             <img src={lunaLogo} alt="LunaAI Logo" className="w-[60px] h-[60px] rounded-lg object-cover" />
@@ -394,7 +400,7 @@ export function Login() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900"
+                className="w-[calc(100%-60px)] px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900"
                 required
               />
             </div>
@@ -403,14 +409,24 @@ export function Login() {
               <label htmlFor="password" className="block text-sm mb-2 text-slate-700">
                 Password
               </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900"
-                required
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="flex-1 px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  required
+                />
+                <IconButton
+                  onClick={() => setShowPassword(!showPassword)}
+                  size="small"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="border border-slate-300 rounded-md"
+                >
+                  {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                </IconButton>
+              </div>
             </div>
 
             {error && (
@@ -451,7 +467,7 @@ export function Login() {
         </div>
 
         {/* System Messages Panel - Row Layout */}
-        <div className="w-full mt-[100px] max-h-[350px] bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-lg shadow-lg text-white overflow-auto">
+        <div className="w-full mt-[100px] max-h-[350px] bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-lg shadow-lg text-white overflow-auto hidden min-[700px]:block">
           <div className="border-b border-slate-600 pb-3 mb-4">
             <h3 className="text-xl font-bold text-center flex items-center justify-center gap-2">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -470,8 +486,19 @@ export function Login() {
                 </svg>
                 <h4 className="font-semibold text-green-400">Current Build</h4>
               </div>
-              <p className="text-2xl font-bold text-white mb-1">Version 12.0</p>
-              <p className="text-xs text-slate-400">Released: April 1, 2026</p>
+              <p className="text-2xl font-bold text-white mb-1">Version 11.0</p>
+              <p className="text-xs text-slate-400 mb-2">Released: March 17, 2026</p>
+              <a 
+                href="/versionhistory.html" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 underline transition-colors"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                View full history
+              </a>
             </div>
 
             {/* System Status */}
@@ -515,11 +542,11 @@ export function Login() {
               <ul className="text-xs text-slate-300 space-y-2">
                 <li className="flex items-start gap-2">
                   <span className="text-purple-400 mt-0.5">•</span>
-                  <span>Voice Codec Improvements</span>
+                  <span>Registration changes</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-purple-400 mt-0.5">•</span>
-                  <span>Stability Update</span>
+                  <span>Bug fixes</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-purple-400 mt-0.5">•</span>

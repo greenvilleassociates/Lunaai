@@ -10,6 +10,7 @@ import { CircularProgress, Alert } from "@mui/material";
 import { getApiUrl } from "../config/api";
 import { getFileUploadHeaders } from "../utils/auth";
 import { API_CONFIG } from "../config/api";
+import { createVoiceToTextPayload, mapToSupportedMediaType } from "../utils/mediaTypeMapper";
 
 interface AudioFile {
   id: string;
@@ -176,16 +177,21 @@ export function UploadPrompt() {
     }
 
     // Mark file as uploading
-    setUploadedFiles((prev) => 
+    setUploadedFiles((prev) =>
       prev.map((f) => (f.id === audioFile.id ? { ...f, uploading: true, uploadError: undefined } : f))
     );
 
+    // Map to supported MediaType for Azure
+    const supportedMediaType = mapToSupportedMediaType(audioFile.type);
+    console.log(`📤 Uploading to Azure: ${audioFile.type} → ${supportedMediaType}`);
+
     const formData = new FormData();
     formData.append("file", audioFile.file);
+    formData.append("mediaType", supportedMediaType);
 
     try {
-      // Use the exact API endpoint structure from your curl example
-      const apiUrl = getApiUrl(`/File/upload?fileCategory=${fileCategory}`);
+      // Use the exact API endpoint structure with mediaType parameter
+      const apiUrl = getApiUrl(`/File/upload?fileCategory=${fileCategory}&mediaType=${encodeURIComponent(supportedMediaType)}`);
       
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -221,7 +227,7 @@ export function UploadPrompt() {
       if (shouldCallAIActions) {
         try {
           console.log(`🤖 Attempting to queue file for AI processing: ${data.blobUrl}`);
-          const aiActionsUrl = getApiUrl(API_CONFIG.ENDPOINTS.AI_ACTIONS_VOICE("1")); // POST to /api/aiactions/voice/1
+          const aiActionsUrl = getApiUrl(API_CONFIG.ENDPOINTS.AI_ACTIONS_VOICE); // POST to /api/aiactions/voice/1
           
           console.log(`📡 AI Actions URL: ${aiActionsUrl}`);
           
@@ -232,18 +238,17 @@ export function UploadPrompt() {
           const userid = localStorage.getItem("userid"); // Get numeric user ID
           
           console.log(`👤 User Info - uid: ${uid}, userid: ${userid}, username: ${username}, email: ${email}`);
-          
-          const aiActionsPayload = {
+
+          // Create Service Bus payload using helper
+          const aiActionsPayload = createVoiceToTextPayload({
             blobUrl: data.blobUrl,
             fileName: data.fileName || audioFile.name,
+            mimeType: audioFile.type,
             userId: userid ? parseInt(userid) : 1,
-            language: "english",
-            emailTo: email,
-            emailSubject: "UploadedFile",
-            emailBody: "You uploaded a voice prompt"
-          };
-          
-          console.log(`📦 AI Actions POST Payload:`, JSON.stringify(aiActionsPayload, null, 2));
+            language: "english"
+          });
+
+          console.log(`📦 Service Bus Payload (${audioFile.type} → ${aiActionsPayload.MediaType}):`, JSON.stringify(aiActionsPayload, null, 2));
           
           const aiResponse = await fetch(aiActionsUrl, {
             method: "POST",

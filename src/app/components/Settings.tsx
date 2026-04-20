@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Box, Typography, Tabs, Tab, Paper, Alert, Chip, Button } from "@mui/material";
-import { Settings as SettingsIcon, Psychology, Security, Tune, Api, Memory, Build, OpenInNew } from "@mui/icons-material";
+import { Box, Typography, Tabs, Tab, Paper, Alert, Chip, Button, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent } from "@mui/material";
+import { Settings as SettingsIcon, Psychology, Security, Tune, Api, Memory, Build, OpenInNew, RecordVoiceOver } from "@mui/icons-material";
 import { LLMAgentConfig } from "./LLMAgentConfig";
 import { CustomSLM } from "./CustomSLM";
 
@@ -29,6 +29,7 @@ function TabPanel(props: TabPanelProps) {
 export function Settings() {
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [voiceEncodingFormat, setVoiceEncodingFormat] = useState<string>("wav-16khz");
 
   // Check if user is superuser
   const currentUserRole = localStorage.getItem("role");
@@ -37,8 +38,19 @@ export function Settings() {
   const username = localStorage.getItem("username") || "User";
 
   useEffect(() => {
+    // Load saved voice encoding format from localStorage
+    const savedFormat = localStorage.getItem("voiceEncodingFormat");
+    if (savedFormat) {
+      setVoiceEncodingFormat(savedFormat);
+    }
     setLoading(false);
   }, []);
+
+  const handleVoiceEncodingChange = (event: SelectChangeEvent) => {
+    const newFormat = event.target.value;
+    setVoiceEncodingFormat(newFormat);
+    localStorage.setItem("voiceEncodingFormat", newFormat);
+  };
 
   if (loading) {
     return (
@@ -221,32 +233,189 @@ export function Settings() {
       <TabPanel value={activeTab} index={3}>
         <Box>
           <Typography variant="h5" className="mb-4">System Settings</Typography>
-          <Paper className="p-6">
-            <Typography variant="body1" color="text.secondary" className="mb-4">
-              General system configuration and preferences.
-            </Typography>
-            <Box className="space-y-4">
-              <Box className="p-4 border border-slate-200 rounded">
-                <Typography variant="subtitle1" className="mb-2 font-semibold">Company Colors</Typography>
-                <Box className="flex gap-4 items-center">
-                  <Box className="flex items-center gap-2">
-                    <div className="w-12 h-12 bg-black border border-slate-300 rounded"></div>
-                    <Typography variant="body2">Black</Typography>
-                  </Box>
-                  <Box className="flex items-center gap-2">
-                    <div className="w-12 h-12 rounded" style={{ backgroundColor: "#8B0000" }}></div>
-                    <Typography variant="body2">Dark Red (#8B0000)</Typography>
+          <Box className="space-y-4">
+            <Paper className="p-6">
+              <Typography variant="body1" color="text.secondary" className="mb-4">
+                General system configuration and preferences.
+              </Typography>
+              <Box className="space-y-4">
+                <Box className="p-4 border border-slate-200 rounded">
+                  <Typography variant="subtitle1" className="mb-2 font-semibold">Company Colors</Typography>
+                  <Box className="flex gap-4 items-center">
+                    <Box className="flex items-center gap-2">
+                      <div className="w-12 h-12 bg-black border border-slate-300 rounded"></div>
+                      <Typography variant="body2">Black</Typography>
+                    </Box>
+                    <Box className="flex items-center gap-2">
+                      <div className="w-12 h-12 rounded" style={{ backgroundColor: "#8B0000" }}></div>
+                      <Typography variant="body2">Dark Red (#8B0000)</Typography>
+                    </Box>
                   </Box>
                 </Box>
+                <Box className="p-4 border border-slate-200 rounded">
+                  <Typography variant="subtitle1" className="mb-2 font-semibold">Company Name</Typography>
+                  <Typography variant="body2" className="text-slate-600">
+                    Capitol Technology Solutions
+                  </Typography>
+                </Box>
               </Box>
-              <Box className="p-4 border border-slate-200 rounded">
-                <Typography variant="subtitle1" className="mb-2 font-semibold">Company Name</Typography>
-                <Typography variant="body2" className="text-slate-600">
-                  Capitol Technology Solutions
+            </Paper>
+
+            {/* Voice Encoding Settings */}
+            <Paper className="p-6">
+              <Box className="flex items-center gap-2 mb-4">
+                <RecordVoiceOver className="text-slate-700" />
+                <Typography variant="h6">Azure Speech-to-Text Voice Encoding</Typography>
+              </Box>
+              <Typography variant="body2" color="text.secondary" className="mb-4">
+                Select the default audio format for voice recording and Azure Speech-to-Text ingestion.
+              </Typography>
+
+              <Alert severity="info" className="mb-4">
+                WAV (PCM) format is recommended by Microsoft for optimal speech recognition accuracy.
+              </Alert>
+
+              <FormControl fullWidth>
+                <InputLabel id="voice-encoding-label">Audio Format</InputLabel>
+                <Select
+                  labelId="voice-encoding-label"
+                  id="voice-encoding-select"
+                  value={voiceEncodingFormat}
+                  label="Audio Format"
+                  onChange={handleVoiceEncodingChange}
+                >
+                  <MenuItem value="wav-16khz">
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        WAV (PCM) - 16 kHz, 16-bit, mono
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Recommended for speech-to-text (standard quality)
+                      </Typography>
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="wav-8khz">
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        WAV (PCM) - 8 kHz, 16-bit, mono
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Telephony quality (smaller file size)
+                      </Typography>
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="mp3">
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        MP3 - Compressed audio
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Smaller file size, may reduce accuracy
+                      </Typography>
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="ogg-opus">
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        OGG/Opus - Compressed audio
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Modern codec, good quality-to-size ratio
+                      </Typography>
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="raw-pcm">
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        Raw PCM stream
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Uncompressed, requires manual formatting
+                      </Typography>
+                    </Box>
+                  </MenuItem>
+                </Select>
+              </FormControl>
+
+              <Box className="mt-4 p-4 bg-slate-50 rounded border border-slate-200">
+                <Typography variant="subtitle2" className="mb-2 font-semibold">
+                  Current Selection Details
                 </Typography>
+                {voiceEncodingFormat === "wav-16khz" && (
+                  <Box>
+                    <Typography variant="body2" className="text-slate-700">
+                      <strong>Format:</strong> WAV container with PCM encoding
+                    </Typography>
+                    <Typography variant="body2" className="text-slate-700">
+                      <strong>Sample Rate:</strong> 16 kHz
+                    </Typography>
+                    <Typography variant="body2" className="text-slate-700">
+                      <strong>Bit Depth:</strong> 16-bit
+                    </Typography>
+                    <Typography variant="body2" className="text-slate-700">
+                      <strong>Channels:</strong> Mono
+                    </Typography>
+                    <Typography variant="body2" className="text-slate-700 mt-2">
+                      <strong>Use Case:</strong> Best for general speech recognition with high accuracy
+                    </Typography>
+                  </Box>
+                )}
+                {voiceEncodingFormat === "wav-8khz" && (
+                  <Box>
+                    <Typography variant="body2" className="text-slate-700">
+                      <strong>Format:</strong> WAV container with PCM encoding
+                    </Typography>
+                    <Typography variant="body2" className="text-slate-700">
+                      <strong>Sample Rate:</strong> 8 kHz
+                    </Typography>
+                    <Typography variant="body2" className="text-slate-700">
+                      <strong>Bit Depth:</strong> 16-bit
+                    </Typography>
+                    <Typography variant="body2" className="text-slate-700">
+                      <strong>Channels:</strong> Mono
+                    </Typography>
+                    <Typography variant="body2" className="text-slate-700 mt-2">
+                      <strong>Use Case:</strong> Telephony and bandwidth-constrained scenarios
+                    </Typography>
+                  </Box>
+                )}
+                {voiceEncodingFormat === "mp3" && (
+                  <Box>
+                    <Typography variant="body2" className="text-slate-700">
+                      <strong>Format:</strong> MP3 compressed audio
+                    </Typography>
+                    <Typography variant="body2" className="text-slate-700 mt-2">
+                      <strong>Use Case:</strong> Reduced file size, suitable when storage is limited
+                    </Typography>
+                  </Box>
+                )}
+                {voiceEncodingFormat === "ogg-opus" && (
+                  <Box>
+                    <Typography variant="body2" className="text-slate-700">
+                      <strong>Format:</strong> OGG container with Opus codec
+                    </Typography>
+                    <Typography variant="body2" className="text-slate-700 mt-2">
+                      <strong>Use Case:</strong> Modern compressed format with good quality
+                    </Typography>
+                  </Box>
+                )}
+                {voiceEncodingFormat === "raw-pcm" && (
+                  <Box>
+                    <Typography variant="body2" className="text-slate-700">
+                      <strong>Format:</strong> Raw PCM data stream (no container)
+                    </Typography>
+                    <Typography variant="body2" className="text-slate-700 mt-2">
+                      <strong>Use Case:</strong> Advanced scenarios requiring custom audio processing
+                    </Typography>
+                  </Box>
+                )}
               </Box>
-            </Box>
-          </Paper>
+
+              <Typography variant="caption" color="text.secondary" className="mt-3 block">
+                This setting is saved locally and will be applied to all voice recording features.
+              </Typography>
+            </Paper>
+          </Box>
         </Box>
       </TabPanel>
 

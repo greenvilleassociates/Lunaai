@@ -8,13 +8,13 @@ interface ApiWarmupLoaderProps {
 
 export function ApiWarmupLoader({ onComplete }: ApiWarmupLoaderProps) {
   const [progress, setProgress] = useState(0);
-  const [statusMessage, setStatusMessage] = useState("Initializing LunaAI...");
+  const [statusMessage, setStatusMessage] = useState("Getting ready.... please wait...");
 
   useEffect(() => {
     // Warm up the API by calling the users endpoint
     const warmupApi = async () => {
       try {
-        setStatusMessage("Waking up API services...");
+        setStatusMessage("Getting ready.... please wait...");
         const usersUrl = getApiUrl(API_CONFIG.ENDPOINTS.USERS);
         
         // Make the API call to wake up the server
@@ -25,10 +25,10 @@ export function ApiWarmupLoader({ onComplete }: ApiWarmupLoaderProps) {
           },
         });
         
-        setStatusMessage("API services ready!");
+        setStatusMessage("Getting ready.... please wait...");
       } catch (error) {
         console.log("API warmup call completed (may be in development mode)");
-        setStatusMessage("Loading application...");
+        setStatusMessage("Getting ready.... please wait...");
       }
     };
 
@@ -94,7 +94,7 @@ export function ApiWarmupLoader({ onComplete }: ApiWarmupLoaderProps) {
           Powered by Capitol Technology Solutions
         </p>
         <p className="text-slate-600 text-xs mt-2">
-          Version 9.0 • Multi-Provider AI Management Platform
+          Version 11.0 • Multi-Provider AI Management Platform
         </p>
       </div>
     </div>

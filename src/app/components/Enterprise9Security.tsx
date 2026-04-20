@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import {
   Box,
   Typography,
@@ -21,6 +21,11 @@ import {
   Select,
   FormControl,
   InputLabel,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Badge,
 } from "@mui/material";
 import {
   Shield,
@@ -36,6 +41,8 @@ import {
   Error,
   CheckCircle,
   AccessTime,
+  Notifications,
+  Delete,
 } from "@mui/icons-material";
 import { API_CONFIG, getApiUrl } from "../config/api";
 
@@ -62,6 +69,15 @@ interface UserSession {
   ipaddress?: string;
   latitude?: string;
   longitude?: string;
+}
+
+interface UserNotification {
+  id: number;
+  type: "info" | "success" | "warning" | "error";
+  title: string;
+  message: string;
+  timestamp: Date;
+  read: boolean;
 }
 
 interface TabPanelProps {
@@ -119,13 +135,66 @@ const MOCK_SYSADMIN_LOGS: LogEntry[] = [
   { id: "sa-005", timestamp: "2026-03-13 13:48:33", user: "admin@cts.com", action: "Database Backup", details: "Initiated manual database backup", ipAddress: "192.168.1.1", location: "Corporate HQ", severity: "success", category: "Maintenance" },
 ];
 
+const MOCK_ADMIN_LOGS: LogEntry[] = [
+  { id: "adm-001", timestamp: "2026-04-20 10:15:30", user: "superadmin@cts.com", action: "Security Policy Update", details: "Updated password complexity requirements", ipAddress: "192.168.1.1", location: "Corporate HQ", severity: "success", category: "Security Policy" },
+  { id: "adm-002", timestamp: "2026-04-20 09:45:12", user: "admin@cts.com", action: "Database Schema Change", details: "Added new column to Users table", ipAddress: "192.168.1.1", location: "Corporate HQ", severity: "warning", category: "Database" },
+  { id: "adm-003", timestamp: "2026-04-20 09:20:55", user: "superadmin@cts.com", action: "System Restart", details: "Scheduled system restart for maintenance", ipAddress: "192.168.1.1", location: "Corporate HQ", severity: "warning", category: "System" },
+  { id: "adm-004", timestamp: "2026-04-20 08:55:40", user: "admin@cts.com", action: "Bulk User Import", details: "Imported 25 new users from HR system", ipAddress: "192.168.1.1", location: "Corporate HQ", severity: "success", category: "User Management" },
+  { id: "adm-005", timestamp: "2026-04-20 08:30:15", user: "superadmin@cts.com", action: "Certificate Renewal", details: "Renewed SSL certificate for luna.capitoltechnology.net", ipAddress: "192.168.1.1", location: "Corporate HQ", severity: "success", category: "Security" },
+];
+
+const MOCK_API_LOGS: LogEntry[] = [
+  { id: "api-001", timestamp: "2026-04-20 10:25:45", user: "john.doe@cts.com", action: "POST /api/Auth/login", details: "Authentication successful - Response: 200 OK", ipAddress: "192.168.1.100", location: "Washington, DC", severity: "success", category: "Authentication" },
+  { id: "api-002", timestamp: "2026-04-20 10:20:30", user: "sarah.smith@cts.com", action: "GET /api/Websearch", details: "Retrieved search history - Response: 200 OK", ipAddress: "192.168.1.105", location: "San Francisco, CA", severity: "info", category: "Data Retrieval" },
+  { id: "api-003", timestamp: "2026-04-20 10:15:22", user: "mike.johnson@cts.com", action: "POST /api/Usersession", details: "Created new session - Response: 201 Created", ipAddress: "192.168.1.110", location: "New York, NY", severity: "success", category: "Session" },
+  { id: "api-004", timestamp: "2026-04-20 10:10:18", user: "unknown", action: "GET /api/Users", details: "Unauthorized access attempt - Response: 401 Unauthorized", ipAddress: "85.143.23.45", location: "Unknown", severity: "error", category: "Security" },
+  { id: "api-005", timestamp: "2026-04-20 10:05:55", user: "emma.davis@cts.com", action: "PUT /api/Users/5", details: "Updated user profile - Response: 200 OK", ipAddress: "192.168.1.115", location: "Chicago, IL", severity: "success", category: "User Management" },
+  { id: "api-006", timestamp: "2026-04-20 10:00:40", user: "alex.wilson@cts.com", action: "POST /api/File/upload", details: "File upload successful - Response: 200 OK", ipAddress: "192.168.1.120", location: "Austin, TX", severity: "success", category: "File Operations" },
+];
+
 export function Enterprise9Security() {
   const [currentTab, setCurrentTab] = useState(0);
   const [userLogs, setUserLogs] = useState<LogEntry[]>(MOCK_USER_LOGS);
   const [userActions, setUserActions] = useState<LogEntry[]>(MOCK_USER_ACTIONS);
   const [authNotices, setAuthNotices] = useState<LogEntry[]>(MOCK_AUTH_NOTICES);
   const [sysAdminLogs, setSysAdminLogs] = useState<LogEntry[]>(MOCK_SYSADMIN_LOGS);
+  const [adminLogs, setAdminLogs] = useState<LogEntry[]>(MOCK_ADMIN_LOGS);
+  const [apiLogs, setApiLogs] = useState<LogEntry[]>(MOCK_API_LOGS);
   const [userSessions, setUserSessions] = useState<UserSession[]>([]);
+  const [userNotifications, setUserNotifications] = useState<UserNotification[]>([
+    {
+      id: 1,
+      type: "success",
+      title: "AI Search Completed",
+      message: "Your recent AI search query has been processed successfully by ChatGPT and Claude.",
+      timestamp: new Date(Date.now() - 1000 * 60 * 30),
+      read: false,
+    },
+    {
+      id: 2,
+      type: "info",
+      title: "System Update",
+      message: "LunaAI has been updated to version 11.0 with improved security features.",
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
+      read: false,
+    },
+    {
+      id: 3,
+      type: "warning",
+      title: "Security Alert",
+      message: "Unusual login activity detected from a new location. Please verify your recent sessions.",
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24),
+      read: true,
+    },
+    {
+      id: 4,
+      type: "success",
+      title: "Profile Updated",
+      message: "Your profile information has been successfully updated.",
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48),
+      read: true,
+    },
+  ]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterSeverity, setFilterSeverity] = useState<string>("all");
   const [loading, setLoading] = useState(false);
@@ -141,7 +210,7 @@ export function Enterprise9Security() {
 
   // Load user sessions from API
   useEffect(() => {
-    if (hasAccess && currentTab === 4) {
+    if (hasAccess && currentTab === 7) {
       loadUserSessions();
     }
   }, [hasAccess, currentTab]);
@@ -223,6 +292,45 @@ export function Enterprise9Security() {
       const matchesSeverity = filterSeverity === "all" || log.severity === filterSeverity;
       return matchesSearch && matchesSeverity;
     });
+  };
+
+  const markAsRead = (id: number) => {
+    setUserNotifications(
+      userNotifications.map((n) => (n.id === id ? { ...n, read: true } : n))
+    );
+  };
+
+  const deleteNotification = (id: number) => {
+    setUserNotifications(userNotifications.filter((n) => n.id !== id));
+  };
+
+  const formatTimestamp = (timestamp: Date) => {
+    const now = new Date();
+    const diff = now.getTime() - timestamp.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (minutes < 60) {
+      return `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
+    } else if (hours < 24) {
+      return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+    } else {
+      return `${days} day${days !== 1 ? "s" : ""} ago`;
+    }
+  };
+
+  const getNotificationIcon = (type: UserNotification["type"]) => {
+    switch (type) {
+      case "success":
+        return <CheckCircle sx={{ color: "#22c55e" }} />;
+      case "info":
+        return <Info sx={{ color: "#3b82f6" }} />;
+      case "warning":
+        return <Warning sx={{ color: "#f59e0b" }} />;
+      case "error":
+        return <Error sx={{ color: "#ef4444" }} />;
+    }
   };
 
   const renderLogTable = (logs: LogEntry[], title: string) => {
@@ -489,16 +597,16 @@ export function Enterprise9Security() {
           }}
         >
           <Tab
-            icon={<Person />}
+            icon={<AdminPanelSettings />}
             iconPosition="start"
-            label="User Logs"
+            label="Admin Logs"
             id="security-tab-0"
             aria-controls="security-tabpanel-0"
           />
           <Tab
-            icon={<Lock />}
+            icon={<Api />}
             iconPosition="start"
-            label="User Actions"
+            label="API Logs"
             id="security-tab-1"
             aria-controls="security-tabpanel-1"
           />
@@ -510,27 +618,48 @@ export function Enterprise9Security() {
             aria-controls="security-tabpanel-2"
           />
           <Tab
-            icon={<AdminPanelSettings />}
+            icon={<Shield />}
             iconPosition="start"
             label="SysAdmin Logs"
             id="security-tab-3"
             aria-controls="security-tabpanel-3"
           />
           <Tab
+            icon={<Lock />}
+            iconPosition="start"
+            label="User Actions"
+            id="security-tab-4"
+            aria-controls="security-tabpanel-4"
+          />
+          <Tab
+            icon={<Person />}
+            iconPosition="start"
+            label="User Logs"
+            id="security-tab-5"
+            aria-controls="security-tabpanel-5"
+          />
+          <Tab
+            icon={<Notifications />}
+            iconPosition="start"
+            label="User Notices"
+            id="security-tab-6"
+            aria-controls="security-tabpanel-6"
+          />
+          <Tab
             icon={<AccessTime />}
             iconPosition="start"
             label="User Sessions"
-            id="security-tab-4"
-            aria-controls="security-tabpanel-4"
+            id="security-tab-7"
+            aria-controls="security-tabpanel-7"
           />
         </Tabs>
 
         <TabPanel value={currentTab} index={0}>
-          {renderLogTable(userLogs, "User Activity Logs")}
+          {renderLogTable(adminLogs, "Administrator Activity Logs")}
         </TabPanel>
 
         <TabPanel value={currentTab} index={1}>
-          {renderLogTable(userActions, "User Actions & Operations")}
+          {renderLogTable(apiLogs, "API Request & Response Logs")}
         </TabPanel>
 
         <TabPanel value={currentTab} index={2}>
@@ -542,6 +671,95 @@ export function Enterprise9Security() {
         </TabPanel>
 
         <TabPanel value={currentTab} index={4}>
+          {renderLogTable(userActions, "User Actions & Operations")}
+        </TabPanel>
+
+        <TabPanel value={currentTab} index={5}>
+          {renderLogTable(userLogs, "User Activity Logs")}
+        </TabPanel>
+
+        <TabPanel value={currentTab} index={6}>
+          <Box>
+            <Box className="flex items-center justify-between mb-4">
+              <Typography variant="h6" className="flex items-center gap-2">
+                <Notifications sx={{ color: "#8B0000" }} />
+                User Notifications
+              </Typography>
+              <Box className="flex gap-2">
+                <Badge badgeContent={userNotifications.filter(n => !n.read).length} color="error">
+                  <Notifications />
+                </Badge>
+              </Box>
+            </Box>
+
+            {userNotifications.length === 0 ? (
+              <Box className="text-center py-8">
+                <Typography variant="body2" color="text.secondary">
+                  No notifications
+                </Typography>
+              </Box>
+            ) : (
+              <Paper elevation={2}>
+                <List>
+                  {userNotifications.map((notification) => (
+                    <ListItem
+                      key={notification.id}
+                      className={`${!notification.read ? "bg-blue-50" : ""}`}
+                      sx={{
+                        "&:hover": { backgroundColor: notification.read ? "#f8f9fa" : "#e0f2fe" },
+                        cursor: "pointer",
+                      }}
+                      onClick={() => !notification.read && markAsRead(notification.id)}
+                      secondaryAction={
+                        <IconButton
+                          edge="end"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteNotification(notification.id);
+                          }}
+                        >
+                          <Delete />
+                        </IconButton>
+                      }
+                    >
+                      <ListItemIcon>{getNotificationIcon(notification.type)}</ListItemIcon>
+                      <ListItemText
+                        primary={
+                          <Box className="flex items-center gap-2">
+                            <Typography variant="subtitle1" component="span" sx={{ fontWeight: 600 }}>
+                              {notification.title}
+                            </Typography>
+                            {!notification.read && (
+                              <Chip label="New" color="primary" size="small" sx={{ fontSize: "8pt" }} />
+                            )}
+                          </Box>
+                        }
+                        secondary={
+                          <>
+                            <Typography variant="body2" component="span" className="text-slate-700 block mt-1">
+                              {notification.message}
+                            </Typography>
+                            <Typography variant="caption" component="span" className="text-slate-500 block mt-1">
+                              {formatTimestamp(notification.timestamp)}
+                            </Typography>
+                          </>
+                        }
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              </Paper>
+            )}
+
+            <Box className="mt-3 flex items-center justify-between">
+              <Typography variant="caption" color="text.secondary">
+                Showing {userNotifications.length} notifications ({userNotifications.filter(n => !n.read).length} unread)
+              </Typography>
+            </Box>
+          </Box>
+        </TabPanel>
+
+        <TabPanel value={currentTab} index={7}>
           <Box>
             <Box className="flex items-center justify-between mb-4">
               <Typography variant="h6" className="flex items-center gap-2">
@@ -668,18 +886,22 @@ export function Enterprise9Security() {
       </Paper>
 
       {/* Summary Stats */}
-      <Box className="grid grid-cols-4 gap-4 mt-6">
+      <Box className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
         <Paper className="p-4">
           <Typography variant="body2" color="text.secondary" className="mb-1">
-            Total User Logs
+            Admin Logs
           </Typography>
-          <Typography variant="h4">{userLogs.length}</Typography>
+          <Typography variant="h4" className="text-red-600">
+            {adminLogs.length}
+          </Typography>
         </Paper>
         <Paper className="p-4">
           <Typography variant="body2" color="text.secondary" className="mb-1">
-            User Actions
+            API Logs
           </Typography>
-          <Typography variant="h4">{userActions.length}</Typography>
+          <Typography variant="h4" className="text-blue-600">
+            {apiLogs.length}
+          </Typography>
         </Paper>
         <Paper className="p-4">
           <Typography variant="body2" color="text.secondary" className="mb-1">
@@ -693,8 +915,36 @@ export function Enterprise9Security() {
           <Typography variant="body2" color="text.secondary" className="mb-1">
             SysAdmin Logs
           </Typography>
-          <Typography variant="h4" className="text-red-600">
+          <Typography variant="h4" className="text-purple-600">
             {sysAdminLogs.length}
+          </Typography>
+        </Paper>
+        <Paper className="p-4">
+          <Typography variant="body2" color="text.secondary" className="mb-1">
+            User Actions
+          </Typography>
+          <Typography variant="h4">{userActions.length}</Typography>
+        </Paper>
+        <Paper className="p-4">
+          <Typography variant="body2" color="text.secondary" className="mb-1">
+            User Logs
+          </Typography>
+          <Typography variant="h4">{userLogs.length}</Typography>
+        </Paper>
+        <Paper className="p-4">
+          <Typography variant="body2" color="text.secondary" className="mb-1">
+            User Notices
+          </Typography>
+          <Typography variant="h4" className="text-green-600">
+            {userNotifications.length}
+          </Typography>
+        </Paper>
+        <Paper className="p-4">
+          <Typography variant="body2" color="text.secondary" className="mb-1">
+            User Sessions
+          </Typography>
+          <Typography variant="h4" className="text-teal-600">
+            {userSessions.length}
           </Typography>
         </Paper>
       </Box>

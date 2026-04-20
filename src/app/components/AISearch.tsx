@@ -45,6 +45,7 @@ export function AISearch() {
   const loadSearchHistory = async () => {
     try {
       const uid = localStorage.getItem("uid");
+      const role = localStorage.getItem("role");
       if (!uid) {
         setError("Please log in to view search history");
         return;
@@ -60,7 +61,24 @@ export function AISearch() {
 
       if (response.ok) {
         const data = await response.json();
-        setSearchHistory(data);
+        
+        // Filter search history based on user role
+        // Only superusers, admins, and managers can see all search history
+        // Regular users and guests only see their own searches
+        const isSuperUser = role === "superuser";
+        const isAdmin = role === "admin";
+        const isManager = role === "manager";
+        
+        let filteredData;
+        if (isSuperUser || isAdmin || isManager) {
+          // Managers and above can see all search history
+          filteredData = data;
+        } else {
+          // Regular users and guests only see their own search history
+          filteredData = data.filter((item: WebSearchResult) => item.uid === uid);
+        }
+        
+        setSearchHistory(filteredData);
       }
     } catch (err) {
       console.error("Error loading search history:", err);
