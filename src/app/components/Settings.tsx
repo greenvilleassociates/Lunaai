@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Box, Typography, Tabs, Tab, Paper, Alert, Chip, Button, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent } from "@mui/material";
+import { Box, Typography, Tabs, Tab, Paper, Alert, Chip, Button, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { Settings as SettingsIcon, Psychology, Security, Tune, Api, Memory, Build, OpenInNew, RecordVoiceOver } from "@mui/icons-material";
 import { LLMAgentConfig } from "./LLMAgentConfig";
 import { CustomSLM } from "./CustomSLM";
@@ -30,6 +30,8 @@ export function Settings() {
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [voiceEncodingFormat, setVoiceEncodingFormat] = useState<string>("wav-16khz");
+  const [pendingFormat, setPendingFormat] = useState<string | null>(null);
+  const [showFormatWarning, setShowFormatWarning] = useState(false);
 
   // Check if user is superuser
   const currentUserRole = localStorage.getItem("role");
@@ -48,8 +50,32 @@ export function Settings() {
 
   const handleVoiceEncodingChange = (event: SelectChangeEvent) => {
     const newFormat = event.target.value;
-    setVoiceEncodingFormat(newFormat);
-    localStorage.setItem("voiceEncodingFormat", newFormat);
+    if (!newFormat.startsWith("wav")) {
+      setPendingFormat(newFormat);
+      setShowFormatWarning(true);
+    } else {
+      saveFormat(newFormat);
+    }
+  };
+
+  const saveFormat = (format: string) => {
+    setVoiceEncodingFormat(format);
+    localStorage.setItem("voiceEncodingFormat", format);
+    // Notify same-page listeners (storage event only fires across tabs natively)
+    window.dispatchEvent(new StorageEvent("storage", { key: "voiceEncodingFormat", newValue: format }));
+  };
+
+  const confirmFormatChange = () => {
+    if (pendingFormat) {
+      saveFormat(pendingFormat);
+    }
+    setPendingFormat(null);
+    setShowFormatWarning(false);
+  };
+
+  const cancelFormatChange = () => {
+    setPendingFormat(null);
+    setShowFormatWarning(false);
   };
 
   if (loading) {
@@ -314,23 +340,23 @@ export function Settings() {
                       </Typography>
                     </Box>
                   </MenuItem>
-                  <MenuItem value="ogg-opus">
+                  <MenuItem value="wma">
                     <Box>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        OGG/Opus - Compressed audio
+                        WMA - Windows Media Audio
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Modern codec, good quality-to-size ratio
+                        Azure-compatible, good for Windows clients
                       </Typography>
                     </Box>
                   </MenuItem>
-                  <MenuItem value="raw-pcm">
+                  <MenuItem value="webm">
                     <Box>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        Raw PCM stream
+                        WebM - Browser native fallback
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Uncompressed, requires manual formatting
+                        Last resort fallback when other formats unavailable
                       </Typography>
                     </Box>
                   </MenuItem>
@@ -389,23 +415,23 @@ export function Settings() {
                     </Typography>
                   </Box>
                 )}
-                {voiceEncodingFormat === "ogg-opus" && (
+                {voiceEncodingFormat === "wma" && (
                   <Box>
                     <Typography variant="body2" className="text-slate-700">
-                      <strong>Format:</strong> OGG container with Opus codec
+                      <strong>Format:</strong> Windows Media Audio container
                     </Typography>
                     <Typography variant="body2" className="text-slate-700 mt-2">
-                      <strong>Use Case:</strong> Modern compressed format with good quality
+                      <strong>Use Case:</strong> Azure-compatible, best for Windows clients
                     </Typography>
                   </Box>
                 )}
-                {voiceEncodingFormat === "raw-pcm" && (
+                {voiceEncodingFormat === "webm" && (
                   <Box>
                     <Typography variant="body2" className="text-slate-700">
-                      <strong>Format:</strong> Raw PCM data stream (no container)
+                      <strong>Format:</strong> WebM browser-native format
                     </Typography>
                     <Typography variant="body2" className="text-slate-700 mt-2">
-                      <strong>Use Case:</strong> Advanced scenarios requiring custom audio processing
+                      <strong>Use Case:</strong> Fallback when WAV, MP3, and WMA are unavailable
                     </Typography>
                   </Box>
                 )}
@@ -415,6 +441,32 @@ export function Settings() {
                 This setting is saved locally and will be applied to all voice recording features.
               </Typography>
             </Paper>
+
+            {/* WAV Override Warning Dialog */}
+            <Dialog open={showFormatWarning} onClose={cancelFormatChange}>
+              <DialogTitle sx={{ color: 'warning.main', fontWeight: 700 }}>
+                ⚠️ Change Audio Format?
+              </DialogTitle>
+              <DialogContent>
+                <Typography variant="body1" className="mb-2">
+                  <strong>Azure Speech Services requires WAV format.</strong>
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Changing to a non-WAV format may cause voice processing to fail on the Azure API. WAV (PCM) is the only officially supported format.
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 2, fontWeight: 600 }}>
+                  Are you sure you want to change away from WAV?
+                </Typography>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={cancelFormatChange} variant="contained" color="primary">
+                  Keep WAV (Recommended)
+                </Button>
+                <Button onClick={confirmFormatChange} variant="outlined" color="warning">
+                  Change Anyway
+                </Button>
+              </DialogActions>
+            </Dialog>
           </Box>
         </Box>
       </TabPanel>

@@ -47,24 +47,32 @@ export function StartRecording() {
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
+  const applyFormatFromSettings = () => {
+    const userPreference = localStorage.getItem("voiceEncodingFormat") || "wav-16khz";
+    if (!localStorage.getItem("voiceEncodingFormat")) {
+      localStorage.setItem("voiceEncodingFormat", "wav-16khz");
+    }
+    const bestFormat = getBestAudioFormat(userPreference);
+    setCurrentFormat(bestFormat);
+    console.log('🎙️ Format updated from settings:', { userPreference, selectedFormat: bestFormat });
+  };
+
   useEffect(() => {
     // Detect platform and set format on mount
     const platform = detectPlatform();
     setPlatformInfo(platform);
+    applyFormatFromSettings();
 
-    // Get user preference from settings
-    const userPreference = localStorage.getItem("voiceEncodingFormat");
-    const bestFormat = getBestAudioFormat(userPreference || undefined);
-    setCurrentFormat(bestFormat);
-
-    console.log('🎙️ Recording initialized:', {
-      platform,
-      userPreference,
-      selectedFormat: bestFormat
-    });
+    // Listen for settings changes made in another tab or the Settings page
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "voiceEncodingFormat") {
+        applyFormatFromSettings();
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
 
     return () => {
-      // Cleanup on unmount
+      window.removeEventListener("storage", handleStorageChange);
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
@@ -78,9 +86,9 @@ export function StartRecording() {
     try {
       setPermissionError(null); // Clear any previous errors
 
-      // Get the best audio format for this platform
-      const userPreference = localStorage.getItem("voiceEncodingFormat");
-      const format = getBestAudioFormat(userPreference || undefined);
+      // Get the best audio format for this platform — default to wav-16khz
+      const userPreference = localStorage.getItem("voiceEncodingFormat") || "wav-16khz";
+      const format = getBestAudioFormat(userPreference);
       setCurrentFormat(format);
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -282,9 +290,9 @@ export function StartRecording() {
     );
 
     // Determine file extension and MIME type from the blob
-    const blobType = recording.blob.type || 'audio/webm';
-    const format = currentFormat || { fileExtension: 'webm', mimeType: blobType };
-    const fileExtension = format.fileExtension || 'webm';
+    const blobType = recording.blob.type || 'audio/wav';
+    const format = currentFormat || { fileExtension: 'wav', mimeType: blobType };
+    const fileExtension = format.fileExtension || 'wav';
 
     // Map to supported MediaType for Azure
     const supportedMediaType = mapToSupportedMediaType(blobType);
@@ -301,6 +309,9 @@ export function StartRecording() {
       // Use the exact API endpoint structure with mediaType parameter
       const apiUrl = getApiUrl(`/File/upload?fileCategory=${fileCategory}&mediaType=${encodeURIComponent(supportedMediaType)}`);
 
+      const uploadAbort = new AbortController();
+      const uploadTimeout = setTimeout(() => uploadAbort.abort(), 30000);
+
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
@@ -308,7 +319,9 @@ export function StartRecording() {
           // Don't set Content-Type for FormData - browser will set it with boundary
         },
         body: formData,
+        signal: uploadAbort.signal,
       });
+      clearTimeout(uploadTimeout);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -334,7 +347,7 @@ export function StartRecording() {
       if (shouldCallAIActions) {
         try {
           console.log(`🤖 Attempting to queue file for AI processing: ${data.blobUrl}`);
-          const aiActionsUrl = getApiUrl(API_CONFIG.ENDPOINTS.AI_ACTIONS_VOICE);
+          const aiActionsUrl = getApiUrl(API_CONFIG.ENDPOINTS.AI_ACTIONS_VOICE("1"));
 
           // Get user information
           const uid = localStorage.getItem("uid");
@@ -353,6 +366,9 @@ export function StartRecording() {
 
           console.log(`📦 Service Bus Payload (${blobType} → ${aiActionsPayload.MediaType}):`, JSON.stringify(aiActionsPayload, null, 2));
 
+          const aiAbort = new AbortController();
+          const aiTimeout = setTimeout(() => aiAbort.abort(), 15000);
+
           const aiResponse = await fetch(aiActionsUrl, {
             method: "POST",
             headers: {
@@ -361,7 +377,9 @@ export function StartRecording() {
               ...(uid && { "Authorization": `Bearer ${uid}` }),
             },
             body: JSON.stringify(aiActionsPayload),
+            signal: aiAbort.signal,
           });
+          clearTimeout(aiTimeout);
 
           if (!aiResponse.ok) {
             console.log(`ℹ️ AI Actions returned ${aiResponse.status} - file uploaded successfully, using local tracking`);
@@ -379,8 +397,9 @@ export function StartRecording() {
                 : r
             )
           );
-        } catch (aiError) {
-          console.warn(`⚠ AI Actions unavailable - using local tracking fallback:`, aiError);
+        } catch (aiError: any) {
+          const msg = aiError?.name === 'AbortError' ? 'AI Actions timed out' : 'AI Actions unavailable';
+          console.warn(`⚠ ${msg} - using local tracking fallback:`, aiError);
           // Mark as processing locally even if AI Actions fails
           setRecordings((prev) =>
             prev.map((r) =>
@@ -451,8 +470,8 @@ export function StartRecording() {
         localStorage.setItem("voiceCommands", JSON.stringify(voiceCommands));
         console.log(`✅ Voice command saved to localStorage fallback`);
       }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Upload failed";
+    } catch (error: any) {
+      const errorMessage = error?.name === 'AbortError' ? 'Upload timed out — please try again' : error instanceof Error ? error.message : "Upload failed";
       console.error(`⚠ Failed to upload recording:`, error);
 
       setRecordings((prev) =>

@@ -208,17 +208,17 @@ function mapUserPreferenceToFormat(preference: string, platform: PlatformInfo): 
       description: 'MP3',
       quality: 'Medium'
     },
-    'ogg-opus': {
-      mimeType: 'audio/ogg;codecs=opus',
-      fileExtension: 'ogg',
-      description: 'OGG/Opus',
-      quality: 'High'
+    'wma': {
+      mimeType: 'audio/x-ms-wma',
+      fileExtension: 'wma',
+      description: 'WMA',
+      quality: 'Medium'
     },
-    'raw-pcm': {
-      mimeType: 'audio/wav',
-      fileExtension: 'wav',
-      description: 'Raw PCM',
-      quality: 'Lossless'
+    'webm': {
+      mimeType: 'audio/webm;codecs=opus',
+      fileExtension: 'webm',
+      description: 'WebM/Opus',
+      quality: 'High'
     }
   };
 
