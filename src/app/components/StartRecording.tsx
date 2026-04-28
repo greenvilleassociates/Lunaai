@@ -116,7 +116,7 @@ export function StartRecording() {
 
       mediaRecorder.onstop = () => {
         const actualFormat = currentFormat || format;
-        const mimeType = actualFormat.mimeType || 'audio/wav';
+        const mimeType = actualFormat.mimeType || 'audio/webm';
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         const url = URL.createObjectURL(audioBlob);
         setAudioURL(url);
@@ -229,8 +229,8 @@ export function StartRecording() {
     if (!audioURL) return;
 
     const format = currentFormat || {
-      mimeType: 'audio/wav',
-      fileExtension: 'wav',
+      mimeType: 'audio/webm',
+      fileExtension: 'webm',
       description: 'Browser Default',
       quality: 'Unknown'
     };
@@ -241,7 +241,7 @@ export function StartRecording() {
       url: audioURL,
       duration: recordingTime,
       createdAt: new Date().toLocaleString(),
-      blob: new Blob(audioChunksRef.current, { type: format.mimeType || 'audio/wav' }),
+      blob: new Blob(audioChunksRef.current, { type: format.mimeType || 'audio/webm' }),
     };
 
     setRecordings((prev) => [...prev, recording]);
@@ -282,9 +282,9 @@ export function StartRecording() {
     );
 
     // Determine file extension and MIME type from the blob
-    const blobType = recording.blob.type || 'audio/wav';
-    const format = currentFormat || { fileExtension: 'wav', mimeType: blobType };
-    const fileExtension = format.fileExtension || 'wav';
+    const blobType = recording.blob.type || 'audio/webm';
+    const format = currentFormat || { fileExtension: 'webm', mimeType: blobType };
+    const fileExtension = format.fileExtension || 'webm';
 
     // Map to supported MediaType for Azure
     const supportedMediaType = mapToSupportedMediaType(blobType);
@@ -334,7 +334,7 @@ export function StartRecording() {
       if (shouldCallAIActions) {
         try {
           console.log(`🤖 Attempting to queue file for AI processing: ${data.blobUrl}`);
-          const aiActionsUrl = getApiUrl(API_CONFIG.ENDPOINTS.AI_ACTIONS_VOICE("1"));
+          const aiActionsUrl = getApiUrl(API_CONFIG.ENDPOINTS.AI_ACTIONS_VOICE);
 
           // Get user information
           const uid = localStorage.getItem("uid");
