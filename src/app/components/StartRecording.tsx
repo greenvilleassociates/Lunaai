@@ -39,10 +39,12 @@ export function StartRecording() {
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [currentFormat, setCurrentFormat] = useState<AudioFormatConfig | null>(null);
+  const [settingsFormat, setSettingsFormat] = useState<AudioFormatConfig | null>(null); // What the user configured
   const [platformInfo, setPlatformInfo] = useState<ReturnType<typeof detectPlatform> | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const actualMimeTypeRef = useRef<string>('audio/wav'); // Tracks what MediaRecorder actually used
   const timerRef = useRef<number | null>(null);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -54,6 +56,16 @@ export function StartRecording() {
     }
     const bestFormat = getBestAudioFormat(userPreference);
     setCurrentFormat(bestFormat);
+
+    // Track what the user configured in Settings for display purposes
+    const preferenceLabels: Record<string, AudioFormatConfig> = {
+      'wav-16khz': { mimeType: 'audio/wav', fileExtension: 'wav', description: 'WAV/PCM 16kHz (Settings)', quality: 'Lossless' },
+      'wav-8khz':  { mimeType: 'audio/wav', fileExtension: 'wav', description: 'WAV/PCM 8kHz (Settings)',  quality: 'Medium' },
+      'mp3':       { mimeType: 'audio/mpeg', fileExtension: 'mp3', description: 'MP3 (Settings)',          quality: 'Medium' },
+      'wma':       { mimeType: 'audio/x-ms-wma', fileExtension: 'wma', description: 'WMA (Settings)',     quality: 'Medium' },
+      'webm':      { mimeType: 'audio/webm;codecs=opus', fileExtension: 'webm', description: 'WebM (Settings)', quality: 'High' },
+    };
+    setSettingsFormat(preferenceLabels[userPreference] || bestFormat);
     console.log('🎙️ Format updated from settings:', { userPreference, selectedFormat: bestFormat });
   };
 
@@ -114,6 +126,9 @@ export function StartRecording() {
       }
 
       mediaRecorderRef.current = mediaRecorder;
+      // Store the ACTUAL mimeType the browser is using — may differ from what we requested
+      actualMimeTypeRef.current = mediaRecorder.mimeType || 'audio/wav';
+      console.log(`🎙️ MediaRecorder actual mimeType: ${actualMimeTypeRef.current}`);
       audioChunksRef.current = [];
 
       mediaRecorder.ondataavailable = (event) => {
@@ -123,8 +138,7 @@ export function StartRecording() {
       };
 
       mediaRecorder.onstop = () => {
-        const actualFormat = currentFormat || format;
-        const mimeType = actualFormat.mimeType || 'audio/webm';
+        const mimeType = actualMimeTypeRef.current;
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         const url = URL.createObjectURL(audioBlob);
         setAudioURL(url);
@@ -236,20 +250,13 @@ export function StartRecording() {
   const saveRecording = () => {
     if (!audioURL) return;
 
-    const format = currentFormat || {
-      mimeType: 'audio/webm',
-      fileExtension: 'webm',
-      description: 'Browser Default',
-      quality: 'Unknown'
-    };
-
     const recording: Recording = {
       id: Date.now().toString(),
       name: `Recording ${new Date().toLocaleString()}`,
       url: audioURL,
       duration: recordingTime,
       createdAt: new Date().toLocaleString(),
-      blob: new Blob(audioChunksRef.current, { type: format.mimeType || 'audio/webm' }),
+      blob: new Blob(audioChunksRef.current, { type: actualMimeTypeRef.current }),
     };
 
     setRecordings((prev) => [...prev, recording]);
@@ -734,7 +741,7 @@ export function StartRecording() {
         )}
 
         {/* Platform & Format Info */}
-        {platformInfo && currentFormat && (
+        {platformInfo && (settingsFormat || currentFormat) && (
           <div className="bg-slate-50 border border-slate-300 rounded-lg p-6 mb-6">
             <div className="flex items-center gap-2 mb-3">
               <InfoIcon className="text-slate-700" />
@@ -770,26 +777,23 @@ export function StartRecording() {
                 <p className="text-sm text-slate-600 mb-2">Audio Format</p>
                 <div className="flex gap-2 flex-wrap">
                   <Chip
-                    label={currentFormat.description}
+                    label={(settingsFormat || currentFormat)!.description}
                     size="small"
                     color="success"
                   />
                   <Chip
-                    label={`Quality: ${currentFormat.quality}`}
+                    label={`Quality: ${(settingsFormat || currentFormat)!.quality}`}
                     size="small"
                     variant="outlined"
                   />
                 </div>
-                {currentFormat.mimeType && (
-                  <p className="text-xs text-slate-500 mt-1 font-mono">
-                    {currentFormat.mimeType}
-                  </p>
-                )}
+                <p className="text-xs text-slate-500 mt-1 font-mono">
+                  {(settingsFormat || currentFormat)!.mimeType || 'audio/wav'}
+                </p>
               </div>
             </div>
             <p className="text-xs text-slate-600 mt-3">
-              Format automatically selected based on your platform and browser capabilities.
-              {localStorage.getItem("voiceEncodingFormat") && " User preference applied from Settings."}
+              Audio format configured in Settings. Change format in Settings page.
             </p>
           </div>
         )}

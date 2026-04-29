@@ -181,18 +181,15 @@ export function UploadPrompt() {
       prev.map((f) => (f.id === audioFile.id ? { ...f, uploading: true, uploadError: undefined } : f))
     );
 
-    // Map to supported MediaType for Azure
-    const supportedMediaType = mapToSupportedMediaType(audioFile.type);
-    console.log(`📤 Uploading to Azure: ${audioFile.type} → ${supportedMediaType}`);
-
     const formData = new FormData();
     formData.append("file", audioFile.file);
-    formData.append("mediaType", supportedMediaType);
 
     try {
-      // Use the exact API endpoint structure with mediaType parameter
-      const apiUrl = getApiUrl(`/File/upload?fileCategory=${fileCategory}&mediaType=${encodeURIComponent(supportedMediaType)}`);
-      
+      const apiUrl = getApiUrl(`/File/upload?fileCategory=${fileCategory}`);
+
+      const uploadAbort = new AbortController();
+      const uploadTimeout = setTimeout(() => uploadAbort.abort(), 30000);
+
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
@@ -200,7 +197,9 @@ export function UploadPrompt() {
           // Don't set Content-Type for FormData - browser will set it with boundary
         },
         body: formData,
+        signal: uploadAbort.signal,
       });
+      clearTimeout(uploadTimeout);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -208,7 +207,7 @@ export function UploadPrompt() {
       }
 
       const data = await response.json();
-      
+
       // Update file with blob URL and success status
       setUploadedFiles((prev) =>
         prev.map((f) =>
@@ -219,37 +218,41 @@ export function UploadPrompt() {
       );
 
       console.log(`✓ File uploaded successfully: ${data.fileName}`, data);
-      
+
       // Call AI Actions to queue the file for voice-to-text processing
       // This is optional - if it fails, we still track locally
       const shouldCallAIActions = !API_CONFIG.BASE_URL.includes('localhost');
-      
+
       if (shouldCallAIActions) {
         try {
           console.log(`🤖 Attempting to queue file for AI processing: ${data.blobUrl}`);
-          const aiActionsUrl = getApiUrl(API_CONFIG.ENDPOINTS.AI_ACTIONS_VOICE); // POST to /api/aiactions/voice/1
-          
+          const aiActionsUrl = getApiUrl(API_CONFIG.ENDPOINTS.AI_ACTIONS_VOICE("1")); // POST to /api/aiactions/voice/1
+
           console.log(`📡 AI Actions URL: ${aiActionsUrl}`);
-          
+
           // Get user information
           const uid = localStorage.getItem("uid");
           const username = localStorage.getItem("username");
           const email = localStorage.getItem("email") || "user@capitoltechnology.net";
-          const userid = localStorage.getItem("userid"); // Get numeric user ID
-          
+          const userid = localStorage.getItem("userid");
+
           console.log(`👤 User Info - uid: ${uid}, userid: ${userid}, username: ${username}, email: ${email}`);
 
-          // Create Service Bus payload using helper
-          const aiActionsPayload = createVoiceToTextPayload({
+          const aiActionsPayload = {
             blobUrl: data.blobUrl,
             fileName: data.fileName || audioFile.name,
-            mimeType: audioFile.type,
             userId: userid ? parseInt(userid) : 1,
-            language: "english"
-          });
+            language: "english",
+            emailTo: email,
+            emailSubject: "UploadedFile",
+            emailBody: "You uploaded a voice prompt"
+          };
 
-          console.log(`📦 Service Bus Payload (${audioFile.type} → ${aiActionsPayload.MediaType}):`, JSON.stringify(aiActionsPayload, null, 2));
-          
+          console.log(`📦 AI Actions POST Payload:`, JSON.stringify(aiActionsPayload, null, 2));
+
+          const aiAbort = new AbortController();
+          const aiTimeout = setTimeout(() => aiAbort.abort(), 15000);
+
           const aiResponse = await fetch(aiActionsUrl, {
             method: "POST",
             headers: {
@@ -258,10 +261,12 @@ export function UploadPrompt() {
               ...(uid && { "Authorization": `Bearer ${uid}` }),
             },
             body: JSON.stringify(aiActionsPayload),
+            signal: aiAbort.signal,
           });
-          
+          clearTimeout(aiTimeout);
+
           console.log(`📥 AI Actions Response Status: ${aiResponse.status} ${aiResponse.statusText}`);
-          
+
           if (!aiResponse.ok) {
             let errorText = "";
             try {
@@ -271,14 +276,12 @@ export function UploadPrompt() {
               console.log(`❌ Could not read error response body`);
             }
             console.log(`ℹ️ AI Actions returned ${aiResponse.status} - file uploaded successfully, using local tracking`);
-            // Don't throw - file is already uploaded successfully
             return;
           }
-          
+
           const aiData = await aiResponse.json();
           console.log(`✅ AI Actions queued successfully:`, aiData);
-          
-          // Update file to show it's being processed
+
           setUploadedFiles((prev) =>
             prev.map((f) =>
               f.id === audioFile.id
@@ -288,7 +291,6 @@ export function UploadPrompt() {
           );
         } catch (aiError) {
           console.warn(`⚠ AI Actions unavailable - using local tracking fallback:`, aiError);
-          // Mark as processing locally even if AI Actions fails
           setUploadedFiles((prev) =>
             prev.map((f) =>
               f.id === audioFile.id
@@ -299,7 +301,6 @@ export function UploadPrompt() {
         }
       } else {
         console.log(`ℹ️ Skipping AI Actions call (localhost mode) - using local tracking`);
-        // Mark as processing locally
         setUploadedFiles((prev) =>
           prev.map((f) =>
             f.id === audioFile.id
@@ -308,25 +309,24 @@ export function UploadPrompt() {
           )
         );
       }
-      
+
       // Create a voice command record in the database (or local storage fallback)
       try {
         const uid = localStorage.getItem("uid");
         const username = localStorage.getItem("username");
         const voiceCommandUrl = getApiUrl(API_CONFIG.ENDPOINTS.VOICE_COMMANDS);
-        
-        // Map to C# VoiceCommands model structure
+
         const voiceCommandData = {
-          commandType: audioFile.name, // Store filename in CommandType
+          commandType: audioFile.name,
           voiceBlobURL: data.blobUrl,
           actionTime: new Date().toISOString(),
-          actionType: 1, // 1 = voice-to-text
+          actionType: 1,
           status: "queued",
           useridstring: uid,
-          userid: null, // Will be set by backend if needed
+          userid: null,
           displayname: username,
         };
-        
+
         const dbResponse = await fetch(voiceCommandUrl, {
           method: "POST",
           headers: {
@@ -335,7 +335,7 @@ export function UploadPrompt() {
           },
           body: JSON.stringify(voiceCommandData),
         });
-        
+
         if (dbResponse.ok) {
           console.log(`✅ Voice command record created in database`);
         } else {
@@ -343,7 +343,6 @@ export function UploadPrompt() {
         }
       } catch (dbError) {
         console.warn(`⚠ Database unavailable - saving voice command to localStorage:`, dbError);
-        // Fallback to localStorage for superusers
         const voiceCommands = JSON.parse(localStorage.getItem("voiceCommands") || "[]");
         voiceCommands.push({
           id: Date.now(),
@@ -359,10 +358,10 @@ export function UploadPrompt() {
         localStorage.setItem("voiceCommands", JSON.stringify(voiceCommands));
         console.log(`✅ Voice command saved to localStorage fallback`);
       }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Upload failed";
+    } catch (error: any) {
+      const errorMessage = error?.name === 'AbortError' ? 'Upload timed out — please try again' : error instanceof Error ? error.message : "Upload failed";
       console.error(`⚠ Failed to upload file:`, error);
-      
+
       setUploadedFiles((prev) =>
         prev.map((f) =>
           f.id === audioFile.id
