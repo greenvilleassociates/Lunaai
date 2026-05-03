@@ -30,6 +30,34 @@ interface Recording {
   processing?: boolean;
 }
 
+// Prefer WAV/PCM if supported by the browser/OS
+const getWavFirstFormat = (): AudioFormatConfig => {
+  const wavCandidates = [
+    "audio/wav",
+    "audio/x-wav",
+    "audio/wave",
+    "audio/webm;codecs=pcm",
+    "audio/ogg;codecs=pcm",
+  ];
+
+  for (const mimeType of wavCandidates) {
+    if (MediaRecorder.isTypeSupported(mimeType)) {
+      return {
+        mimeType,
+        fileExtension: "wav",
+        description: "WAV/PCM (Auto-selected)",
+        quality: "Lossless",
+      };
+    }
+  }
+
+  // If WAV is not supported, fall back to your existing logic
+  const userPreference = localStorage.getItem("voiceEncodingFormat") || "wav-16khz";
+  return getBestAudioFormat(userPreference);
+};
+
+
+
 export function StartRecording() {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -99,8 +127,7 @@ export function StartRecording() {
       setPermissionError(null); // Clear any previous errors
 
       // Get the best audio format for this platform — default to wav-16khz
-      const userPreference = localStorage.getItem("voiceEncodingFormat") || "wav-16khz";
-      const format = getBestAudioFormat(userPreference);
+      const format = getWavFirstFormat();
       setCurrentFormat(format);
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
