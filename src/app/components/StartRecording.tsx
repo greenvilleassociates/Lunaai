@@ -76,24 +76,6 @@ const encodeWav = (samples: Float32Array, sampleRate = 16000) => {
   return new Blob([view], { type: "audio/wav" });
 };
 
-const togglePlayback = () => {
-  if (!audioPlayerRef.current || !audioURL) return;
-
-  const player = audioPlayerRef.current;
-
-  if (isPlaying) {
-    player.pause();
-    setIsPlaying(false);
-  } else {
-    player.src = audioURL;
-    player.play();
-    setIsPlaying(true);
-
-    player.onended = () => {
-      setIsPlaying(false);
-    };
-  }
-};
 
 
 
@@ -125,6 +107,27 @@ export function StartRecording() {
   const actualMimeTypeRef = useRef<string>("audio/wav");
   const timerRef = useRef<number | null>(null);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+
+  const togglePlayback = () => {
+    if (!audioPlayerRef.current || !audioURL) return;
+  
+    const player = audioPlayerRef.current;
+  
+    if (isPlaying) {
+      player.pause();
+      setIsPlaying(false);
+    } else {
+      player.src = audioURL;
+      player.play();
+      setIsPlaying(true);
+  
+      player.onended = () => {
+        setIsPlaying(false);
+      };
+    }
+  };
+  
+
 
   const applyFormatFromSettings = () => {
     const userPreference =
@@ -276,20 +279,20 @@ export function StartRecording() {
 
 
   const saveRecording = () => {
-    if (!audioURL) return;
-
+    if (!audioURL || !pendingBlob) return;
+  
     const recording: Recording = {
       id: Date.now().toString(),
       name: `Recording ${new Date().toLocaleString()}`,
       url: audioURL,
       duration: recordingTime,
       createdAt: new Date().toLocaleString(),
-      blob: new Blob(audioChunksRef.current, { type: actualMimeTypeRef.current }),
+      blob: pendingBlob,   // ⭐ USE WAV BLOB
     };
-
+  
     setRecordings((prev) => [...prev, recording]);
-
-    // Reset for new recording
+  
+    // Reset UI
     setAudioURL(null);
     setRecordingTime(0);
     if (audioPlayerRef.current) {
@@ -298,6 +301,7 @@ export function StartRecording() {
     }
     setIsPlaying(false);
   };
+
 
   const discardRecording = () => {
     setAudioURL(null);
