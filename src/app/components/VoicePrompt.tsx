@@ -23,7 +23,7 @@ interface UploadedRecording {
   processing?: boolean;
 }
 
-export default function VoicePrompt() {
+export function VoicePrompt() {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedRecording[]>([]);
   const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
   const audioRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
