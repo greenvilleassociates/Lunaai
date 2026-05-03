@@ -25,8 +25,8 @@ import {
   mapToSupportedMediaType,
 } from "../utils/mediaTypeMapper";
 
-// ❌ REMOVE MultiRecorder — it cannot work in your environment
-// import { MultiRecorder, type AudioFormat } from "react-ts-audio-recorder";
+// ❌ Removed MultiRecorder — incompatible with Vite/Node 25
+// import { MultiRecorder } from "react-ts-audio-recorder";
 // import vmsgWasm from "react-ts-audio-recorder/assets/vmsg.wasm?url";
 
 interface Recording {
@@ -92,8 +92,7 @@ export function StartRecording() {
   const [platformInfo, setPlatformInfo] =
     useState<ReturnType<typeof detectPlatform> | null>(null);
 
-
-  // PURE WAV RECORDER STATE
+  // ⭐ PURE WAV RECORDER STATE
   const audioContextRef = useRef<AudioContext | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const inputRef = useRef<MediaStreamAudioSourceNode | null>(null);
@@ -210,28 +209,28 @@ export function StartRecording() {
 
   const stopRecording = async () => {
     if (!isRecording) return;
-  
+
     if (processorRef.current) processorRef.current.disconnect();
     if (inputRef.current) inputRef.current.disconnect();
     if (audioContextRef.current) audioContextRef.current.close();
-  
+
     const merged = new Float32Array(
       wavBufferRef.current.reduce((acc, cur) => acc + cur.length, 0)
     );
-  
+
     let offset = 0;
     for (const chunk of wavBufferRef.current) {
       merged.set(chunk, offset);
       offset += chunk.length;
     }
-  
+
     const wavBlob = encodeWav(merged, 16000);
     const blobUrl = URL.createObjectURL(wavBlob);
-  
+
     setPendingBlob(wavBlob);
     setAudioURL(blobUrl);
-  
-    // ⭐ Create a Recording entry (same structure as before)
+
+    // ⭐ Create a Recording entry (same as your old MediaRecorder logic)
     const recording: Recording = {
       id: Date.now().toString(),
       name: `Recording ${new Date().toLocaleString()}`,
@@ -240,68 +239,20 @@ export function StartRecording() {
       createdAt: new Date().toLocaleString(),
       blob: wavBlob,
     };
-  
+
     // ⭐ Add to UI list
     setRecordings((prev) => [...prev, recording]);
-  
-    // ⭐ Persist to localStorage (your original behavior)
+
+    // ⭐ Persist to localStorage
     localStorage.setItem(
       "recordings",
       JSON.stringify([...recordings, recording])
     );
-  
-    setIsRecording(false);
-    if (timerRef.current) clearInterval(timerRef.current);
-  };
-  
-
-// ⭐ Add to UI list
-setRecordings((prev) => [...prev, recording]);
-
-// ⭐ Persist to localStorage (your original behavior)
-localStorage.setItem("recordings", JSON.stringify([...recordings, recording]));
 
     setIsRecording(false);
     if (timerRef.current) clearInterval(timerRef.current);
   };
 
-  const pauseRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      if (isPaused) {
-        mediaRecorderRef.current.resume();
-        setIsPaused(false);
-        // Resume timer
-        timerRef.current = window.setInterval(() => {
-          setRecordingTime((prev) => prev + 1);
-        }, 1000);
-      } else {
-        mediaRecorderRef.current.pause();
-        setIsPaused(true);
-        // Pause timer
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
-      }
-    }
-  };
-
-  const togglePlayback = () => {
-    if (!audioURL) return;
-
-    if (!audioPlayerRef.current) {
-      audioPlayerRef.current = new Audio(audioURL);
-      audioPlayerRef.current.onended = () => setIsPlaying(false);
-    }
-
-    if (isPlaying) {
-      audioPlayerRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      audioPlayerRef.current.play();
-      setIsPlaying(true);
-    }
-  };
 
   const saveRecording = () => {
     if (!audioURL) return;
