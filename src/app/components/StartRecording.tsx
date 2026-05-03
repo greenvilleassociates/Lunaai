@@ -14,9 +14,20 @@ import { CircularProgress, Chip } from "@mui/material";
 import { getApiUrl } from "../config/api";
 import { getFileUploadHeaders } from "../utils/auth";
 import { API_CONFIG } from "../config/api";
-import { getBestAudioFormat, detectPlatform, getSupportedFormats, type AudioFormatConfig } from "../utils/audioFormatDetection";
-import { createVoiceToTextPayload, mapToSupportedMediaType } from "../utils/mediaTypeMapper";
-import { AudioRecorder, useAudioRecorder } from "react-ts-audio-recorder";
+import {
+  getBestAudioFormat,
+  detectPlatform,
+  getSupportedFormats,
+  type AudioFormatConfig,
+} from "../utils/audioFormatDetection";
+import {
+  createVoiceToTextPayload,
+  mapToSupportedMediaType,
+} from "../utils/mediaTypeMapper";
+
+// ⭐ Correct import for your installed version
+import { MultiRecorder, type AudioFormat } from "react-ts-audio-recorder";
+import vmsgWasm from "react-ts-audio-recorder/assets/vmsg.wasm?url";
 
 interface Recording {
   id: string;
@@ -52,7 +63,8 @@ const getWavFirstFormat = (): AudioFormatConfig => {
     }
   }
 
-  const userPreference = localStorage.getItem("voiceEncodingFormat") || "wav-16khz";
+  const userPreference =
+    localStorage.getItem("voiceEncodingFormat") || "wav-16khz";
   return getBestAudioFormat(userPreference);
 };
 
@@ -65,9 +77,12 @@ export function StartRecording() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [permissionError, setPermissionError] = useState<string | null>(null);
-  const [currentFormat, setCurrentFormat] = useState<AudioFormatConfig | null>(null);
-  const [settingsFormat, setSettingsFormat] = useState<AudioFormatConfig | null>(null);
-  const [platformInfo, setPlatformInfo] = useState<ReturnType<typeof detectPlatform> | null>(null);
+  const [currentFormat, setCurrentFormat] =
+    useState<AudioFormatConfig | null>(null);
+  const [settingsFormat, setSettingsFormat] =
+    useState<AudioFormatConfig | null>(null);
+  const [platformInfo, setPlatformInfo] =
+    useState<ReturnType<typeof detectPlatform> | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -76,19 +91,12 @@ export function StartRecording() {
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // ⭐ Correct placement — WAV recorder hook INSIDE the component
-  const recorder = useAudioRecorder({
-    sampleRate: 16000,
-    bitDepth: 16,
-    channels: 1,
-    format: "wav",
-    onRecordingComplete: (blob: Blob) => {
-      setPendingBlob(blob);
-    },
-  });
+  // ⭐ MultiRecorder instance
+  const multiRecorderRef = useRef<MultiRecorder | null>(null);
 
   const applyFormatFromSettings = () => {
-    const userPreference = localStorage.getItem("voiceEncodingFormat") || "wav-16khz";
+    const userPreference =
+      localStorage.getItem("voiceEncodingFormat") || "wav-16khz";
     if (!localStorage.getItem("voiceEncodingFormat")) {
       localStorage.setItem("voiceEncodingFormat", "wav-16khz");
     }
@@ -160,10 +168,21 @@ export function StartRecording() {
       setPermissionError(null);
       setPendingBlob(null);
 
-      // ⭐ Start WAV recorder
-      recorder.startRecording();
+      // ⭐ Initialize MultiRecorder (WAV @ 16 kHz)
+      const recorder = new MultiRecorder({
+        format: "wav",
+        sampleRate: 16000,
+        wasmURL: vmsgWasm,
+      });
 
-      // ⭐ Everything below is still your old MediaRecorder logic (we will remove later)
+      multiRecorderRef.current = recorder;
+
+      await recorder.init();
+      await recorder.startRecording();
+
+      console.log("🎙️ MultiRecorder started (WAV 16 kHz)");
+
+      // ⭐ Keep your existing MediaRecorder logic untouched for now
       const format = getWavFirstFormat();
       setCurrentFormat(format);
 
@@ -226,9 +245,11 @@ export function StartRecording() {
         setRecordingTime((prev) => prev + 1);
       }, 1000);
     } catch (error: any) {
-      // your existing error handling stays untouched
       let errorMsg = "Unable to access microphone. ";
-      if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
+      if (
+        error.name === "NotAllowedError" ||
+        error.name === "PermissionDeniedError"
+      ) {
         errorMsg +=
           "Please allow microphone access in your browser settings.\n\nChrome/Edge: Click the camera/microphone icon in the address bar.\nFirefox: Click the microphone icon.\nSafari: Settings > Websites > Microphone.";
       } else if (error.name === "NotFoundError") {
@@ -242,10 +263,25 @@ export function StartRecording() {
     }
   };
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      recorder.stopRecording(); // ⭐ WAV recorder stop
-      mediaRecorderRef.current.stop(); // old engine still here for now
+  const stopRecording = async () => {
+    if (isRecording) {
+      // ⭐ Stop MultiRecorder first
+      if (multiRecorderRef.current) {
+        const wavBlob = await multiRecorderRef.current.stopRecording();
+        multiRecorderRef.current.close();
+        multiRecorderRef.current = null;
+
+        setPendingBlob(wavBlob);
+        setAudioURL(URL.createObjectURL(wavBlob));
+
+        console.log("🎙️ MultiRecorder WAV blob ready:", wavBlob);
+      }
+
+      // Keep your old MediaRecorder stop for now
+      if (mediaRecorderRef.current) {
+        mediaRecorderRef.current.stop();
+      }
+
       setIsRecording(false);
       setIsPaused(false);
 
