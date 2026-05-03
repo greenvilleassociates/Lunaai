@@ -210,24 +210,56 @@ export function StartRecording() {
 
   const stopRecording = async () => {
     if (!isRecording) return;
-
+  
     if (processorRef.current) processorRef.current.disconnect();
     if (inputRef.current) inputRef.current.disconnect();
     if (audioContextRef.current) audioContextRef.current.close();
-
+  
     const merged = new Float32Array(
       wavBufferRef.current.reduce((acc, cur) => acc + cur.length, 0)
     );
-
+  
     let offset = 0;
     for (const chunk of wavBufferRef.current) {
       merged.set(chunk, offset);
       offset += chunk.length;
     }
-
+  
     const wavBlob = encodeWav(merged, 16000);
+    const blobUrl = URL.createObjectURL(wavBlob);
+  
     setPendingBlob(wavBlob);
-    setAudioURL(URL.createObjectURL(wavBlob));
+    setAudioURL(blobUrl);
+  
+    // ⭐ Create a Recording entry (same structure as before)
+    const recording: Recording = {
+      id: Date.now().toString(),
+      name: `Recording ${new Date().toLocaleString()}`,
+      url: blobUrl,
+      duration: recordingTime,
+      createdAt: new Date().toLocaleString(),
+      blob: wavBlob,
+    };
+  
+    // ⭐ Add to UI list
+    setRecordings((prev) => [...prev, recording]);
+  
+    // ⭐ Persist to localStorage (your original behavior)
+    localStorage.setItem(
+      "recordings",
+      JSON.stringify([...recordings, recording])
+    );
+  
+    setIsRecording(false);
+    if (timerRef.current) clearInterval(timerRef.current);
+  };
+  
+
+// ⭐ Add to UI list
+setRecordings((prev) => [...prev, recording]);
+
+// ⭐ Persist to localStorage (your original behavior)
+localStorage.setItem("recordings", JSON.stringify([...recordings, recording]));
 
     setIsRecording(false);
     if (timerRef.current) clearInterval(timerRef.current);
