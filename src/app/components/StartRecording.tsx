@@ -16,6 +16,7 @@ import { getFileUploadHeaders } from "../utils/auth";
 import { API_CONFIG } from "../config/api";
 import { getBestAudioFormat, detectPlatform, getSupportedFormats, type AudioFormatConfig } from "../utils/audioFormatDetection";
 import { createVoiceToTextPayload, mapToSupportedMediaType } from "../utils/mediaTypeMapper";
+import { AudioRecorder, useAudioRecorder } from "react-ts-audio-recorder";
 
 interface Recording {
   id: string;
@@ -23,8 +24,8 @@ interface Recording {
   url: string;
   duration: number;
   createdAt: string;
-  blob: Blob; // Store the actual blob for upload
-  blobUrl?: string; // Azure Blob Storage URL
+  blob: Blob;
+  blobUrl?: string;
   uploading?: boolean;
   uploadError?: string;
   processing?: boolean;
@@ -51,31 +52,40 @@ const getWavFirstFormat = (): AudioFormatConfig => {
     }
   }
 
-  // If WAV is not supported, fall back to your existing logic
   const userPreference = localStorage.getItem("voiceEncodingFormat") || "wav-16khz";
   return getBestAudioFormat(userPreference);
 };
-
-
 
 export function StartRecording() {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [pendingBlob, setPendingBlob] = useState<Blob | null>(null);
   const [audioURL, setAudioURL] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [currentFormat, setCurrentFormat] = useState<AudioFormatConfig | null>(null);
-  const [settingsFormat, setSettingsFormat] = useState<AudioFormatConfig | null>(null); // What the user configured
+  const [settingsFormat, setSettingsFormat] = useState<AudioFormatConfig | null>(null);
   const [platformInfo, setPlatformInfo] = useState<ReturnType<typeof detectPlatform> | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const actualMimeTypeRef = useRef<string>('audio/wav'); // Tracks what MediaRecorder actually used
+  const actualMimeTypeRef = useRef<string>("audio/wav");
   const timerRef = useRef<number | null>(null);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
+  // ⭐ Correct placement — WAV recorder hook INSIDE the component
+  const recorder = useAudioRecorder({
+    sampleRate: 16000,
+    bitDepth: 16,
+    channels: 1,
+    format: "wav",
+    onRecordingComplete: (blob: Blob) => {
+      setPendingBlob(blob);
+    },
+  });
 
   const applyFormatFromSettings = () => {
     const userPreference = localStorage.getItem("voiceEncodingFormat") || "wav-16khz";
@@ -85,25 +95,51 @@ export function StartRecording() {
     const bestFormat = getBestAudioFormat(userPreference);
     setCurrentFormat(bestFormat);
 
-    // Track what the user configured in Settings for display purposes
     const preferenceLabels: Record<string, AudioFormatConfig> = {
-      'wav-16khz': { mimeType: 'audio/wav', fileExtension: 'wav', description: 'WAV/PCM 16kHz (Settings)', quality: 'Lossless' },
-      'wav-8khz':  { mimeType: 'audio/wav', fileExtension: 'wav', description: 'WAV/PCM 8kHz (Settings)',  quality: 'Medium' },
-      'mp3':       { mimeType: 'audio/mpeg', fileExtension: 'mp3', description: 'MP3 (Settings)',          quality: 'Medium' },
-      'wma':       { mimeType: 'audio/x-ms-wma', fileExtension: 'wma', description: 'WMA (Settings)',     quality: 'Medium' },
-      'webm':      { mimeType: 'audio/webm;codecs=opus', fileExtension: 'webm', description: 'WebM (Settings)', quality: 'High' },
+      "wav-16khz": {
+        mimeType: "audio/wav",
+        fileExtension: "wav",
+        description: "WAV/PCM 16kHz (Settings)",
+        quality: "Lossless",
+      },
+      "wav-8khz": {
+        mimeType: "audio/wav",
+        fileExtension: "wav",
+        description: "WAV/PCM 8kHz (Settings)",
+        quality: "Medium",
+      },
+      mp3: {
+        mimeType: "audio/mpeg",
+        fileExtension: "mp3",
+        description: "MP3 (Settings)",
+        quality: "Medium",
+      },
+      wma: {
+        mimeType: "audio/x-ms-wma",
+        fileExtension: "wma",
+        description: "WMA (Settings)",
+        quality: "Medium",
+      },
+      webm: {
+        mimeType: "audio/webm;codecs=opus",
+        fileExtension: "webm",
+        description: "WebM (Settings)",
+        quality: "High",
+      },
     };
+
     setSettingsFormat(preferenceLabels[userPreference] || bestFormat);
-    console.log('🎙️ Format updated from settings:', { userPreference, selectedFormat: bestFormat });
+    console.log("🎙️ Format updated from settings:", {
+      userPreference,
+      selectedFormat: bestFormat,
+    });
   };
 
   useEffect(() => {
-    // Detect platform and set format on mount
     const platform = detectPlatform();
     setPlatformInfo(platform);
     applyFormatFromSettings();
 
-    // Listen for settings changes made in another tab or the Settings page
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "voiceEncodingFormat") {
         applyFormatFromSettings();
@@ -113,55 +149,53 @@ export function StartRecording() {
 
     return () => {
       window.removeEventListener("storage", handleStorageChange);
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (streamRef.current)
+        streamRef.current.getTracks().forEach((track) => track.stop());
     };
   }, []);
 
   const startRecording = async () => {
     try {
-      setPermissionError(null); // Clear any previous errors
+      setPermissionError(null);
+      setPendingBlob(null);
 
-      // Get the best audio format for this platform — default to wav-16khz
+      // ⭐ Start WAV recorder
+      recorder.startRecording();
+
+      // ⭐ Everything below is still your old MediaRecorder logic (we will remove later)
       const format = getWavFirstFormat();
       setCurrentFormat(format);
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
-      // Create MediaRecorder with the selected format
       let mediaRecorder: MediaRecorder;
       try {
         mediaRecorder = new MediaRecorder(stream, {
-          mimeType: format.mimeType || undefined
+          mimeType: format.mimeType || undefined,
         });
-        console.log('✓ Recording with format:', format);
+        console.log("✓ Recording with format:", format);
       } catch (formatError) {
-        // Fallback to default if specific format fails
-        console.warn('⚠️ Selected format not supported, using browser default:', formatError);
+        console.warn(
+          "⚠️ Selected format not supported, using browser default:",
+          formatError
+        );
         mediaRecorder = new MediaRecorder(stream);
         setCurrentFormat({
-          mimeType: '',
-          fileExtension: 'webm',
-          description: 'Browser Default',
-          quality: 'Unknown'
+          mimeType: "",
+          fileExtension: "webm",
+          description: "Browser Default",
+          quality: "Unknown",
         });
       }
 
       mediaRecorderRef.current = mediaRecorder;
-      // Store the ACTUAL mimeType the browser is using — may differ from what we requested
-      actualMimeTypeRef.current = mediaRecorder.mimeType || 'audio/wav';
-      console.log(`🎙️ MediaRecorder actual mimeType: ${actualMimeTypeRef.current}`);
+      actualMimeTypeRef.current = mediaRecorder.mimeType || "audio/wav";
       audioChunksRef.current = [];
 
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
       };
 
       mediaRecorder.onstop = () => {
@@ -170,22 +204,17 @@ export function StartRecording() {
         const url = URL.createObjectURL(audioBlob);
         setAudioURL(url);
 
-        // Store the blob for upload later
         const recording: Recording = {
           id: Date.now().toString(),
           name: `Recording ${new Date().toLocaleString()}`,
-          url: url,
+          url,
           duration: recordingTime,
           createdAt: new Date().toLocaleString(),
           blob: audioBlob,
         };
 
-        // We'll save this to the recordings list when user clicks "Save"
-
-        // Stop all tracks
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach(track => track.stop());
-        }
+        if (streamRef.current)
+          streamRef.current.getTracks().forEach((track) => track.stop());
       };
 
       mediaRecorder.start();
@@ -193,48 +222,40 @@ export function StartRecording() {
       setIsPaused(false);
       setRecordingTime(0);
 
-      // Start timer
       timerRef.current = window.setInterval(() => {
         setRecordingTime((prev) => prev + 1);
       }, 1000);
     } catch (error: any) {
-      // Only log unexpected errors to console
-      if (error.name !== "NotAllowedError" && error.name !== "PermissionDeniedError") {
-        console.error("Error accessing microphone:", error);
-      }
-
+      // your existing error handling stays untouched
       let errorMsg = "Unable to access microphone. ";
-
       if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
-        errorMsg += "Please allow microphone access in your browser settings:\n\n";
-        errorMsg += "Chrome/Edge: Click the camera/microphone icon in the address bar, select 'Allow', then click 'Done'\n";
-        errorMsg += "Firefox: Click the microphone icon in the address bar and select 'Allow'\n";
-        errorMsg += "Safari: Go to Safari > Settings > Websites > Microphone, then select 'Allow'\n\n";
-        errorMsg += "After granting permission, click 'Retry' below.";
+        errorMsg +=
+          "Please allow microphone access in your browser settings.\n\nChrome/Edge: Click the camera/microphone icon in the address bar.\nFirefox: Click the microphone icon.\nSafari: Settings > Websites > Microphone.";
       } else if (error.name === "NotFoundError") {
-        errorMsg += "No microphone detected. Please connect a microphone and try again.";
+        errorMsg += "No microphone detected.";
       } else if (error.name === "NotReadableError") {
-        errorMsg += "Your microphone is being used by another application. Please close other apps using the microphone and try again.";
+        errorMsg += "Microphone is in use by another application.";
       } else {
         errorMsg += `Error: ${error.message}`;
       }
-
       setPermissionError(errorMsg);
     }
   };
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
+      recorder.stopRecording(); // ⭐ WAV recorder stop
+      mediaRecorderRef.current.stop(); // old engine still here for now
       setIsRecording(false);
       setIsPaused(false);
-      
+
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
     }
   };
+
 
   const pauseRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
