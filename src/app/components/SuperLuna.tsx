@@ -40,7 +40,7 @@ import {
   Lock,
   Memory,
   Settings,
-  PersonOutline,
+  PersonOutlineOutlined,
   CorporateFare,
 } from "@mui/icons-material";
 import { API_CONFIG, getApiUrl } from "../config/api";
@@ -616,7 +616,7 @@ export function SuperLuna() {
                     </>
                   ) : (
                     <>
-                      <PersonOutline color="secondary" />
+                      <PersonOutlineOutlined color="secondary" />
                       Using Personal Preferences
                     </>
                   )}
