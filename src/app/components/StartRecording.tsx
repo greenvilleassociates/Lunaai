@@ -76,6 +76,27 @@ const encodeWav = (samples: Float32Array, sampleRate = 16000) => {
   return new Blob([view], { type: "audio/wav" });
 };
 
+const togglePlayback = () => {
+  if (!audioPlayerRef.current || !audioURL) return;
+
+  const player = audioPlayerRef.current;
+
+  if (isPlaying) {
+    player.pause();
+    setIsPlaying(false);
+  } else {
+    player.src = audioURL;
+    player.play();
+    setIsPlaying(true);
+
+    player.onended = () => {
+      setIsPlaying(false);
+    };
+  }
+};
+
+
+
 export function StartRecording() {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
