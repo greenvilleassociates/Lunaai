@@ -288,6 +288,46 @@ export function StartRecording() {
     setIsPlaying(false);
   };
 
+  const pauseRecording = () => {
+    if (!isRecording || isPaused) return;
+  
+    setIsPaused(true);
+  
+    // Disconnect processor so no samples are collected
+    if (processorRef.current) {
+      processorRef.current.disconnect();
+    }
+  
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+  
+  const resumeRecording = () => {
+    if (!isRecording || !isPaused) return;
+  
+    setIsPaused(false);
+  
+    // Reconnect processor to resume capturing samples
+    if (
+      processorRef.current &&
+      audioContextRef.current &&
+      inputRef.current
+    ) {
+      inputRef.current.connect(processorRef.current);
+      processorRef.current.connect(audioContextRef.current.destination);
+    }
+  
+    // Restart timer
+    timerRef.current = window.setInterval(() => {
+      setRecordingTime((prev) => prev + 1);
+    }, 1000);
+  };
+  
+
+
+
   const deleteRecording = (id: string) => {
     setRecordings((prev) => prev.filter((rec) => rec.id !== id));
   };
