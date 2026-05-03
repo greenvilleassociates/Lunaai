@@ -25,9 +25,9 @@ import {
   mapToSupportedMediaType,
 } from "../utils/mediaTypeMapper";
 
-// ⭐ Correct import for your installed version
-import { MultiRecorder, type AudioFormat } from "react-ts-audio-recorder";
-import vmsgWasm from "react-ts-audio-recorder/assets/vmsg.wasm?url";
+// ❌ REMOVE MultiRecorder — it cannot work in your environment
+// import { MultiRecorder, type AudioFormat } from "react-ts-audio-recorder";
+// import vmsgWasm from "react-ts-audio-recorder/assets/vmsg.wasm?url";
 
 interface Recording {
   id: string;
@@ -42,30 +42,38 @@ interface Recording {
   processing?: boolean;
 }
 
-// Prefer WAV/PCM if supported by the browser/OS
-const getWavFirstFormat = (): AudioFormatConfig => {
-  const wavCandidates = [
-    "audio/wav",
-    "audio/x-wav",
-    "audio/wave",
-    "audio/webm;codecs=pcm",
-    "audio/ogg;codecs=pcm",
-  ];
+// ⭐ WAV encoder (16 kHz PCM)
+const encodeWav = (samples: Float32Array, sampleRate = 16000) => {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
 
-  for (const mimeType of wavCandidates) {
-    if (MediaRecorder.isTypeSupported(mimeType)) {
-      return {
-        mimeType,
-        fileExtension: "wav",
-        description: "WAV/PCM (Auto-selected)",
-        quality: "Lossless",
-      };
+  const writeString = (offset: number, str: string) => {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i));
     }
+  };
+
+  writeString(0, "RIFF");
+  view.setUint32(4, 36 + samples.length * 2, true);
+  writeString(8, "WAVE");
+  writeString(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeString(36, "data");
+  view.setUint32(40, samples.length * 2, true);
+
+  let offset = 44;
+  for (let i = 0; i < samples.length; i++, offset += 2) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
   }
 
-  const userPreference =
-    localStorage.getItem("voiceEncodingFormat") || "wav-16khz";
-  return getBestAudioFormat(userPreference);
+  return new Blob([view], { type: "audio/wav" });
 };
 
 export function StartRecording() {
@@ -84,15 +92,19 @@ export function StartRecording() {
   const [platformInfo, setPlatformInfo] =
     useState<ReturnType<typeof detectPlatform> | null>(null);
 
+
+  // PURE WAV RECORDER STATE
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const inputRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const wavBufferRef = useRef<Float32Array[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const actualMimeTypeRef = useRef<string>("audio/wav");
   const timerRef = useRef<number | null>(null);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-
-  // ⭐ MultiRecorder instance
-  const multiRecorderRef = useRef<MultiRecorder | null>(null);
 
   const applyFormatFromSettings = () => {
     const userPreference =
@@ -137,10 +149,6 @@ export function StartRecording() {
     };
 
     setSettingsFormat(preferenceLabels[userPreference] || bestFormat);
-    console.log("🎙️ Format updated from settings:", {
-      userPreference,
-      selectedFormat: bestFormat,
-    });
   };
 
   useEffect(() => {
@@ -167,131 +175,63 @@ export function StartRecording() {
     try {
       setPermissionError(null);
       setPendingBlob(null);
+      wavBufferRef.current = [];
 
-      // ⭐ Initialize MultiRecorder (WAV @ 16 kHz)
-      const recorder = new MultiRecorder({
-        format: "wav",
-        sampleRate: 16000,
-        wasmURL: vmsgWasm,
-      });
-
-      multiRecorderRef.current = recorder;
-
-      await recorder.init();
-      await recorder.startRecording();
-
-      console.log("🎙️ MultiRecorder started (WAV 16 kHz)");
-
-      // ⭐ Keep your existing MediaRecorder logic untouched for now
-      const format = getWavFirstFormat();
-      setCurrentFormat(format);
+      // ⭐ Create 16 kHz audio context
+      audioContextRef.current = new AudioContext({ sampleRate: 16000 });
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
-      let mediaRecorder: MediaRecorder;
-      try {
-        mediaRecorder = new MediaRecorder(stream, {
-          mimeType: format.mimeType || undefined,
-        });
-        console.log("✓ Recording with format:", format);
-      } catch (formatError) {
-        console.warn(
-          "⚠️ Selected format not supported, using browser default:",
-          formatError
-        );
-        mediaRecorder = new MediaRecorder(stream);
-        setCurrentFormat({
-          mimeType: "",
-          fileExtension: "webm",
-          description: "Browser Default",
-          quality: "Unknown",
-        });
-      }
+      inputRef.current =
+        audioContextRef.current.createMediaStreamSource(stream);
 
-      mediaRecorderRef.current = mediaRecorder;
-      actualMimeTypeRef.current = mediaRecorder.mimeType || "audio/wav";
-      audioChunksRef.current = [];
+      processorRef.current =
+        audioContextRef.current.createScriptProcessor(4096, 1, 1);
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+      processorRef.current.onaudioprocess = (e) => {
+        const input = e.inputBuffer.getChannelData(0);
+        wavBufferRef.current.push(new Float32Array(input));
       };
 
-      mediaRecorder.onstop = () => {
-        const mimeType = actualMimeTypeRef.current;
-        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-        const url = URL.createObjectURL(audioBlob);
-        setAudioURL(url);
+      inputRef.current.connect(processorRef.current);
+      processorRef.current.connect(audioContextRef.current.destination);
 
-        const recording: Recording = {
-          id: Date.now().toString(),
-          name: `Recording ${new Date().toLocaleString()}`,
-          url,
-          duration: recordingTime,
-          createdAt: new Date().toLocaleString(),
-          blob: audioBlob,
-        };
-
-        if (streamRef.current)
-          streamRef.current.getTracks().forEach((track) => track.stop());
-      };
-
-      mediaRecorder.start();
       setIsRecording(true);
-      setIsPaused(false);
       setRecordingTime(0);
 
       timerRef.current = window.setInterval(() => {
         setRecordingTime((prev) => prev + 1);
       }, 1000);
     } catch (error: any) {
-      let errorMsg = "Unable to access microphone. ";
-      if (
-        error.name === "NotAllowedError" ||
-        error.name === "PermissionDeniedError"
-      ) {
-        errorMsg +=
-          "Please allow microphone access in your browser settings.\n\nChrome/Edge: Click the camera/microphone icon in the address bar.\nFirefox: Click the microphone icon.\nSafari: Settings > Websites > Microphone.";
-      } else if (error.name === "NotFoundError") {
-        errorMsg += "No microphone detected.";
-      } else if (error.name === "NotReadableError") {
-        errorMsg += "Microphone is in use by another application.";
-      } else {
-        errorMsg += `Error: ${error.message}`;
-      }
-      setPermissionError(errorMsg);
+      setPermissionError("Unable to access microphone: " + error.message);
     }
   };
 
   const stopRecording = async () => {
-    if (isRecording) {
-      // ⭐ Stop MultiRecorder first
-      if (multiRecorderRef.current) {
-        const wavBlob = await multiRecorderRef.current.stopRecording();
-        multiRecorderRef.current.close();
-        multiRecorderRef.current = null;
+    if (!isRecording) return;
 
-        setPendingBlob(wavBlob);
-        setAudioURL(URL.createObjectURL(wavBlob));
+    if (processorRef.current) processorRef.current.disconnect();
+    if (inputRef.current) inputRef.current.disconnect();
+    if (audioContextRef.current) audioContextRef.current.close();
 
-        console.log("🎙️ MultiRecorder WAV blob ready:", wavBlob);
-      }
+    const merged = new Float32Array(
+      wavBufferRef.current.reduce((acc, cur) => acc + cur.length, 0)
+    );
 
-      // Keep your old MediaRecorder stop for now
-      if (mediaRecorderRef.current) {
-        mediaRecorderRef.current.stop();
-      }
-
-      setIsRecording(false);
-      setIsPaused(false);
-
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
+    let offset = 0;
+    for (const chunk of wavBufferRef.current) {
+      merged.set(chunk, offset);
+      offset += chunk.length;
     }
-  };
 
+    const wavBlob = encodeWav(merged, 16000);
+    setPendingBlob(wavBlob);
+    setAudioURL(URL.createObjectURL(wavBlob));
+
+    setIsRecording(false);
+    if (timerRef.current) clearInterval(timerRef.current);
+  };
 
   const pauseRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
