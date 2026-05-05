@@ -108,7 +108,7 @@ export function MyDesktop() {
           console.log("✅ Search history loaded (MY RECORDS only)");
         }
         
-        setSearchHistory(filteredSearches.slice(0, 5));
+      setSearchHistory(filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5));
       } else {
         throw new Error("Database unavailable");
       }
@@ -129,8 +129,7 @@ export function MyDesktop() {
         } else {
           filteredSearches = fallbackData.filter((item: WebSearchResult) => item.uid === uid);
         }
-        
-        setSearchHistory(filteredSearches.slice(0, 5));
+        setSearchHistory(filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5));
         console.log("✅ Search history loaded from local JSON fallback");
       } catch (fallbackErr) {
         console.error("Failed to load fallback data:", fallbackErr);
@@ -177,9 +176,12 @@ export function MyDesktop() {
           );
           console.log("✅ Voice commands loaded (MY RECORDS only)");
         }
-        
-        setVoiceCommands(filteredCommands.slice(0, 5));
-      } else {
+        setVoiceCommands(
+  filtered
+    .sort((a, b) => new Date(b.actionTime || 0).getTime() - new Date(a.actionTime || 0).getTime())
+    .slice(0, 5)
+);
+        } else {
         throw new Error("Database unavailable");
       }
     } catch (err) {
