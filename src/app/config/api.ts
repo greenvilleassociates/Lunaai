@@ -144,6 +144,10 @@ export const API_CONFIG = {
     // Timesheet (uses /api/Timesheet)
     TIMESHEETS: '/Timesheet',
     TIMESHEET_BY_ID: (id: number) => `/Timesheet/${id}`,
+
+    // SuperLuna (uses /api/SuperLuna)
+    SUPER_LUNA: '/SuperLuna',
+    SUPER_LUNA_BY_ID: (id: number) => `/SuperLuna/${id}`,
   },
 };
 

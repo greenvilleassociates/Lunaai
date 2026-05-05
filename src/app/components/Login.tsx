@@ -65,52 +65,6 @@ export function Login() {
         // Local JSON authentication successful
         console.log("Local JSON authentication successful for user:", localUser.username);
         
-        // Try to create the user in the database if they don't exist yet
-        try {
-          const userCreateUrl = getApiUrl(API_CONFIG.ENDPOINTS.USERS);
-          console.log("📤 Attempting to create user in database:", localUser.uid);
-          
-          const createResponse = await fetch(userCreateUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${localUser.uid}`,
-            },
-            body: JSON.stringify({
-              uid: localUser.uid,
-              username: localUser.username,
-              password: localUser.password,
-              role: localUser.role || "user",
-              companyId: localUser.companyId || "company-001",
-              address1: localUser.address1 || "",
-              address2: localUser.address2 || "",
-              city: localUser.city || "",
-              state: localUser.state || "",
-              zip: localUser.zip || "",
-              phone: localUser.phone || "",
-              cell: localUser.cell || "",
-              profilePicture: localUser.profilePicture || "",
-              email: localUser.email || `${localUser.username}@capitoltechnology.net`,
-            }),
-          });
-          
-          if (createResponse.ok) {
-            console.log("✅ User created in database successfully");
-          } else if (createResponse.status === 409) {
-            // 409 Conflict means user already exists - this is fine
-            console.log("✓ User already exists in database");
-          } else if (createResponse.status === 404) {
-            // 404 means the API endpoint doesn't exist - use local fallback
-            console.log("ℹ️ API endpoint not available - using local user data");
-          } else {
-            const errorText = await createResponse.text();
-            console.log(`ℹ️ Could not sync user to database (${createResponse.status}) - using local user data`);
-          }
-        } catch (error) {
-          // Don't block login if user creation fails - just use local data
-          console.log("ℹ️ API not available - using local user data");
-        }
-        
         // Get current time
         const loginTime = new Date().toLocaleString();
         

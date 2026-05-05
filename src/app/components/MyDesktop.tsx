@@ -92,23 +92,11 @@ export function MyDesktop() {
       if (response.ok) {
         const data = await response.json();
         
-        // For superusers with toggle ON: show all records
-        // For everyone else (or superusers with toggle OFF): show only their own records
-        let filteredSearches;
-        if (isSuperUser && currentView === "company") {
-          filteredSearches = data; // Show all records
-          console.log("✅ Search history loaded (ALL USERS - Superuser mode)");
-        } else if (isManager && currentView === "team") {
-          filteredSearches = data.filter((item: WebSearchResult) => 
-            teamMembers.some(member => member.uid === item.uid)
-          );
-          console.log("✅ Search history loaded (TEAM RECORDS only)");
-        } else {
-          filteredSearches = data.filter((item: WebSearchResult) => item.uid === uid);
-          console.log("✅ Search history loaded (MY RECORDS only)");
-        }
-        
-      setSearchHistory(filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5));
+        const filteredSearches = isSuperUser
+          ? data
+          : data.filter((item: WebSearchResult) => item.uid === uid);
+        console.log(`✅ Search history loaded (${isSuperUser ? "ALL USERS" : "MY RECORDS only"})`);
+        setSearchHistory(filteredSearches.sort((a: WebSearchResult, b: WebSearchResult) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5));
       } else {
         throw new Error("Database unavailable");
       }
@@ -119,17 +107,10 @@ export function MyDesktop() {
         const fallbackData = await fetchExternalData<WebSearchResult[]>(DATA_URLS.WEBSEARCH);
         const uid = localStorage.getItem("uid");
         
-        let filteredSearches;
-        if (isSuperUser && currentView === "company") {
-          filteredSearches = fallbackData;
-        } else if (isManager && currentView === "team") {
-          filteredSearches = fallbackData.filter((item: WebSearchResult) => 
-            teamMembers.some(member => member.uid === item.uid)
-          );
-        } else {
-          filteredSearches = fallbackData.filter((item: WebSearchResult) => item.uid === uid);
-        }
-        setSearchHistory(filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5));
+        const filteredSearches = isSuperUser
+          ? fallbackData
+          : fallbackData.filter((item: WebSearchResult) => item.uid === uid);
+        setSearchHistory(filteredSearches.sort((a: WebSearchResult, b: WebSearchResult) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5));
         console.log("✅ Search history loaded from local JSON fallback");
       } catch (fallbackErr) {
         console.error("Failed to load fallback data:", fallbackErr);
@@ -158,29 +139,17 @@ export function MyDesktop() {
       if (response.ok) {
         const data = await response.json();
         
-        // For superusers with toggle ON: show all records
-        // For everyone else (or superusers with toggle OFF): show only their own records
-        let filteredCommands;
-        if (isSuperUser && currentView === "company") {
-          filteredCommands = data; // Show all records
-          console.log("✅ Voice commands loaded (ALL USERS - Superuser mode)");
-        } else if (isManager && currentView === "team") {
-          filteredCommands = data.filter((item: VoiceCommand) => 
-            teamMembers.some(member => member.uid === item.useridstring || item.userid?.toString() === member.uid)
-          );
-          console.log("✅ Voice commands loaded (TEAM RECORDS only)");
-        } else {
-          // Filter by userid or useridstring
-          filteredCommands = data.filter((item: VoiceCommand) => 
-            item.useridstring === uid || item.userid?.toString() === uid
-          );
-          console.log("✅ Voice commands loaded (MY RECORDS only)");
-        }
+        const filteredCommands = isSuperUser
+          ? data
+          : data.filter((item: VoiceCommand) =>
+              item.useridstring === uid || item.userid?.toString() === uid
+            );
+        console.log(`✅ Voice commands loaded (${isSuperUser ? "ALL USERS" : "MY RECORDS only"})`);
         setVoiceCommands(
-  filtered
-    .sort((a, b) => new Date(b.actionTime || 0).getTime() - new Date(a.actionTime || 0).getTime())
-    .slice(0, 5)
-);
+          filteredCommands
+            .sort((a: VoiceCommand, b: VoiceCommand) => new Date(b.actionTime || 0).getTime() - new Date(a.actionTime || 0).getTime())
+            .slice(0, 5)
+        );
         } else {
         throw new Error("Database unavailable");
       }
