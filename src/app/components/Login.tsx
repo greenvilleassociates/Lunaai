@@ -440,7 +440,7 @@ export function Login() {
                 </svg>
                 <h4 className="font-semibold text-green-400">Current Build</h4>
               </div>
-              <p className="text-2xl font-bold text-white mb-1">Version 18.01</p>
+              <p className="text-2xl font-bold text-white mb-1">Version 19.0</p>
               <p className="text-xs text-slate-400 mb-2">Released: May 6, 2026</p>
               <a 
                 href="/versionhistory.html" 
@@ -496,19 +496,15 @@ export function Login() {
               <ul className="text-xs text-slate-300 space-y-2">
                 <li className="flex items-start gap-2">
                   <span className="text-purple-400 mt-0.5">•</span>
-                  <span>Registration changes</span>
+                  <span>Desktop search history sorted by request type (WebSearch, VoiceSearch, EnterpriseSearch, ClaudeAI)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-purple-400 mt-0.5">•</span>
-                  <span>Bug fixes</span>
+                  <span>Backup API destination configurable in Settings</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-purple-400 mt-0.5">•</span>
-                  <span>Enhanced security features</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-purple-400 mt-0.5">•</span>
-                  <span>Performance optimizations</span>
+                  <span>Voice Search API endpoint added (/api/VoiceSearch)</span>
                 </li>
               </ul>
             </div>

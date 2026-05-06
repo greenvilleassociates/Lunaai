@@ -282,10 +282,10 @@ export function Root() {
                 className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
                   isActive("/empowr") ? "bg-slate-700 text-white" : "text-slate-300"
                 }`}
-                title="Empowr for Enterprise Queries"
+                title="Empwr for Enterprise Queries"
               >
                 <SearchIcon sx={{ fontSize: 25 }} />
-                <span className="text-xs text-center">Empowr</span>
+                <span className="text-xs text-center">Empwr</span>
               </Link>
             )}
             {!isGuest && (
@@ -449,10 +449,10 @@ export function Root() {
                   className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
                     isActive("/empowr") ? "bg-slate-700 text-white" : "text-slate-300"
                   }`}
-                  title="Empowr for Enterprise Queries"
+                  title="Empwr for Enterprise Queries"
                 >
                   <SearchIcon fontSize="small" />
-                  <span className="text-sm">Empowr</span>
+                  <span className="text-sm">Empwr</span>
                 </Link>
               )}
               {!isGuest && (
@@ -689,7 +689,7 @@ export function Root() {
                   <ListItemIcon sx={{ color: "white" }}>
                     <SearchIcon />
                   </ListItemIcon>
-                  <ListItemText primary="Empowr for Enterprise Queries" />
+                  <ListItemText primary="Empwr for Enterprise Queries" />
                 </ListItemButton>
               </ListItem>
             )}

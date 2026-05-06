@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Box, Typography, Tabs, Tab, Paper, Alert, Chip, Button, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
-import { Settings as SettingsIcon, Psychology, Security, Tune, Api, Memory, Build, OpenInNew, RecordVoiceOver } from "@mui/icons-material";
+import { Box, Typography, Tabs, Tab, Paper, Alert, Chip, Button, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Switch, FormControlLabel } from "@mui/material";
+import { Settings as SettingsIcon, Psychology, Security, Tune, Api, Memory, Build, OpenInNew, RecordVoiceOver, CheckCircle, Cancel } from "@mui/icons-material";
 import { LLMAgentConfig } from "./LLMAgentConfig";
 import { CustomSLM } from "./CustomSLM";
 
@@ -32,6 +32,9 @@ export function Settings() {
   const [voiceEncodingFormat, setVoiceEncodingFormat] = useState<string>("wav-16khz");
   const [pendingFormat, setPendingFormat] = useState<string | null>(null);
   const [showFormatWarning, setShowFormatWarning] = useState(false);
+  const [backupApiUrl, setBackupApiUrl] = useState<string>("");
+  const [useBackupApi, setUseBackupApi] = useState<boolean>(false);
+  const [backupTestStatus, setBackupTestStatus] = useState<"idle" | "testing" | "ok" | "fail">("idle");
 
   // Check if user is superuser
   const currentUserRole = localStorage.getItem("role");
@@ -40,11 +43,15 @@ export function Settings() {
   const username = localStorage.getItem("username") || "User";
 
   useEffect(() => {
-    // Load saved voice encoding format from localStorage
     const savedFormat = localStorage.getItem("voiceEncodingFormat");
-    if (savedFormat) {
-      setVoiceEncodingFormat(savedFormat);
-    }
+    if (savedFormat) setVoiceEncodingFormat(savedFormat);
+
+    const savedBackupUrl = localStorage.getItem("backupApiUrl");
+    if (savedBackupUrl) setBackupApiUrl(savedBackupUrl);
+
+    const savedUseBackup = localStorage.getItem("useBackupApi") === "true";
+    setUseBackupApi(savedUseBackup);
+
     setLoading(false);
   }, []);
 
@@ -153,6 +160,30 @@ export function Settings() {
     );
   }
 
+  const handleSaveBackupApi = () => {
+    const trimmed = backupApiUrl.trim();
+    localStorage.setItem("backupApiUrl", trimmed);
+    localStorage.setItem("useBackupApi", useBackupApi ? "true" : "false");
+    setBackupTestStatus("idle");
+  };
+
+  const handleToggleBackup = (checked: boolean) => {
+    setUseBackupApi(checked);
+    localStorage.setItem("useBackupApi", checked ? "true" : "false");
+  };
+
+  const handleTestBackupConnection = async () => {
+    const url = backupApiUrl.trim();
+    if (!url) return;
+    setBackupTestStatus("testing");
+    try {
+      await fetch(`${url.replace(/\/$/, "")}/api`, { method: "HEAD", mode: "no-cors" });
+      setBackupTestStatus("ok");
+    } catch {
+      setBackupTestStatus("fail");
+    }
+  };
+
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
@@ -218,25 +249,119 @@ export function Settings() {
       </TabPanel>
 
       <TabPanel value={activeTab} index={1}>
-        <Box>
+        <Box className="space-y-4">
           <Typography variant="h5" className="mb-4">API Configuration</Typography>
+
+          {/* Primary API */}
           <Paper className="p-6">
-            <Typography variant="body1" color="text.secondary">
-              API endpoint configuration and management will be available here.
-            </Typography>
-            <Box className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Box className="p-4 border border-slate-200 rounded">
-                <Typography variant="subtitle1" className="mb-2 font-semibold">Azure API Root</Typography>
+            <Box className="flex items-center gap-2 mb-4">
+              <Api className="text-slate-700" />
+              <Typography variant="h6">Primary API</Typography>
+              {!useBackupApi && <Chip label="Active" color="success" size="small" />}
+            </Box>
+            <Box className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Box className="p-4 border border-slate-200 rounded bg-slate-50">
+                <Typography variant="subtitle2" className="mb-1 font-semibold text-slate-700">Azure API Root</Typography>
                 <Typography variant="body2" className="font-mono text-xs text-slate-600">
                   lunaapi-h3a0ataqcphhd5em.westus3-01.azurewebsites.net
                 </Typography>
               </Box>
-              <Box className="p-4 border border-slate-200 rounded">
-                <Typography variant="subtitle1" className="mb-2 font-semibold">Deployment URL</Typography>
+              <Box className="p-4 border border-slate-200 rounded bg-slate-50">
+                <Typography variant="subtitle2" className="mb-1 font-semibold text-slate-700">Deployment URL</Typography>
                 <Typography variant="body2" className="font-mono text-xs text-slate-600">
                   luna.capitoltechnology.net
                 </Typography>
               </Box>
+            </Box>
+          </Paper>
+
+          {/* Backup API */}
+          <Paper className="p-6">
+            <Box className="flex items-center gap-2 mb-4">
+              <Api className="text-slate-700" />
+              <Typography variant="h6">Backup API Destination</Typography>
+              {useBackupApi && <Chip label="Active" color="warning" size="small" />}
+            </Box>
+
+            <Alert severity={useBackupApi ? "warning" : "info"} className="mb-4">
+              {useBackupApi
+                ? "Backup API is currently active. All requests are being routed to the backup destination."
+                : "Configure a fallback API root URL. Enable the toggle to route all traffic to the backup."}
+            </Alert>
+
+            <Box className="space-y-4">
+              <TextField
+                fullWidth
+                label="Backup API Root URL"
+                placeholder="https://backup-api.example.com"
+                value={backupApiUrl}
+                onChange={(e) => {
+                  setBackupApiUrl(e.target.value);
+                  setBackupTestStatus("idle");
+                }}
+                helperText="Enter the root URL only (no /api path). Example: https://backup-api.example.com"
+                variant="outlined"
+                size="small"
+              />
+
+              <Box className="flex items-center justify-between flex-wrap gap-3">
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={useBackupApi}
+                      onChange={(e) => handleToggleBackup(e.target.checked)}
+                      disabled={!backupApiUrl.trim()}
+                      color="warning"
+                    />
+                  }
+                  label={
+                    <Typography variant="body2">
+                      Route all API traffic to backup destination
+                    </Typography>
+                  }
+                />
+
+                <Box className="flex items-center gap-2">
+                  {backupTestStatus === "ok" && (
+                    <Box className="flex items-center gap-1 text-green-600">
+                      <CheckCircle fontSize="small" />
+                      <Typography variant="caption">Reachable</Typography>
+                    </Box>
+                  )}
+                  {backupTestStatus === "fail" && (
+                    <Box className="flex items-center gap-1 text-red-600">
+                      <Cancel fontSize="small" />
+                      <Typography variant="caption">Unreachable</Typography>
+                    </Box>
+                  )}
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={handleTestBackupConnection}
+                    disabled={!backupApiUrl.trim() || backupTestStatus === "testing"}
+                    sx={{ borderColor: "#8B0000", color: "#8B0000", "&:hover": { borderColor: "#6B0000", backgroundColor: "rgba(139,0,0,0.04)" } }}
+                  >
+                    {backupTestStatus === "testing" ? "Testing..." : "Test Connection"}
+                  </Button>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={handleSaveBackupApi}
+                    disabled={!backupApiUrl.trim()}
+                    sx={{ backgroundColor: "#8B0000", "&:hover": { backgroundColor: "#6B0000" } }}
+                  >
+                    Save
+                  </Button>
+                </Box>
+              </Box>
+
+              {useBackupApi && backupApiUrl && (
+                <Box className="p-3 bg-amber-50 border border-amber-200 rounded">
+                  <Typography variant="body2" className="font-mono text-xs text-amber-800">
+                    Active: {backupApiUrl.replace(/\/$/, "")}/api/...
+                  </Typography>
+                </Box>
+              )}
             </Box>
           </Paper>
         </Box>

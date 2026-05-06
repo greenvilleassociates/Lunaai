@@ -90,6 +90,14 @@ export const API_CONFIG = {
     // Web Search / AI Lookup (uses /api/Websearch)
     WEB_SEARCH: '/Websearch',
     WEB_SEARCH_BY_ID: (id: number) => `/Websearch/${id}`,
+
+    // Voice Search (uses /api/VoiceSearch)
+    VOICE_SEARCH: '/VoiceSearch',
+    VOICE_SEARCH_BY_ID: (id: number) => `/VoiceSearch/${id}`,
+
+    // Empwr Enterprise Search (uses /api/ZEmpwr)
+    ZEMPWR: '/ZEmpwr',
+    ZEMPWR_BY_ID: (id: number) => `/ZEmpwr/${id}`,
     
     // User Help / Trouble Tickets (uses /api/Userhelp)
     USER_HELP: '/Userhelp',
@@ -152,9 +160,17 @@ export const API_CONFIG = {
 };
 
 /**
- * Helper function to build full API URLs
+ * Helper function to build full API URLs.
+ * If a backup API is configured and active in localStorage, uses that instead.
  */
 export function getApiUrl(endpoint: string): string {
+  const useBackup = localStorage.getItem('useBackupApi') === 'true';
+  const backupRootUrl = localStorage.getItem('backupApiUrl');
+
+  if (useBackup && backupRootUrl) {
+    return `${backupRootUrl.replace(/\/$/, '')}${API_CONFIG.BASE_PATH}${endpoint}`;
+  }
+
   return `${API_CONFIG.BASE_URL}${endpoint}`;
 }
 

@@ -1,14 +1,16 @@
 import { Link } from "react-router";
 import { useState, useEffect } from "react";
-import FolderIcon from "@mui/icons-material/Folder";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import SearchIcon from "@mui/icons-material/Search";
 import MicIcon from "@mui/icons-material/Mic";
-import AudioFileIcon from "@mui/icons-material/AudioFile";
 import PersonIcon from "@mui/icons-material/Person";
 import GroupIcon from "@mui/icons-material/Group";
 import BusinessIcon from "@mui/icons-material/Business";
-import { Switch, FormControlLabel, Box, Tabs, Tab } from "@mui/material";
+import ManageSearchIcon from "@mui/icons-material/ManageSearch";
+import RecordVoiceOverIcon from "@mui/icons-material/RecordVoiceOver";
+import CorporateFareIcon from "@mui/icons-material/CorporateFare";
+import SmartToyIcon from "@mui/icons-material/SmartToy";
+import { Box, Tabs, Tab } from "@mui/material";
 import { API_CONFIG, getApiUrl } from "../config/api";
 import { DATA_URLS, fetchExternalData } from "../config/dataUrls";
 
@@ -21,6 +23,13 @@ interface WebSearchResult {
   metadata: string;
   expectedtokens: number;
   expectedcost: number;
+  requestType?: number | null; // 1=WebSearch, 2=VoiceSearch, 3=EnterpriseSearch, 4=ClaudeAI
+  model?: string | null;
+  url1?: string | null;
+  url2?: string | null;
+  url3?: string | null;
+  url4?: string | null;
+  url5?: string | null;
 }
 
 interface VoiceCommand {
@@ -276,6 +285,46 @@ export function MyDesktop() {
     return `$${cost.toFixed(4)}`;
   };
 
+  const getSearchTypeBadge = (requestType?: number | null) => {
+    switch (requestType) {
+      case 1:
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+            <ManageSearchIcon sx={{ fontSize: 12 }} />
+            WebSearch
+          </span>
+        );
+      case 2:
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+            <RecordVoiceOverIcon sx={{ fontSize: 12 }} />
+            VoiceSearch
+          </span>
+        );
+      case 3:
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+            <CorporateFareIcon sx={{ fontSize: 12 }} />
+            EnterpriseSearch
+          </span>
+        );
+      case 4:
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+            <SmartToyIcon sx={{ fontSize: 12 }} />
+            ClaudeAI
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+            <ManageSearchIcon sx={{ fontSize: 12 }} />
+            WebSearch
+          </span>
+        );
+    }
+  };
+
   const truncateText = (text: string, maxLength: number) => {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + "...";
@@ -383,23 +432,44 @@ export function MyDesktop() {
                 </Link>
               </div>
             ) : (
-              searchHistory.map((item) => (
-                <div key={item.id} className="p-3 bg-slate-50 rounded text-sm">
-                  <p className="font-medium text-slate-900 mb-1">
-                    {truncateText(item.question, 60)}
-                  </p>
-                  <p className="text-slate-600 text-xs mb-1">
-                    {truncateText(item.response || "Processing...", 80)}
-                  </p>
-                  <div className="flex items-center gap-3 text-xs text-slate-500">
-                    <span>{formatDate(item.timestamp)}</span>
-                    <span>•</span>
-                    <span>{item.expectedtokens} tokens</span>
-                    <span>•</span>
-                    <span>{formatCost(item.expectedcost)}</span>
+              searchHistory.map((item) => {
+                const blobUrls = [item.url1, item.url2, item.url3, item.url4, item.url5].filter(Boolean) as string[];
+                return (
+                  <div key={item.id} className="p-3 bg-slate-50 rounded text-sm">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="font-medium text-slate-900">
+                        {truncateText(item.question, 55)}
+                      </p>
+                      {getSearchTypeBadge(item.requestType)}
+                    </div>
+                    <p className="text-slate-600 text-xs mb-1">
+                      {truncateText(item.response || "Processing...", 80)}
+                    </p>
+                    {blobUrls.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-1 mb-1">
+                        {blobUrls.map((url, i) => (
+                          <a
+                            key={i}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                          >
+                            📄 Document {i + 1}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-3 text-xs text-slate-500">
+                      <span>{formatDate(item.timestamp)}</span>
+                      <span>•</span>
+                      <span>{item.expectedtokens} tokens</span>
+                      <span>•</span>
+                      <span>{formatCost(item.expectedcost)}</span>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
           {searchHistory.length > 0 && (

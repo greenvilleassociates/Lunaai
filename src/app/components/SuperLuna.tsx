@@ -645,7 +645,7 @@ export function SuperLuna() {
         {!isCorporateUser && (
           <Paper className="p-4 mb-4 bg-slate-50 border border-slate-300">
             <Box className="flex items-center gap-2">
-              <PersonOutline color="action" />
+              <PersonOutlineOutlined color="action" />
               <Typography variant="body2" color="text.secondary">
                 <strong>Personal Account:</strong> You are not associated with a company. These are your personal SuperLuna preferences.
               </Typography>

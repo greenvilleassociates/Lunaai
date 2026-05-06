@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import * as d3 from "d3";
 import { API_CONFIG, getApiUrl } from "../config/api";
 import { DATA_URLS, fetchExternalData } from "../config/dataUrls";
-import { Button } from "@mui/material";
+import { Button, Tabs, Tab, Box } from "@mui/material";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 interface MonthlyData {
   month: string;
@@ -33,7 +35,12 @@ interface VoiceCommand {
   displayname?: string | null;
 }
 
+// Update this URL when your D3/SQL render endpoint is ready
+const REALTIME_GRAPHS_URL = "";
+
 export function Visualizations() {
+  const [activeTab, setActiveTab] = useState(0);
+  const centercountRef = useRef<HTMLDivElement>(null);
   const [viewMode, setViewMode] = useState<"current" | "all">("current");
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -163,6 +170,16 @@ export function Visualizations() {
       textSearches: monthlyMap[month].textSearches,
       voiceCommands: monthlyMap[month].voiceCommands,
     }));
+  };
+
+  const saveSnapshotToPDF = async () => {
+    if (!centercountRef.current) return;
+    const canvas = await html2canvas(centercountRef.current, { useCORS: true, scale: 2 });
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [800, 800] });
+    pdf.addImage(imgData, "PNG", 0, 0, 800, 800);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    pdf.save(`Centercourt-${timestamp}.pdf`);
   };
 
   const drawChart = () => {
@@ -304,6 +321,72 @@ export function Visualizations() {
         View and analyze AI Text Searches and Voice AI Commands through interactive visualizations.
       </p>
 
+      {/* Tabs */}
+      <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
+        <Tabs
+          value={activeTab}
+          onChange={(_e, val) => setActiveTab(val)}
+          sx={{
+            "& .MuiTab-root": { textTransform: "none", fontWeight: 500 },
+            "& .Mui-selected": { color: "#000000 !important" },
+            "& .MuiTabs-indicator": { backgroundColor: "#000000" },
+          }}
+        >
+          <Tab label="Activity Charts" />
+          <Tab label="Real-Time Graphics" />
+        </Tabs>
+      </Box>
+
+      {/* Centercourt Tab */}
+      {activeTab === 1 && (
+        <div className="bg-white border border-slate-200 rounded-lg overflow-hidden" ref={centercountRef} style={{ width: "800px" }}>
+          <div className="px-6 py-4 border-b border-slate-200">
+            <h3 className="text-2xl">Centercourt</h3>
+            <p className="text-slate-600 text-sm mt-1">
+              Live D3 visualizations from router &amp; switch data via AI-generated SQL
+            </p>
+          </div>
+          {REALTIME_GRAPHS_URL ? (
+            <iframe
+              src={REALTIME_GRAPHS_URL}
+              title="Centercourt"
+              style={{ width: "800px", height: "800px", border: "none" }}
+              allowFullScreen
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center text-slate-400 gap-3" style={{ width: "800px", height: "800px" }}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <rect x="2" y="3" width="20" height="14" rx="2" />
+                <path d="M8 21h8M12 17v4" />
+              </svg>
+              <p className="text-lg font-medium text-slate-500">Centercourt endpoint not yet configured</p>
+              <p className="text-sm">Set <code className="bg-slate-100 px-1 rounded">REALTIME_GRAPHS_URL</code> in Visualizations.tsx when your render endpoint is ready</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Save Snapshot Button */}
+      {activeTab === 1 && (
+        <div className="mt-4" style={{ width: "800px" }}>
+          <Button
+            variant="contained"
+            onClick={saveSnapshotToPDF}
+            sx={{
+              backgroundColor: "#000000",
+              color: "#ffffff",
+              textTransform: "none",
+              fontWeight: 500,
+              "&:hover": { backgroundColor: "#1a1a1a" },
+            }}
+          >
+            Save Snapshot as PDF
+          </Button>
+        </div>
+      )}
+
+      {/* Activity Charts Tab */}
+      {activeTab === 0 && <>
       {/* View Mode Toggle */}
       {isSuperuser && (
         <div className="mb-6 flex gap-3">
@@ -387,6 +470,7 @@ export function Visualizations() {
           </p>
         </div>
       </div>
+      </>}
     </div>
   );
 }
