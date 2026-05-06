@@ -440,8 +440,8 @@ export function Login() {
                 </svg>
                 <h4 className="font-semibold text-green-400">Current Build</h4>
               </div>
-              <p className="text-2xl font-bold text-white mb-1">Version 17.02</p>
-              <p className="text-xs text-slate-400 mb-2">Released: May 1, 2026</p>
+              <p className="text-2xl font-bold text-white mb-1">Version 18.01</p>
+              <p className="text-xs text-slate-400 mb-2">Released: May 6, 2026</p>
               <a 
                 href="/versionhistory.html" 
                 target="_blank" 

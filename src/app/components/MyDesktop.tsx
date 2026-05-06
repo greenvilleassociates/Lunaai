@@ -91,11 +91,20 @@ export function MyDesktop() {
 
       if (response.ok) {
         const data = await response.json();
-        
-        const filteredSearches = isSuperUser
+
+        // Individual view always shows current user's data only
+        // Company/Team view shows all data for superusers
+        const showAll = isSuperUser && currentView !== "individual";
+        const filteredSearches = showAll
           ? data
           : data.filter((item: WebSearchResult) => item.uid === uid);
-        console.log(`✅ Search history loaded (${isSuperUser ? "ALL USERS" : "MY RECORDS only"})`);
+        console.log(`✅ Search history loaded (${showAll ? "ALL USERS" : "MY RECORDS only"})`);
+
+        // If API returned empty and we're in company/team view as superuser, use fallback demo data
+        if (filteredSearches.length === 0 && showAll) {
+          throw new Error("API returned empty, loading demo data");
+        }
+
         setSearchHistory(filteredSearches.sort((a: WebSearchResult, b: WebSearchResult) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5));
       } else {
         throw new Error("Database unavailable");
@@ -106,8 +115,9 @@ export function MyDesktop() {
       try {
         const fallbackData = await fetchExternalData<WebSearchResult[]>(DATA_URLS.WEBSEARCH);
         const uid = localStorage.getItem("uid");
-        
-        const filteredSearches = isSuperUser
+
+        const showAll = isSuperUser && currentView !== "individual";
+        const filteredSearches = showAll
           ? fallbackData
           : fallbackData.filter((item: WebSearchResult) => item.uid === uid);
         setSearchHistory(filteredSearches.sort((a: WebSearchResult, b: WebSearchResult) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5));
@@ -138,13 +148,14 @@ export function MyDesktop() {
 
       if (response.ok) {
         const data = await response.json();
-        
-        const filteredCommands = isSuperUser
+
+        const showAll = isSuperUser && currentView !== "individual";
+        const filteredCommands = showAll
           ? data
           : data.filter((item: VoiceCommand) =>
               item.useridstring === uid || item.userid?.toString() === uid
             );
-        console.log(`✅ Voice commands loaded (${isSuperUser ? "ALL USERS" : "MY RECORDS only"})`);
+        console.log(`✅ Voice commands loaded (${showAll ? "ALL USERS" : "MY RECORDS only"})`);
         setVoiceCommands(
           filteredCommands
             .sort((a: VoiceCommand, b: VoiceCommand) => new Date(b.actionTime || 0).getTime() - new Date(a.actionTime || 0).getTime())
@@ -232,8 +243,7 @@ export function MyDesktop() {
       console.warn("⚠ Database unavailable - loading users from local JSON:", err);
       // Fallback to local JSON data
       try {
-        const usersResponse = await fetch("/src/app/data/users.json");
-        const allUsers = await usersResponse.json();
+        const allUsers = await fetchExternalData<User[]>(DATA_URLS.USERS);
         const companyId = localStorage.getItem("companyId");
         const companyUsersList = allUsers.filter((user: User) => user.companyId === companyId);
         setCompanyUsers(companyUsersList);
@@ -365,7 +375,9 @@ export function MyDesktop() {
               </div>
             ) : searchHistory.length === 0 ? (
               <div className="p-3 bg-slate-50 rounded text-sm text-center text-slate-500">
-                No search history yet.{" "}
+                {isSuperUser && currentView === "individual"
+                  ? "No personal searches yet. Switch to Company View to see all users' activity."
+                  : "No search history yet."}{" "}
                 <Link to="/aisearch" className="text-blue-600 hover:underline">
                   Try AI Search
                 </Link>
@@ -418,7 +430,9 @@ export function MyDesktop() {
               </div>
             ) : voiceCommands.length === 0 ? (
               <div className="p-3 bg-slate-50 rounded text-sm text-center text-slate-500">
-                No voice commands yet.{" "}
+                {isSuperUser && currentView === "individual"
+                  ? "No personal voice commands yet. Switch to Company View to see all users' activity."
+                  : "No voice commands yet."}{" "}
                 <Link to="/uploadprompt" className="text-blue-600 hover:underline">
                   Upload Voice File
                 </Link>
