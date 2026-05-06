@@ -5,6 +5,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import HistoryIcon from "@mui/icons-material/History";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import GoogleIcon from "@mui/icons-material/Google";
 import ctsLogo from "figma:asset/399d93660a307619ab55b61f935095fec4286492.png";
 
 export function Features() {
@@ -63,6 +64,15 @@ export function Features() {
       icon: <HistoryIcon sx={{ fontSize: 48 }} />,
       action: "View Entries",
       route: "/mydesktop",
+      external: false,
+    },
+    {
+      id: 7,
+      title: "Google Gemini Search",
+      description: "Ask questions powered by Google Gemini AI via the LunaAI orchestration layer using the /api/ZGoogle endpoint.",
+      icon: <GoogleIcon sx={{ fontSize: 48, color: "#4285F4" }} />,
+      action: "Search Gemini",
+      route: "/googlesearch",
       external: false,
     },
   ];

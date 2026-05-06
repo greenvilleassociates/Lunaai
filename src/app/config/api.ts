@@ -98,6 +98,9 @@ export const API_CONFIG = {
     // Empwr Enterprise Search (uses /api/ZEmpwr)
     ZEMPWR: '/ZEmpwr',
     ZEMPWR_BY_ID: (id: number) => `/ZEmpwr/${id}`,
+
+    // Google Gemini Search (uses /api/ZGoogle)
+    ZGOOGLE: '/ZGoogle',
     
     // User Help / Trouble Tickets (uses /api/Userhelp)
     USER_HELP: '/Userhelp',

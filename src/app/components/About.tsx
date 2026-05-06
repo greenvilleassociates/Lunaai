@@ -7,7 +7,7 @@ export function About() {
       <Box className="flex items-center justify-between mb-6">
         <h2 className="text-3xl">About LunaAI</h2>
         <Chip
-          label="Version 19.0"
+          label="Version 20.0"
           color="success"
           icon={<NewReleases />}
           sx={{ fontSize: '1rem', padding: '20px 10px' }}
@@ -79,19 +79,19 @@ export function About() {
                 <Paper className="p-4 border-l-4 border-green-600 bg-green-50">
                   <Box className="flex items-center justify-between mb-2">
                     <Typography variant="h6" className="font-bold text-green-800">
-                      Version 19.0 - Current Build
+                      Version 20.0 - Current Build
                     </Typography>
                     <Chip label="May 6, 2026" color="success" size="small" />
                   </Box>
                   <Typography variant="subtitle2" className="mb-3 text-green-700">
-                    Visualizations — Centercourt Real-Time Network Graphs
+                    Sortable Desktop &amp; Features Keyword Search
                   </Typography>
                   <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">
-                    <li><strong>Centercourt Panel</strong> - New Real-Time Graphics tab on the Visualizations page for live router & switch D3 graphs</li>
-                    <li><strong>AI-Generated SQL</strong> - Network graph data driven by AI-generated SQL queries against router/switch telemetry</li>
-                    <li><strong>800×800 Iframe Viewer</strong> - Dedicated Centercourt iframe rendered at fixed 800×800px</li>
-                    <li><strong>Snapshot to PDF</strong> - Save Centercourt screen content as a timestamped PDF to local documents</li>
-                    <li><strong>Tabbed Visualizations</strong> - Activity Charts and Real-Time Graphics tabs on the Visualizations page</li>
+                    <li><strong>Sortable Desktop</strong> - AI Text Search History and Voice Commands History panels are now sortable by date via arrow toggle buttons</li>
+                    <li><strong>Refresh Button</strong> - Dedicated refresh button on both Desktop history panels</li>
+                    <li><strong>UID Column</strong> - Poster UID shown in left column of each Desktop history row</li>
+                    <li><strong>Features Keyword Search</strong> - Text Search on the Features page now queries /api/WebSearch and returns matching records by keyword</li>
+                    <li><strong>Centercourt Panel</strong> - Real-Time Graphics tab with 800×800 iframe, PDF snapshot export</li>
                   </ul>
                 </Paper>
 

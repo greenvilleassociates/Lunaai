@@ -28,6 +28,7 @@ import { Enterprise9Security } from "./components/Enterprise9Security";
 import { GridLicenseManager } from "./components/GridLicenseManager";
 import { LunaAdBasePro } from "./components/LunaAdBasePro";
 import { Empowr } from "./components/Empowr";
+import { GoogleSearch } from "./components/GoogleSearch";
 
 export const router = createBrowserRouter([
   {
@@ -62,6 +63,7 @@ export const router = createBrowserRouter([
       { path: "gridlicensemanager", element: <ProtectedRoute><GridLicenseManager /></ProtectedRoute> },
       { path: "lunaadbasepro", element: <ProtectedRoute><LunaAdBasePro /></ProtectedRoute> },
       { path: "empowr", element: <ProtectedRoute><Empowr /></ProtectedRoute> },
+      { path: "googlesearch", element: <ProtectedRoute><GoogleSearch /></ProtectedRoute> },
     ],
   },
 ]);

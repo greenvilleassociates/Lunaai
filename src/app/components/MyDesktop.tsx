@@ -10,7 +10,10 @@ import ManageSearchIcon from "@mui/icons-material/ManageSearch";
 import RecordVoiceOverIcon from "@mui/icons-material/RecordVoiceOver";
 import CorporateFareIcon from "@mui/icons-material/CorporateFare";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
-import { Box, Tabs, Tab } from "@mui/material";
+import { Box, Tabs, Tab, IconButton, Tooltip } from "@mui/material";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import { API_CONFIG, getApiUrl } from "../config/api";
 import { DATA_URLS, fetchExternalData } from "../config/dataUrls";
 
@@ -62,6 +65,8 @@ export function MyDesktop() {
   const [currentView, setCurrentView] = useState<DesktopView>("individual");
   const [teamMembers, setTeamMembers] = useState<User[]>([]);
   const [companyUsers, setCompanyUsers] = useState<User[]>([]);
+  const [searchSortAsc, setSearchSortAsc] = useState(false);
+  const [voiceSortAsc, setVoiceSortAsc] = useState(false);
   
   // Check user role and permissions
   const currentUserRole = localStorage.getItem("role");
@@ -101,20 +106,17 @@ export function MyDesktop() {
       if (response.ok) {
         const data = await response.json();
 
-        // Individual view always shows current user's data only
-        // Company/Team view shows all data for superusers
+        // API already filters by authenticated user via Bearer token.
+        // In company/team view (superuser), show all returned records.
         const showAll = isSuperUser && currentView !== "individual";
-        const filteredSearches = showAll
-          ? data
-          : data.filter((item: WebSearchResult) => item.uid === uid);
         console.log(`✅ Search history loaded (${showAll ? "ALL USERS" : "MY RECORDS only"})`);
 
         // If API returned empty and we're in company/team view as superuser, use fallback demo data
-        if (filteredSearches.length === 0 && showAll) {
+        if (data.length === 0 && showAll) {
           throw new Error("API returned empty, loading demo data");
         }
 
-        setSearchHistory(filteredSearches.sort((a: WebSearchResult, b: WebSearchResult) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5));
+        setSearchHistory(data.sort((a: WebSearchResult, b: WebSearchResult) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5));
       } else {
         throw new Error("Database unavailable");
       }
@@ -158,12 +160,9 @@ export function MyDesktop() {
       if (response.ok) {
         const data = await response.json();
 
+        // API already filters by authenticated user via Bearer token.
         const showAll = isSuperUser && currentView !== "individual";
-        const filteredCommands = showAll
-          ? data
-          : data.filter((item: VoiceCommand) =>
-              item.useridstring === uid || item.userid?.toString() === uid
-            );
+        const filteredCommands = data;
         console.log(`✅ Voice commands loaded (${showAll ? "ALL USERS" : "MY RECORDS only"})`);
         setVoiceCommands(
           filteredCommands
@@ -271,6 +270,13 @@ export function MyDesktop() {
         console.log("✅ Mock company users loaded:", mockCompanyUsers.length);
       }
     }
+  };
+
+  const handleRefresh = () => {
+    setLoading(true);
+    setVoiceLoading(true);
+    loadRecentSearches();
+    loadVoiceCommands();
   };
 
   const formatDate = (timestamp: string) => {
@@ -412,7 +418,17 @@ export function MyDesktop() {
         <div className="p-8 border border-slate-200 rounded-lg bg-white">
           <div className="flex items-center gap-4 mb-4">
             <SearchIcon sx={{ fontSize: 48 }} className="text-slate-700" />
-            <h3 className="text-2xl">AI Text Search History</h3>
+            <h3 className="text-2xl flex-1">AI Text Search History</h3>
+            <Tooltip title={searchSortAsc ? "Sort Newest First" : "Sort Oldest First"}>
+              <IconButton size="small" onClick={() => setSearchSortAsc(v => !v)}>
+                {searchSortAsc ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />}
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Refresh">
+              <IconButton size="small" onClick={handleRefresh}>
+                <RefreshIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
           </div>
           <p className="text-slate-600 mb-4">
             Your most recent AI-powered text search queries and responses.
@@ -432,40 +448,54 @@ export function MyDesktop() {
                 </Link>
               </div>
             ) : (
-              searchHistory.map((item) => {
+              [...searchHistory]
+                .sort((a, b) => {
+                  const diff = new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+                  return searchSortAsc ? diff : -diff;
+                })
+                .map((item) => {
                 const blobUrls = [item.url1, item.url2, item.url3, item.url4, item.url5].filter(Boolean) as string[];
                 return (
-                  <div key={item.id} className="p-3 bg-slate-50 rounded text-sm">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="font-medium text-slate-900">
-                        {truncateText(item.question, 55)}
-                      </p>
-                      {getSearchTypeBadge(item.requestType)}
+                  <div key={item.id} className="p-3 bg-slate-50 rounded text-sm flex gap-3">
+                    {/* Left column: uid */}
+                    <div className="flex-shrink-0 w-20 flex items-start pt-0.5">
+                      <span className="text-xs font-mono bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded truncate w-full text-center" title={item.uid}>
+                        {item.uid ? item.uid.substring(0, 8) : "—"}
+                      </span>
                     </div>
-                    <p className="text-slate-600 text-xs mb-1">
-                      {truncateText(item.response || "Processing...", 80)}
-                    </p>
-                    {blobUrls.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-1 mb-1">
-                        {blobUrls.map((url, i) => (
-                          <a
-                            key={i}
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline"
-                          >
-                            📄 Document {i + 1}
-                          </a>
-                        ))}
+                    {/* Right column: content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="font-medium text-slate-900">
+                          {truncateText(item.question, 50)}
+                        </p>
+                        {getSearchTypeBadge(item.requestType)}
                       </div>
-                    )}
-                    <div className="flex items-center gap-3 text-xs text-slate-500">
-                      <span>{formatDate(item.timestamp)}</span>
-                      <span>•</span>
-                      <span>{item.expectedtokens} tokens</span>
-                      <span>•</span>
-                      <span>{formatCost(item.expectedcost)}</span>
+                      <p className="text-slate-600 text-xs mb-1">
+                        {truncateText(item.response || "Processing...", 80)}
+                      </p>
+                      {blobUrls.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-1 mb-1">
+                          {blobUrls.map((url, i) => (
+                            <a
+                              key={i}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                            >
+                              📄 Document {i + 1}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-3 text-xs text-slate-500">
+                        <span>{formatDate(item.timestamp)}</span>
+                        <span>•</span>
+                        <span>{item.expectedtokens} tokens</span>
+                        <span>•</span>
+                        <span>{formatCost(item.expectedcost)}</span>
+                      </div>
                     </div>
                   </div>
                 );
@@ -488,7 +518,17 @@ export function MyDesktop() {
         <div className="p-8 border border-slate-200 rounded-lg bg-white">
           <div className="flex items-center gap-4 mb-4">
             <MicIcon sx={{ fontSize: 48 }} className="text-slate-700" />
-            <h3 className="text-2xl">Voice Commands History</h3>
+            <h3 className="text-2xl flex-1">Voice Commands History</h3>
+            <Tooltip title={voiceSortAsc ? "Sort Newest First" : "Sort Oldest First"}>
+              <IconButton size="small" onClick={() => setVoiceSortAsc(v => !v)}>
+                {voiceSortAsc ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />}
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Refresh">
+              <IconButton size="small" onClick={handleRefresh}>
+                <RefreshIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
           </div>
           <p className="text-slate-600 mb-4">
             Your most recent voice uploads and processing status.
@@ -508,44 +548,56 @@ export function MyDesktop() {
                 </Link>
               </div>
             ) : (
-              voiceCommands.map((item) => {
-                // Extract filename from voiceBlobURL or use commandType
-                const fileName = item.commandType || 
-                  (item.voiceBlobURL ? item.voiceBlobURL.split('/').pop() : null) || 
+              [...voiceCommands]
+                .sort((a, b) => {
+                  const diff = new Date(a.actionTime || 0).getTime() - new Date(b.actionTime || 0).getTime();
+                  return voiceSortAsc ? diff : -diff;
+                })
+                .map((item) => {
+                const fileName = item.commandType ||
+                  (item.voiceBlobURL ? item.voiceBlobURL.split('/').pop() : null) ||
                   "Voice Recording";
-                
                 return (
-                  <div key={item.id} className="p-3 bg-slate-50 rounded text-sm">
-                    <p className="font-medium text-slate-900 mb-1">
-                      {truncateText(fileName, 60)}
-                    </p>
-                    {item.displayname && (
-                      <p className="text-slate-600 text-xs mb-1">
-                        User: {item.displayname}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-3 text-xs text-slate-500">
-                      <span>{item.actionTime ? formatDate(item.actionTime) : "N/A"}</span>
-                      <span>•</span>
-                      <span>Action Type: {item.actionType || "N/A"}</span>
-                      <span>•</span>
-                      <span
-                        className={`${
-                          item.status === "processing"
-                            ? "text-blue-600"
-                            : item.status === "completed"
-                            ? "text-green-600"
-                            : item.status === "queued"
-                            ? "text-yellow-600"
-                            : "text-slate-500"
-                        }`}
-                      >
-                        {item.status === "processing" && "🔄 Processing"}
-                        {item.status === "completed" && "✓ Completed"}
-                        {item.status === "queued" && "⏳ Queued"}
-                        {item.status === "failed" && "✗ Failed"}
-                        {!item.status && "Unknown"}
+                  <div key={item.id} className="p-3 bg-slate-50 rounded text-sm flex gap-3">
+                    {/* Left column: uid */}
+                    <div className="flex-shrink-0 w-20 flex items-start pt-0.5">
+                      <span className="text-xs font-mono bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded truncate w-full text-center" title={item.useridstring || ""}>
+                        {item.useridstring ? item.useridstring.substring(0, 8) : "—"}
                       </span>
+                    </div>
+                    {/* Right column: content */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-slate-900 mb-1">
+                        {truncateText(fileName, 55)}
+                      </p>
+                      {item.displayname && (
+                        <p className="text-slate-600 text-xs mb-1">
+                          User: {item.displayname}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-3 text-xs text-slate-500">
+                        <span>{item.actionTime ? formatDate(item.actionTime) : "N/A"}</span>
+                        <span>•</span>
+                        <span>Action Type: {item.actionType || "N/A"}</span>
+                        <span>•</span>
+                        <span
+                          className={`${
+                            item.status === "processing"
+                              ? "text-blue-600"
+                              : item.status === "completed"
+                              ? "text-green-600"
+                              : item.status === "queued"
+                              ? "text-yellow-600"
+                              : "text-slate-500"
+                          }`}
+                        >
+                          {item.status === "processing" && "🔄 Processing"}
+                          {item.status === "completed" && "✓ Completed"}
+                          {item.status === "queued" && "⏳ Queued"}
+                          {item.status === "failed" && "✗ Failed"}
+                          {!item.status && "Unknown"}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 );

@@ -440,7 +440,7 @@ export function Login() {
                 </svg>
                 <h4 className="font-semibold text-green-400">Current Build</h4>
               </div>
-              <p className="text-2xl font-bold text-white mb-1">Version 19.0</p>
+              <p className="text-2xl font-bold text-white mb-1">Version 20.0</p>
               <p className="text-xs text-slate-400 mb-2">Released: May 6, 2026</p>
               <a 
                 href="/versionhistory.html" 
@@ -496,15 +496,23 @@ export function Login() {
               <ul className="text-xs text-slate-300 space-y-2">
                 <li className="flex items-start gap-2">
                   <span className="text-purple-400 mt-0.5">•</span>
-                  <span>Desktop search history sorted by request type (WebSearch, VoiceSearch, EnterpriseSearch, ClaudeAI)</span>
+                  <span>Google Gemini Search — new /api/ZGoogle integration via Features</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-purple-400 mt-0.5">•</span>
-                  <span>Backup API destination configurable in Settings</span>
+                  <span>Sortable Desktop — history panels sortable by date with refresh button</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-purple-400 mt-0.5">•</span>
-                  <span>Voice Search API endpoint added (/api/VoiceSearch)</span>
+                  <span>UID column added to Desktop history rows</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-400 mt-0.5">•</span>
+                  <span>Text Search now queries /api/WebSearch by keyword</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-400 mt-0.5">•</span>
+                  <span>Centercourt — Real-Time Graphics tab with 800×800 iframe and PDF snapshot</span>
                 </li>
               </ul>
             </div>
