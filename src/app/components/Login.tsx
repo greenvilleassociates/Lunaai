@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router";
 import { IconButton } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
@@ -6,6 +6,14 @@ import { API_CONFIG, getApiUrl } from "../config/api";
 import { DATA_URLS, fetchExternalData } from "../config/dataUrls";
 import lunaLogo from "figma:asset/97a2e4984c2367786c9db0dc16a816860615bd7e.png";
 import { ApiWarmupLoader } from "./ApiWarmupLoader";
+import { ImageWithFallback } from "./figma/ImageWithFallback";
+
+const seasideImages = [
+  "https://images.unsplash.com/photo-1610289795012-6b0cebf95f0f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtYWxkaXZlcyUyMHR1cnF1b2lzZSUyMGJlYWNofGVufDF8fHx8MTc3MzA3MjAzMXww&ixlib=rb-4.1.0&q=80&w=1080",
+  "https://images.unsplash.com/photo-1651617733477-6cc82ceb3730?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzYW50b3JpbmklMjBncmVlY2UlMjBjb2FzdHxlbnwxfHx8fDE3NzMwNzIwMzF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+  "https://images.unsplash.com/photo-1714412192114-61dca8f15f68?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0cm9waWNhbCUyMHBhcmFkaXNlJTIwYmVhY2h8ZW58MXx8fHwxNzczMDcyMDMyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+  "https://images.unsplash.com/photo-1653580650559-9998f8a2e062?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb2FzdGFsJTIwc3Vuc2V0JTIwb2NlYW58ZW58MXx8fHwxNzczMDcyMDMyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+];
 
 /**
  * Login Component
@@ -45,7 +53,15 @@ export function Login() {
   const [loading, setLoading] = useState(false);
   const [showWarmupLoader, setShowWarmupLoader] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % seasideImages.length);
+    }, 8000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleWarmupComplete = async () => {
     // After warmup completes, proceed with authentication
@@ -333,7 +349,42 @@ export function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
+    <div className="relative min-h-screen overflow-hidden">
+      {/* Background Image Slideshow */}
+      {seasideImages.map((image, index) => (
+        <div
+          key={index}
+          className={`absolute inset-0 transition-opacity duration-1000 ${
+            index === currentImageIndex ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          <ImageWithFallback
+            src={image}
+            alt={`Background ${index + 1}`}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      ))}
+
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-900/70 via-slate-900/60 to-slate-900/80" />
+
+      {/* Image Indicators */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+        {seasideImages.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => setCurrentImageIndex(index)}
+            className={`h-2 rounded-full transition-all ${
+              index === currentImageIndex ? "bg-white w-8" : "bg-white/50 hover:bg-white/75 w-2"
+            }`}
+            aria-label={`View image ${index + 1}`}
+          />
+        ))}
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
       <div className="w-full h-[800px] flex flex-col items-center">
         {/* Login Form */}
         <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg">
@@ -518,6 +569,7 @@ export function Login() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
