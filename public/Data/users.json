@@ -12,7 +12,10 @@
     "zip": "27601",
     "phone": "919-555-0101",
     "cell": "919-555-0102",
-    "profilePicture": ""
+    "profilePicture": "",
+    "dse": 1,
+    "maxsearchengines": 1,
+    "chainsearch": 0
   },
   {
     "uid": "user-002",
@@ -27,7 +30,10 @@
     "zip": "27703",
     "phone": "919-555-0201",
     "cell": "919-555-0202",
-    "profilePicture": ""
+    "profilePicture": "",
+    "dse": 1,
+    "maxsearchengines": 1,
+    "chainsearch": 0
   },
   {
     "uid": "user-003",
@@ -42,7 +48,10 @@
     "zip": "27514",
     "phone": "919-555-0301",
     "cell": "919-555-0302",
-    "profilePicture": ""
+    "profilePicture": "",
+    "dse": 1,
+    "maxsearchengines": 1,
+    "chainsearch": 0
   },
   {
     "uid": "user-004",
@@ -57,7 +66,10 @@
     "zip": "27511",
     "phone": "919-555-0401",
     "cell": "919-555-0402",
-    "profilePicture": ""
+    "profilePicture": "",
+    "dse": 1,
+    "maxsearchengines": 1,
+    "chainsearch": 0
   },
   {
     "uid": "user-005",
@@ -72,7 +84,10 @@
     "zip": "27707",
     "phone": "919-555-0501",
     "cell": "919-555-0502",
-    "profilePicture": ""
+    "profilePicture": "",
+    "dse": 1,
+    "maxsearchengines": 1,
+    "chainsearch": 0
   },
   {
     "uid": "user-006",
@@ -87,6 +102,9 @@
     "zip": "27705",
     "phone": "919-555-0601",
     "cell": "919-555-0602",
-    "profilePicture": ""
+    "profilePicture": "",
+    "dse": 1,
+    "maxsearchengines": 1,
+    "chainsearch": 0
   }
 ]

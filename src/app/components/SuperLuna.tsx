@@ -46,6 +46,34 @@ import {
 import { API_CONFIG, getApiUrl } from "../config/api";
 import superLunaIcon from "figma:asset/cfadca739638cf837cbfaf51361c717172db777b.png";
 
+interface SuperLunaApiRecord {
+  id: string;
+  description: string;
+  saasInstance: string;
+  userId: string;
+  companyId: string;
+  llM1_Name: string;  llM1_Url: string;  llM1_Priority: number;
+  llM2_Name: string;  llM2_Url: string;  llM2_Priority: number;
+  llM3_Name: string;  llM3_Url: string;  llM3_Priority: number;
+  llM4_Name: string;  llM4_Url: string;  llM4_Priority: number;
+  llM5_Name: string;  llM5_Url: string;  llM5_Priority: number;
+  llM6_Name: string;  llM6_Url: string;  llM6_Priority: number;
+  llM7_Name: string;  llM7_Url: string;  llM7_Priority: number;
+  llM8_Name: string;  llM8_Url: string;  llM8_Priority: number;
+  llM9_Name: string;  llM9_Url: string;  llM9_Priority: number;
+  llM10_Name: string; llM10_Url: string; llM10_Priority: number;
+  llM11_Name: string; llM11_Url: string; llM11_Priority: number;
+  llM12_Name: string; llM12_Url: string; llM12_Priority: number;
+  llM13_Name: string; llM13_Url: string; llM13_Priority: number;
+  llM14_Name: string; llM14_Url: string; llM14_Priority: number;
+  llM15_Name: string; llM15_Url: string; llM15_Priority: number;
+  llM16_Name: string; llM16_Url: string; llM16_Priority: number;
+  llM17_Name: string; llM17_Url: string; llM17_Priority: number;
+  llM18_Name: string; llM18_Url: string; llM18_Priority: number;
+  llM19_Name: string; llM19_Url: string; llM19_Priority: number;
+  llM20_Name: string; llM20_Url: string; llM20_Priority: number;
+}
+
 interface LLMPreference {
   id: number;
   name: string;
@@ -88,6 +116,7 @@ export function SuperLuna() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [useCompanyDefaults, setUseCompanyDefaults] = useState(true);
+  const [existingConfigId, setExistingConfigId] = useState<string | null>(null);
   const [showAdminDialog, setShowAdminDialog] = useState(false);
   const [adminTabValue, setAdminTabValue] = useState(0);
 
@@ -103,53 +132,62 @@ export function SuperLuna() {
     loadUserPreferences();
   }, [useCompanyDefaults]);
 
+  const mapApiRecordToPreferences = (record: SuperLunaApiRecord): LLMPreference[] => {
+    const prefs: LLMPreference[] = [];
+    for (let i = 1; i <= 20; i++) {
+      const name = record[`llM${i}_Name` as keyof SuperLunaApiRecord] as string;
+      const priority = record[`llM${i}_Priority` as keyof SuperLunaApiRecord] as number;
+      if (name) {
+        prefs.push({
+          id: i,
+          name,
+          provider: name,
+          model: name.toLowerCase().replace(/\s+/g, "-"),
+          enabled: true,
+          priority: priority || i,
+        });
+      }
+    }
+    return prefs;
+  };
+
   const loadUserPreferences = async () => {
     setLoading(true);
     try {
-      let preferencesLoaded = false;
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.SUPER_LUNA);
+      const response = await fetch(url, {
+        headers: {
+          "Content-Type": "application/json",
+          ...(uid && { Authorization: `Bearer ${uid}` }),
+        },
+      });
 
-      // If corporate user and using company defaults
-      if (isCorporateUser && useCompanyDefaults) {
-        const companyUrl = getApiUrl(`/api/companyllmpreferences/${companyId}`);
-        const companyResponse = await fetch(companyUrl, {
-          headers: {
-            "Content-Type": "application/json",
-            ...(uid && { Authorization: `Bearer ${uid}` }),
-          },
-        });
+      if (response.ok) {
+        const data = await response.json();
+        const records: SuperLunaApiRecord[] = Array.isArray(data) ? data : [data];
 
-        if (companyResponse.ok) {
-          const companyData = await companyResponse.json();
-          applyPreferences(companyData);
-          preferencesLoaded = true;
-          console.log("✅ Company LLM preferences loaded");
+        // Find a record matching this user (or company defaults if toggled)
+        const matchKey = isCorporateUser && useCompanyDefaults ? "companyId" : "userId";
+        const matchVal = isCorporateUser && useCompanyDefaults ? companyId : uid;
+        const record = records.find((r) => r[matchKey] === matchVal);
+
+        if (record) {
+          setExistingConfigId(record.id);
+          const prefs = mapApiRecordToPreferences(record);
+          if (prefs.length > 0) {
+            setGlobalPreferences(prefs);
+            setErpPreferences(getDefaultEnterprisePreferences());
+            setAccountingPreferences(getDefaultEnterprisePreferences());
+            console.log(`✅ SuperLuna preferences loaded from /api/SuperLuna (${matchKey}: ${matchVal})`);
+            return;
+          }
         }
       }
 
-      // If not using company defaults or company load failed, load personal preferences
-      if (!preferencesLoaded) {
-        const userUrl = getApiUrl(`/api/userllmpreferences/${uid}`);
-        const userResponse = await fetch(userUrl, {
-          headers: {
-            "Content-Type": "application/json",
-            ...(uid && { Authorization: `Bearer ${uid}` }),
-          },
-        });
-
-        if (userResponse.ok) {
-          const userData = await userResponse.json();
-          applyPreferences(userData);
-          preferencesLoaded = true;
-          console.log("✅ Personal LLM preferences loaded");
-        }
-      }
-
-      // Fallback to defaults if nothing loaded
-      if (!preferencesLoaded) {
-        loadDefaultPreferences();
-      }
+      // Nothing found — use UI defaults
+      loadDefaultPreferences();
     } catch (err) {
-      console.error("Failed to load preferences:", err);
+      console.error("Failed to load SuperLuna preferences:", err);
       loadDefaultPreferences();
     } finally {
       setLoading(false);
@@ -353,36 +391,64 @@ export function SuperLuna() {
     setSuccess(`Priority updated in ${section} section!`);
   };
 
+  const buildApiPayload = (
+    prefs: LLMPreference[],
+    overrideUserId?: string,
+    overrideCompanyId?: string
+  ): Record<string, unknown> => {
+    // Merge global + ERP + accounting, deduped by id, sorted by priority
+    const seen = new Set<number>();
+    const allPrefs: LLMPreference[] = [];
+    for (const pref of [...prefs, ...erpPreferences, ...accountingPreferences]) {
+      if (!seen.has(pref.id)) {
+        seen.add(pref.id);
+        allPrefs.push(pref);
+      }
+    }
+    allPrefs.sort((a, b) => a.priority - b.priority);
+
+    const payload: Record<string, unknown> = {
+      description: `SuperLuna preferences for ${username}`,
+      saasInstance: "luna",
+      userId: overrideUserId ?? uid ?? "",
+      companyId: overrideCompanyId ?? localStorage.getItem("companyId") ?? "",
+    };
+
+    for (let i = 0; i < 20; i++) {
+      const n = i + 1;
+      const pref = allPrefs[i];
+      payload[`llM${n}_Name`] = pref?.name ?? "";
+      payload[`llM${n}_Url`] = "";
+      payload[`llM${n}_Priority`] = pref?.priority ?? 0;
+    }
+
+    return payload;
+  };
+
   const savePreferences = async () => {
     try {
-      const url = getApiUrl("/api/userllmpreferences");
-      
+      const baseUrl = getApiUrl(API_CONFIG.ENDPOINTS.SUPER_LUNA);
+      const isUpdate = !!existingConfigId;
+      const url = isUpdate ? `${baseUrl}/${existingConfigId}` : baseUrl;
+
       const response = await fetch(url, {
-        method: "POST",
+        method: isUpdate ? "PUT" : "POST",
         headers: {
           "Content-Type": "application/json",
           ...(uid && { Authorization: `Bearer ${uid}` }),
         },
-        body: JSON.stringify({
-          global: globalPreferences,
-          erp: erpPreferences,
-          accounting: accountingPreferences,
-          globalSlmPrivacy,
-          erpSlmPrivacy,
-          accountingSlmPrivacy,
-          globalFallback,
-          erpFallback,
-          accountingFallback,
-        }),
+        body: JSON.stringify(buildApiPayload(globalPreferences)),
       });
 
       if (response.ok) {
-        setSuccess("All preferences saved successfully!");
+        const result = await response.json();
+        if (!isUpdate && result?.id) setExistingConfigId(result.id);
+        setSuccess("SuperLuna preferences saved successfully!");
       } else {
-        setError("Failed to save preferences to server (saved locally)");
+        setError(`Failed to save preferences (${response.status} ${response.statusText})`);
       }
     } catch (err) {
-      setError("Failed to save preferences to server (saved locally)");
+      setError("Failed to save preferences to server");
     }
   };
 
@@ -850,33 +916,24 @@ export function SuperLuna() {
             variant="contained"
             onClick={async () => {
               try {
-                const url = getApiUrl(`/api/companyllmpreferences/${companyId}`);
-                
-                const response = await fetch(url, {
+                const baseUrl = getApiUrl(API_CONFIG.ENDPOINTS.SUPER_LUNA);
+                // Company defaults are stored as a SuperLuna record keyed by companyId
+                const response = await fetch(baseUrl, {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
                     ...(uid && { Authorization: `Bearer ${uid}` }),
                   },
-                  body: JSON.stringify({
-                    companyId,
-                    global: globalPreferences,
-                    erp: erpPreferences,
-                    accounting: accountingPreferences,
-                    globalSlmPrivacy,
-                    erpSlmPrivacy,
-                    accountingSlmPrivacy,
-                    globalFallback,
-                    erpFallback,
-                    accountingFallback,
-                  }),
+                  body: JSON.stringify(
+                    buildApiPayload(globalPreferences, `company:${companyId}`, companyId ?? "")
+                  ),
                 });
 
                 if (response.ok) {
                   setSuccess("Company-wide defaults saved successfully!");
                   setShowAdminDialog(false);
                 } else {
-                  setError("Failed to save company defaults");
+                  setError(`Failed to save company defaults (${response.status})`);
                 }
               } catch (err) {
                 setError("Failed to save company defaults");

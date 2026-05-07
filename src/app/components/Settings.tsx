@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Box, Typography, Tabs, Tab, Paper, Alert, Chip, Button, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Switch, FormControlLabel } from "@mui/material";
-import { Settings as SettingsIcon, Psychology, Security, Tune, Api, Memory, Build, OpenInNew, RecordVoiceOver, CheckCircle, Cancel } from "@mui/icons-material";
+import { Box, Typography, Tabs, Tab, Paper, Alert, Chip, Button, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Switch, FormControlLabel, RadioGroup, Radio, FormLabel } from "@mui/material";
+import { Settings as SettingsIcon, Psychology, Security, Tune, Api, Memory, Build, OpenInNew, RecordVoiceOver, CheckCircle, Cancel, ManageSearch } from "@mui/icons-material";
 import { LLMAgentConfig } from "./LLMAgentConfig";
 import { CustomSLM } from "./CustomSLM";
 
@@ -35,6 +35,9 @@ export function Settings() {
   const [backupApiUrl, setBackupApiUrl] = useState<string>("");
   const [useBackupApi, setUseBackupApi] = useState<boolean>(false);
   const [backupTestStatus, setBackupTestStatus] = useState<"idle" | "testing" | "ok" | "fail">("idle");
+  const [defaultSearchEngine, setDefaultSearchEngine] = useState<string>("1");
+  const [maxSearchEngines, setMaxSearchEngines] = useState<string>("1");
+  const [chainSearch, setChainSearch] = useState<string>("0");
 
   // Check if user is superuser
   const currentUserRole = localStorage.getItem("role");
@@ -51,6 +54,15 @@ export function Settings() {
 
     const savedUseBackup = localStorage.getItem("useBackupApi") === "true";
     setUseBackupApi(savedUseBackup);
+
+    const savedSearchEngine = localStorage.getItem("defaultSearchEngine");
+    if (savedSearchEngine) setDefaultSearchEngine(savedSearchEngine);
+
+    const savedMaxEngines = localStorage.getItem("maxsearchengines");
+    if (savedMaxEngines) setMaxSearchEngines(savedMaxEngines);
+
+    const savedChainSearch = localStorage.getItem("chainsearch");
+    if (savedChainSearch) setChainSearch(savedChainSearch);
 
     setLoading(false);
   }, []);
@@ -240,6 +252,7 @@ export function Settings() {
           <Tab icon={<Tune />} label="System Settings" iconPosition="start" />
           <Tab icon={<Memory />} label="Custom SLM" iconPosition="start" />
           <Tab icon={<Build />} label="Utilities" iconPosition="start" />
+          <Tab icon={<ManageSearch />} label="Search Engine" iconPosition="start" />
         </Tabs>
       </Paper>
 
@@ -598,6 +611,216 @@ export function Settings() {
 
       <TabPanel value={activeTab} index={4}>
         <CustomSLM />
+      </TabPanel>
+
+      <TabPanel value={activeTab} index={6}>
+        <Box>
+          <Typography variant="h5" className="mb-4">Default Search Engine</Typography>
+          <Paper className="p-6">
+            <Box className="flex items-center gap-2 mb-4">
+              <ManageSearch className="text-slate-700" />
+              <Typography variant="h6">Search Engine Preference</Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary" className="mb-6">
+              Choose which search engine is used by default when submitting queries through LunaAI.
+            </Typography>
+
+            <FormControl component="fieldset">
+              <FormLabel component="legend" sx={{ fontWeight: 600, color: "text.primary", mb: 2 }}>
+                Select Default Engine
+              </FormLabel>
+              <RadioGroup
+                value={defaultSearchEngine}
+                onChange={(e) => {
+                  setDefaultSearchEngine(e.target.value);
+                  localStorage.setItem("defaultSearchEngine", e.target.value);
+                }}
+              >
+                {/* Core options */}
+                <Box className={`p-3 mb-2 border rounded transition-colors ${defaultSearchEngine === "1" ? "border-amber-400 bg-amber-50" : "border-slate-200 hover:bg-slate-50"}`}>
+                  <FormControlLabel
+                    value="1"
+                    control={<Radio sx={{ color: "#8B0000", "&.Mui-checked": { color: "#8B0000" } }} />}
+                    label={
+                      <Box>
+                        <Typography variant="body1" sx={{ fontWeight: 600 }}>SuperLuna <Typography component="span" variant="caption" color="text.secondary">[1]</Typography></Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          LunaAI multi-provider aggregated search (default recommended)
+                        </Typography>
+                      </Box>
+                    }
+                  />
+
+                  {/* SuperLuna sub-options — visible only when SuperLuna is selected */}
+                  {defaultSearchEngine === "1" && (
+                    <Box className="mt-3 ml-8 p-4 bg-white border border-amber-200 rounded space-y-4">
+                      {/* Max Search Engines */}
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                          Max Search Engines
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" className="block mb-2">
+                          Total number of search engines used in a chained search (1 = no chaining).
+                        </Typography>
+                        <TextField
+                          type="number"
+                          size="small"
+                          value={maxSearchEngines}
+                          inputProps={{ min: 1, max: 7 }}
+                          sx={{ width: 100 }}
+                          onChange={(e) => {
+                            const val = Math.max(1, Math.min(7, parseInt(e.target.value) || 1)).toString();
+                            setMaxSearchEngines(val);
+                            localStorage.setItem("maxsearchengines", val);
+                          }}
+                        />
+                        <Typography variant="caption" color="text.secondary" className="ml-2">
+                          (1–7)
+                        </Typography>
+                      </Box>
+
+                      {/* Chain Search */}
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                          Chain Search
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" className="block mb-2">
+                          When enabled, SuperLuna queries multiple engines sequentially and aggregates results.
+                        </Typography>
+                        <RadioGroup
+                          row
+                          value={chainSearch}
+                          onChange={(e) => {
+                            setChainSearch(e.target.value);
+                            localStorage.setItem("chainsearch", e.target.value);
+                          }}
+                        >
+                          <FormControlLabel
+                            value="1"
+                            control={<Radio size="small" sx={{ color: "#8B0000", "&.Mui-checked": { color: "#8B0000" } }} />}
+                            label={<Typography variant="body2">Enable</Typography>}
+                          />
+                          <FormControlLabel
+                            value="0"
+                            control={<Radio size="small" sx={{ color: "#8B0000", "&.Mui-checked": { color: "#8B0000" } }} />}
+                            label={<Typography variant="body2">Disable</Typography>}
+                          />
+                        </RadioGroup>
+                      </Box>
+                    </Box>
+                  )}
+                </Box>
+
+                <Box className="p-3 mb-2 border border-slate-200 rounded hover:bg-slate-50 transition-colors">
+                  <FormControlLabel
+                    value="2"
+                    control={<Radio sx={{ color: "#8B0000", "&.Mui-checked": { color: "#8B0000" } }} />}
+                    label={
+                      <Box>
+                        <Typography variant="body1" sx={{ fontWeight: 600 }}>Keyword Based <Typography component="span" variant="caption" color="text.secondary">[2]</Typography></Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Traditional keyword search without AI processing
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                </Box>
+
+                {/* Preferred provider options */}
+                <Typography variant="subtitle2" sx={{ mt: 2, mb: 1, color: "text.secondary", fontWeight: 600, textTransform: "uppercase", fontSize: "0.7rem", letterSpacing: 1 }}>
+                  Preferred Provider
+                </Typography>
+
+                <Box className="p-3 mb-2 border border-slate-200 rounded hover:bg-slate-50 transition-colors">
+                  <FormControlLabel
+                    value="3"
+                    control={<Radio sx={{ color: "#8B0000", "&.Mui-checked": { color: "#8B0000" } }} />}
+                    label={
+                      <Box>
+                        <Typography variant="body1" sx={{ fontWeight: 600 }}>P-ChatGPT <Typography component="span" variant="caption" color="text.secondary">[3]</Typography></Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Route queries preferentially through OpenAI ChatGPT
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                </Box>
+
+                <Box className="p-3 mb-2 border border-slate-200 rounded hover:bg-slate-50 transition-colors">
+                  <FormControlLabel
+                    value="4"
+                    control={<Radio sx={{ color: "#8B0000", "&.Mui-checked": { color: "#8B0000" } }} />}
+                    label={
+                      <Box>
+                        <Typography variant="body1" sx={{ fontWeight: 600 }}>P-Google <Typography component="span" variant="caption" color="text.secondary">[4]</Typography></Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Route queries preferentially through Google Search
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                </Box>
+
+                <Box className="p-3 mb-2 border border-slate-200 rounded hover:bg-slate-50 transition-colors">
+                  <FormControlLabel
+                    value="5"
+                    control={<Radio sx={{ color: "#8B0000", "&.Mui-checked": { color: "#8B0000" } }} />}
+                    label={
+                      <Box>
+                        <Typography variant="body1" sx={{ fontWeight: 600 }}>P-Claude <Typography component="span" variant="caption" color="text.secondary">[5]</Typography></Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Route queries preferentially through Anthropic Claude
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                </Box>
+
+                <Box className="p-3 mb-2 border border-slate-200 rounded hover:bg-slate-50 transition-colors">
+                  <FormControlLabel
+                    value="6"
+                    control={<Radio sx={{ color: "#8B0000", "&.Mui-checked": { color: "#8B0000" } }} />}
+                    label={
+                      <Box>
+                        <Typography variant="body1" sx={{ fontWeight: 600 }}>P-Wikipedia <Typography component="span" variant="caption" color="text.secondary">[6]</Typography></Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Route queries preferentially through Wikipedia
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                </Box>
+
+                <Box className="p-3 mb-2 border border-slate-200 rounded hover:bg-slate-50 transition-colors">
+                  <FormControlLabel
+                    value="7"
+                    control={<Radio sx={{ color: "#8B0000", "&.Mui-checked": { color: "#8B0000" } }} />}
+                    label={
+                      <Box>
+                        <Typography variant="body1" sx={{ fontWeight: 600 }}>Empwr <Typography component="span" variant="caption" color="text.secondary">[7]</Typography></Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Route queries through the Empwr search platform
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                </Box>
+              </RadioGroup>
+            </FormControl>
+
+            <Box className="mt-6 p-4 bg-slate-50 border border-slate-200 rounded">
+              <Typography variant="subtitle2" className="mb-1 font-semibold">Current Selection</Typography>
+              <Chip
+                label={{"1":"1 — SuperLuna","2":"2 — Keyword","3":"3 — P-ChatGPT","4":"4 — P-Google","5":"5 — P-Claude","6":"6 — P-Wikipedia","7":"7 — Empwr"}[defaultSearchEngine] ?? defaultSearchEngine}
+                size="small"
+                sx={{ backgroundColor: "#8B0000", color: "white" }}
+              />
+              <Typography variant="caption" color="text.secondary" className="mt-2 block">
+                This preference is saved locally and applied when using the AI Search feature.
+              </Typography>
+            </Box>
+          </Paper>
+        </Box>
       </TabPanel>
 
       <TabPanel value={activeTab} index={5}>

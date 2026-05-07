@@ -6,7 +6,9 @@ import HistoryIcon from "@mui/icons-material/History";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import GoogleIcon from "@mui/icons-material/Google";
+import { Box } from "@mui/material";
 import ctsLogo from "figma:asset/399d93660a307619ab55b61f935095fec4286492.png";
+import superLunaIcon from "figma:asset/cfadca739638cf837cbfaf51361c717172db777b.png";
 
 export function Features() {
   const navigate = useNavigate();
@@ -73,6 +75,49 @@ export function Features() {
       icon: <GoogleIcon sx={{ fontSize: 48, color: "#4285F4" }} />,
       action: "Search Gemini",
       route: "/googlesearch",
+      external: false,
+    },
+    {
+      id: 8,
+      title: "SuperLuna Search",
+      description: "Multi-provider chained AI search via the LunaAI SuperLuna orchestration layer using /api/SuperLunaSearch.",
+      icon: (
+        <img
+          src={superLunaIcon}
+          alt="SuperLuna"
+          className="w-12 h-12 rounded-full object-cover border-2 border-yellow-400"
+        />
+      ),
+      action: "Search SuperLuna",
+      route: "/superlunasearch",
+      external: false,
+    },
+    {
+      id: 9,
+      title: "Weather Underground",
+      description: "Query weather data and forecasts via IBM's Weather Underground platform through the LunaAI orchestration layer using /api/WeatherUnderground.",
+      icon: (
+        <Box
+          sx={{
+            width: 48,
+            height: 48,
+            backgroundColor: "#0062FF",
+            color: "white",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontWeight: 700,
+            fontSize: 14,
+            borderRadius: 1,
+            letterSpacing: "0.08em",
+            fontFamily: "monospace",
+          }}
+        >
+          IBM
+        </Box>
+      ),
+      action: "Get Weather",
+      route: "/weathersearch",
       external: false,
     },
   ];

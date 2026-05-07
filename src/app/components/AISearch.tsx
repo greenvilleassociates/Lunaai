@@ -14,8 +14,10 @@ import {
   Box,
   Typography,
   Chip,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
-import { Search, Send } from "@mui/icons-material";
+import { Search, Send, ArrowDownward, ArrowUpward } from "@mui/icons-material";
 import { API_CONFIG, getApiUrl } from "../config/api";
 
 interface WebSearchResult {
@@ -36,6 +38,7 @@ export function AISearch() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [currentResponse, setCurrentResponse] = useState<WebSearchResult | null>(null);
+  const [sortNewestFirst, setSortNewestFirst] = useState(true);
 
   // Load search history on mount
   useEffect(() => {
@@ -262,6 +265,11 @@ export function AISearch() {
         <Box className="flex items-center gap-2 mb-4">
           <Search />
           <Typography variant="h6">Search History</Typography>
+          <Tooltip title={sortNewestFirst ? "Showing newest first" : "Showing oldest first"}>
+            <IconButton size="small" onClick={() => setSortNewestFirst((prev) => !prev)}>
+              {sortNewestFirst ? <ArrowDownward fontSize="small" /> : <ArrowUpward fontSize="small" />}
+            </IconButton>
+          </Tooltip>
         </Box>
 
         {searchHistory.length === 0 ? (
@@ -283,7 +291,12 @@ export function AISearch() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {searchHistory.map((item) => (
+                {[...searchHistory]
+                  .sort((a, b) => {
+                    const diff = new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+                    return sortNewestFirst ? diff : -diff;
+                  })
+                  .map((item) => (
                   <TableRow key={item.id}>
                     <TableCell sx={{ maxWidth: 250 }}>
                       <Typography variant="body2" className="line-clamp-2">

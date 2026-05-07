@@ -119,6 +119,9 @@ export function Login() {
         localStorage.setItem("latitude", latitude);
         localStorage.setItem("longitude", longitude);
         localStorage.setItem("ipAddress", ipAddress);
+        localStorage.setItem("defaultSearchEngine", (localUser.dse ?? 1).toString());
+        localStorage.setItem("maxsearchengines", (localUser.maxsearchengines ?? 1).toString());
+        localStorage.setItem("chainsearch", (localUser.chainsearch ?? 0).toString());
         
         console.log("LocalStorage updated with uid:", localStorage.getItem("uid"));
         console.log("LocalStorage updated with userid:", localStorage.getItem("userid"));
@@ -277,6 +280,9 @@ export function Login() {
       localStorage.setItem("latitude", latitude);
       localStorage.setItem("longitude", longitude);
       localStorage.setItem("ipAddress", ipAddress);
+      localStorage.setItem("defaultSearchEngine", (user.dse ?? 1).toString());
+      localStorage.setItem("maxsearchengines", (user.maxsearchengines ?? 1).toString());
+      localStorage.setItem("chainsearch", (user.chainsearch ?? 0).toString());
       
       // Store auth token if using API authentication
       if (authToken) {

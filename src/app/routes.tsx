@@ -29,6 +29,8 @@ import { GridLicenseManager } from "./components/GridLicenseManager";
 import { LunaAdBasePro } from "./components/LunaAdBasePro";
 import { Empowr } from "./components/Empowr";
 import { GoogleSearch } from "./components/GoogleSearch";
+import { WeatherSearch } from "./components/WeatherSearch";
+import { SuperLunaSearch } from "./components/SuperLunaSearch";
 
 export const router = createBrowserRouter([
   {
@@ -64,6 +66,8 @@ export const router = createBrowserRouter([
       { path: "lunaadbasepro", element: <ProtectedRoute><LunaAdBasePro /></ProtectedRoute> },
       { path: "empowr", element: <ProtectedRoute><Empowr /></ProtectedRoute> },
       { path: "googlesearch", element: <ProtectedRoute><GoogleSearch /></ProtectedRoute> },
+      { path: "weathersearch", element: <ProtectedRoute><WeatherSearch /></ProtectedRoute> },
+      { path: "superlunasearch", element: <ProtectedRoute><SuperLunaSearch /></ProtectedRoute> },
     ],
   },
 ]);

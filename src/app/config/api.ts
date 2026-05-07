@@ -159,6 +159,14 @@ export const API_CONFIG = {
     // SuperLuna (uses /api/SuperLuna)
     SUPER_LUNA: '/SuperLuna',
     SUPER_LUNA_BY_ID: (id: number) => `/SuperLuna/${id}`,
+
+    // Weather Underground / IBM Weather (uses /api/WeatherUnderground)
+    WEATHER_UNDERGROUND: '/WeatherUnderground',
+    WEATHER_UNDERGROUND_BY_ID: (id: number) => `/WeatherUnderground/${id}`,
+
+    // SuperLuna Search (uses /api/SuperLunaSearch)
+    SUPER_LUNA_SEARCH: '/SuperLunaSearch',
+    SUPER_LUNA_SEARCH_BY_ID: (id: number) => `/SuperLunaSearch/${id}`,
   },
 };
 
