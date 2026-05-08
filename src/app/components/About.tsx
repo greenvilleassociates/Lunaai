@@ -7,7 +7,7 @@ export function About() {
       <Box className="flex items-center justify-between mb-6">
         <h2 className="text-3xl">About LunaAI</h2>
         <Chip
-          label="Version 22"
+          label="Version 24"
           color="success"
           icon={<NewReleases />}
           sx={{ fontSize: '1rem', padding: '20px 10px' }}
@@ -75,15 +75,35 @@ export function About() {
             </AccordionSummary>
             <AccordionDetails>
               <Box className="space-y-4">
-                {/* Version 19.0 */}
+                {/* Version 24 */}
                 <Paper className="p-4 border-l-4 border-green-600 bg-green-50">
                   <Box className="flex items-center justify-between mb-2">
                     <Typography variant="h6" className="font-bold text-green-800">
-                      Version 22 - Current Build
+                      Version 24 - Current Build
+                    </Typography>
+                    <Chip label="May 8, 2026" color="success" size="small" />
+                  </Box>
+                  <Typography variant="subtitle2" className="mb-3 text-green-700">
+                    Claude &amp; Grok Search, Enterprise SQL Query Builder with D3 Graph
+                  </Typography>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">
+                    <li><strong>Claude AI Search</strong> - Direct Anthropic Claude queries via /api/Zclaude with history</li>
+                    <li><strong>Grok AI Search</strong> - xAI Grok queries via /api/ZGrok with history</li>
+                    <li><strong>Enterprise SQL Query</strong> - AI-generated SQL via VoiceSearch executed against GRouter/GSwitch</li>
+                    <li><strong>SQL → JS Translation</strong> - Client-side filter engine with WHERE, ORDER BY, TOP, LIKE, IN support</li>
+                    <li><strong>Publish to Graph</strong> - Radio target (GRouter/GSwitch) renders filtered results as adaptive D3 horizontal bar chart</li>
+                  </ul>
+                </Paper>
+
+                {/* Version 22 */}
+                <Paper className="p-4 border-l-4 border-teal-600 bg-teal-50">
+                  <Box className="flex items-center justify-between mb-2">
+                    <Typography variant="h6" className="font-bold text-teal-800">
+                      Version 22
                     </Typography>
                     <Chip label="May 7, 2026" color="success" size="small" />
                   </Box>
-                  <Typography variant="subtitle2" className="mb-3 text-green-700">
+                  <Typography variant="subtitle2" className="mb-3 text-teal-700">
                     Context Router, Search Engine Preferences &amp; SuperLuna API Integration
                   </Typography>
                   <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">
@@ -91,21 +111,21 @@ export function About() {
                     <li><strong>SuperLuna Search</strong> - New feature page via /api/SuperLunaSearch with SuperLuna logo</li>
                     <li><strong>Weather Underground</strong> - New IBM Weather feature via /api/WeatherUnderground</li>
                     <li><strong>SuperLuna API Integration</strong> - SuperLuna config page now POSTs/PUTs to /api/SuperLuna with correct llM1–llM20 schema</li>
-                    <li><strong>Search Engine Settings Tab</strong> - 7 radio options (SuperLuna, Keyword, P-ChatGPT, P-Google, P-Claude, P-Wikipedia, Empwr) with SuperLuna sub-panel for maxsearchengines and chain search</li>
-                    <li><strong>User Preferences</strong> - dse, maxsearchengines, chainsearch fields added to user record and written to localStorage on login</li>
-                    <li><strong>AI Search Sort</strong> - Search history now defaults to newest-first with arrow toggle</li>
+                    <li><strong>Search Engine Settings Tab</strong> - 7 radio options with SuperLuna sub-panel for maxsearchengines and chain search</li>
+                    <li><strong>User Preferences</strong> - dse, maxsearchengines, chainsearch fields added to user record and localStorage</li>
+                    <li><strong>AI Search Sort</strong> - Search history defaults to newest-first with arrow toggle</li>
                   </ul>
                 </Paper>
 
                 {/* Version 21 */}
-                <Paper className="p-4 border-l-4 border-teal-600 bg-teal-50">
+                <Paper className="p-4 border-l-4 border-blue-400 bg-blue-50">
                   <Box className="flex items-center justify-between mb-2">
-                    <Typography variant="h6" className="font-bold text-teal-800">
+                    <Typography variant="h6" className="font-bold text-blue-800">
                       Version 21
                     </Typography>
-                    <Chip label="May 7, 2026" color="success" size="small" />
+                    <Chip label="May 7, 2026" color="primary" size="small" />
                   </Box>
-                  <Typography variant="subtitle2" className="mb-3 text-teal-700">
+                  <Typography variant="subtitle2" className="mb-3 text-blue-700">
                     SuperLuna Orchestration &amp; Multi-Provider Search Features
                   </Typography>
                   <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">

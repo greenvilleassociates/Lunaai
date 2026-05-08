@@ -32,6 +32,8 @@ import { GoogleSearch } from "./components/GoogleSearch";
 import { WeatherSearch } from "./components/WeatherSearch";
 import { SuperLunaSearch } from "./components/SuperLunaSearch";
 import { LunaContextRouter } from "./components/LunaContextRouter";
+import { Claude } from "./components/Claude";
+import { Grok } from "./components/Grok";
 
 export const router = createBrowserRouter([
   {
@@ -70,6 +72,8 @@ export const router = createBrowserRouter([
       { path: "weathersearch", element: <ProtectedRoute><WeatherSearch /></ProtectedRoute> },
       { path: "superlunasearch", element: <ProtectedRoute><SuperLunaSearch /></ProtectedRoute> },
       { path: "lunacontextrouter", element: <ProtectedRoute><LunaContextRouter /></ProtectedRoute> },
+      { path: "claude", element: <ProtectedRoute><Claude /></ProtectedRoute> },
+      { path: "grok", element: <ProtectedRoute><Grok /></ProtectedRoute> },
     ],
   },
 ]);

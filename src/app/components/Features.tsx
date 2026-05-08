@@ -7,6 +7,7 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import GoogleIcon from "@mui/icons-material/Google";
 import AbcIcon from "@mui/icons-material/Abc";
+import PsychologyIcon from "@mui/icons-material/Psychology";
 import { Box } from "@mui/material";
 import ctsLogo from "figma:asset/399d93660a307619ab55b61f935095fec4286492.png";
 import superLunaIcon from "figma:asset/cfadca739638cf837cbfaf51361c717172db777b.png";
@@ -128,6 +129,43 @@ export function Features() {
       ),
       action: "Get Weather",
       route: "/weathersearch",
+      external: false,
+    },
+    {
+      id: 11,
+      title: "Claude AI Search",
+      description: "Submit queries directly to Anthropic Claude via the LunaAI orchestration layer using /api/Zclaude.",
+      icon: <PsychologyIcon sx={{ fontSize: 48, color: "#D4563C" }} />,
+      action: "Ask Claude",
+      route: "/claude",
+      external: false,
+    },
+    {
+      id: 12,
+      title: "Grok AI Search",
+      description: "Submit queries to xAI's Grok via the LunaAI orchestration layer using /api/ZGrok.",
+      icon: (
+        <Box
+          sx={{
+            width: 48,
+            height: 48,
+            backgroundColor: "#000",
+            color: "#fff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontWeight: 900,
+            fontSize: 22,
+            borderRadius: "6px",
+            fontFamily: "'Arial Black', sans-serif",
+            userSelect: "none",
+          }}
+        >
+          𝗫
+        </Box>
+      ),
+      action: "Ask Grok",
+      route: "/grok",
       external: false,
     },
   ];

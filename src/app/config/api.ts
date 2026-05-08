@@ -171,6 +171,12 @@ export const API_CONFIG = {
     // Luna Context Router (uses /api/ZLunaContextSearch)
     ZLUNA_CONTEXT_SEARCH: '/ZLunaContextSearch',
 
+    // Claude AI (uses /api/Zclaude)
+    ZCLAUDE: '/Zclaude',
+
+    // Grok AI (uses /api/ZGrok)
+    ZGROK: '/ZGrok',
+
     // Network Device Endpoints (uses /api/GRouter, /api/GSwitch)
     GROUTER: '/GRouter',
     GROUTER_QUERY: '/GRouter/query',
