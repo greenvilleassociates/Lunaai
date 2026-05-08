@@ -7,7 +7,7 @@ export function About() {
       <Box className="flex items-center justify-between mb-6">
         <h2 className="text-3xl">About LunaAI</h2>
         <Chip
-          label="Version 20.0"
+          label="Version 22"
           color="success"
           icon={<NewReleases />}
           sx={{ fontSize: '1rem', padding: '20px 10px' }}
@@ -79,15 +79,56 @@ export function About() {
                 <Paper className="p-4 border-l-4 border-green-600 bg-green-50">
                   <Box className="flex items-center justify-between mb-2">
                     <Typography variant="h6" className="font-bold text-green-800">
-                      Version 20.0 - Current Build
+                      Version 22 - Current Build
                     </Typography>
-                    <Chip label="May 6, 2026" color="success" size="small" />
+                    <Chip label="May 7, 2026" color="success" size="small" />
                   </Box>
                   <Typography variant="subtitle2" className="mb-3 text-green-700">
+                    Context Router, Search Engine Preferences &amp; SuperLuna API Integration
+                  </Typography>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">
+                    <li><strong>Luna Context Router</strong> - New feature routing queries to best LLM via /api/ZLunaContextSearch with ABC icon</li>
+                    <li><strong>SuperLuna Search</strong> - New feature page via /api/SuperLunaSearch with SuperLuna logo</li>
+                    <li><strong>Weather Underground</strong> - New IBM Weather feature via /api/WeatherUnderground</li>
+                    <li><strong>SuperLuna API Integration</strong> - SuperLuna config page now POSTs/PUTs to /api/SuperLuna with correct llM1–llM20 schema</li>
+                    <li><strong>Search Engine Settings Tab</strong> - 7 radio options (SuperLuna, Keyword, P-ChatGPT, P-Google, P-Claude, P-Wikipedia, Empwr) with SuperLuna sub-panel for maxsearchengines and chain search</li>
+                    <li><strong>User Preferences</strong> - dse, maxsearchengines, chainsearch fields added to user record and written to localStorage on login</li>
+                    <li><strong>AI Search Sort</strong> - Search history now defaults to newest-first with arrow toggle</li>
+                  </ul>
+                </Paper>
+
+                {/* Version 21 */}
+                <Paper className="p-4 border-l-4 border-teal-600 bg-teal-50">
+                  <Box className="flex items-center justify-between mb-2">
+                    <Typography variant="h6" className="font-bold text-teal-800">
+                      Version 21
+                    </Typography>
+                    <Chip label="May 7, 2026" color="success" size="small" />
+                  </Box>
+                  <Typography variant="subtitle2" className="mb-3 text-teal-700">
+                    SuperLuna Orchestration &amp; Multi-Provider Search Features
+                  </Typography>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">
+                    <li><strong>Google Gemini Search</strong> - New feature via /api/ZGoogle integration</li>
+                    <li><strong>Empowr Search</strong> - Enterprise search via /api/ZEmpwr</li>
+                    <li><strong>SuperLuna Config</strong> - Full LLM priority ordering with Global, ERP, and Accounting sections</li>
+                    <li><strong>Backup API</strong> - Configurable fallback API destination in Settings</li>
+                  </ul>
+                </Paper>
+
+                {/* Version 20 */}
+                <Paper className="p-4 border-l-4 border-blue-600 bg-blue-50">
+                  <Box className="flex items-center justify-between mb-2">
+                    <Typography variant="h6" className="font-bold text-blue-800">
+                      Version 20.0
+                    </Typography>
+                    <Chip label="May 6, 2026" color="primary" size="small" />
+                  </Box>
+                  <Typography variant="subtitle2" className="mb-3 text-blue-700">
                     Sortable Desktop &amp; Features Keyword Search
                   </Typography>
                   <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">
-                    <li><strong>Sortable Desktop</strong> - AI Text Search History and Voice Commands History panels are now sortable by date via arrow toggle buttons</li>
+                    <li><strong>Sortable Desktop</strong> - AI Text Search History and Voice Commands History panels sortable by date via arrow toggle buttons</li>
                     <li><strong>Refresh Button</strong> - Dedicated refresh button on both Desktop history panels</li>
                     <li><strong>UID Column</strong> - Poster UID shown in left column of each Desktop history row</li>
                     <li><strong>Features Keyword Search</strong> - Text Search on the Features page now queries /api/WebSearch and returns matching records by keyword</li>

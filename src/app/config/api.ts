@@ -167,6 +167,15 @@ export const API_CONFIG = {
     // SuperLuna Search (uses /api/SuperLunaSearch)
     SUPER_LUNA_SEARCH: '/SuperLunaSearch',
     SUPER_LUNA_SEARCH_BY_ID: (id: number) => `/SuperLunaSearch/${id}`,
+
+    // Luna Context Router (uses /api/ZLunaContextSearch)
+    ZLUNA_CONTEXT_SEARCH: '/ZLunaContextSearch',
+
+    // Network Device Endpoints (uses /api/GRouter, /api/GSwitch)
+    GROUTER: '/GRouter',
+    GROUTER_QUERY: '/GRouter/query',
+    GSWITCH: '/GSwitch',
+    GSWITCH_QUERY: '/GSwitch/query',
   },
 };
 

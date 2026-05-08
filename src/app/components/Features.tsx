@@ -6,6 +6,7 @@ import HistoryIcon from "@mui/icons-material/History";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import GoogleIcon from "@mui/icons-material/Google";
+import AbcIcon from "@mui/icons-material/Abc";
 import { Box } from "@mui/material";
 import ctsLogo from "figma:asset/399d93660a307619ab55b61f935095fec4286492.png";
 import superLunaIcon from "figma:asset/cfadca739638cf837cbfaf51361c717172db777b.png";
@@ -94,6 +95,15 @@ export function Features() {
     },
     {
       id: 9,
+      title: "Context Router",
+      description: "Intelligently routes queries to the best LLM provider based on context analysis via /api/ZLunaContextSearch.",
+      icon: <AbcIcon sx={{ fontSize: 48, color: "#8B0000" }} />,
+      action: "Route Query",
+      route: "/lunacontextrouter",
+      external: false,
+    },
+    {
+      id: 10,
       title: "Weather Underground",
       description: "Query weather data and forecasts via IBM's Weather Underground platform through the LunaAI orchestration layer using /api/WeatherUnderground.",
       icon: (

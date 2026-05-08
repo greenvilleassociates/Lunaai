@@ -2,7 +2,7 @@
   {
     "uid": "user-001",
     "username": "john",
-    "password": "test12345",
+    "password": "john",
     "role": "superuser",
     "companyId": "comp-001",
     "address1": "123 Main Street",
@@ -56,7 +56,7 @@
   {
     "uid": "user-004",
     "username": "portia",
-    "password": "test12345",
+    "password": "portia",
     "role": "superuser",
     "companyId": "comp-001",
     "address1": "321 Elm Boulevard",

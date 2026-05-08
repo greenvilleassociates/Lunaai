@@ -497,8 +497,8 @@ export function Login() {
                 </svg>
                 <h4 className="font-semibold text-green-400">Current Build</h4>
               </div>
-              <p className="text-2xl font-bold text-white mb-1">Version 20.0</p>
-              <p className="text-xs text-slate-400 mb-2">Released: May 6, 2026</p>
+              <p className="text-2xl font-bold text-white mb-1">Version 22</p>
+              <p className="text-xs text-slate-400 mb-2">Released: May 7, 2026</p>
               <a 
                 href="/versionhistory.html" 
                 target="_blank" 
@@ -553,23 +553,23 @@ export function Login() {
               <ul className="text-xs text-slate-300 space-y-2">
                 <li className="flex items-start gap-2">
                   <span className="text-purple-400 mt-0.5">•</span>
-                  <span>Google Gemini Search — new /api/ZGoogle integration via Features</span>
+                  <span>Luna Context Router — new ABC feature routing queries to best LLM via /api/ZLunaContextSearch</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-purple-400 mt-0.5">•</span>
-                  <span>Sortable Desktop — history panels sortable by date with refresh button</span>
+                  <span>SuperLuna Search — new feature page via /api/SuperLunaSearch with SuperLuna logo</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-purple-400 mt-0.5">•</span>
-                  <span>UID column added to Desktop history rows</span>
+                  <span>Weather Underground — new IBM Weather feature via /api/WeatherUnderground</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-purple-400 mt-0.5">•</span>
-                  <span>Text Search now queries /api/WebSearch by keyword</span>
+                  <span>Search Engine Settings — 7 radio options with SuperLuna sub-panel for max engines &amp; chain search</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-purple-400 mt-0.5">•</span>
-                  <span>Centercourt — Real-Time Graphics tab with 800×800 iframe and PDF snapshot</span>
+                  <span>SuperLuna API Integration — config page now POSTs/PUTs to /api/SuperLuna with llM1–llM20 schema</span>
                 </li>
               </ul>
             </div>

@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import * as d3 from "d3";
 import { API_CONFIG, getApiUrl } from "../config/api";
 import { DATA_URLS, fetchExternalData } from "../config/dataUrls";
-import { Button, Tabs, Tab, Box } from "@mui/material";
+import { Button, Tabs, Tab, Box, TextField, CircularProgress, Chip, Radio, RadioGroup, FormControlLabel, FormLabel } from "@mui/material";
+import { applySqlToData, SqlTranslation } from "../utils/sqlFilter";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
@@ -42,6 +43,16 @@ export function Visualizations() {
   const [activeTab, setActiveTab] = useState(0);
   const centercountRef = useRef<HTMLDivElement>(null);
   const [viewMode, setViewMode] = useState<"current" | "all">("current");
+  const [sqlQuery, setSqlQuery] = useState("");
+  const [sqlResult, setSqlResult] = useState("");
+  const [sqlLoading, setSqlLoading] = useState(false);
+  const [sqlError, setSqlError] = useState("");
+  const [queryTarget, setQueryTarget] = useState<"GRouter" | "GSwitch">("GRouter");
+  const [graphData, setGraphData] = useState<Record<string, unknown>[]>([]);
+  const [graphLoading, setGraphLoading] = useState(false);
+  const [graphError, setGraphError] = useState("");
+  const [sqlTranslation, setSqlTranslation] = useState<SqlTranslation | null>(null);
+  const queryGraphRef = useRef<SVGSVGElement>(null);
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSuperuser, setIsSuperuser] = useState(false);
@@ -314,6 +325,148 @@ export function Visualizations() {
     });
   };
 
+  // Draw adaptive D3 bar chart from query result data
+  const drawQueryGraph = (data: Record<string, unknown>[]) => {
+    if (!queryGraphRef.current || data.length === 0) return;
+
+    d3.select(queryGraphRef.current).selectAll("*").remove();
+
+    const firstRow = data[0];
+    const keys = Object.keys(firstRow);
+    const labelKey = keys.find(k => typeof firstRow[k] === "string") ?? keys[0];
+    const valueKey = keys.find(k => typeof firstRow[k] === "number" && k !== labelKey) ?? keys[1];
+
+    const margin = { top: 16, right: 24, bottom: 60, left: 160 };
+    const width = 740 - margin.left - margin.right;
+    const barHeight = 28;
+    const height = Math.max(200, data.length * (barHeight + 6));
+
+    const svg = d3
+      .select(queryGraphRef.current)
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    const labels = data.map(d => String(d[labelKey] ?? ""));
+    const values = data.map(d => Number(d[valueKey] ?? 0));
+    const maxVal = Math.max(...values, 1);
+
+    const y = d3.scaleBand().domain(labels).range([0, height]).padding(0.2);
+    const x = d3.scaleLinear().domain([0, maxVal]).nice().range([0, width]);
+
+    // Color ramp: teal → blue by target
+    const barColor = queryTarget === "GRouter" ? "#0ea5e9" : "#6366f1";
+
+    svg.append("g").call(d3.axisLeft(y)).selectAll("text").style("font-size", "11px");
+
+    svg
+      .append("g")
+      .attr("transform", `translate(0,${height})`)
+      .call(d3.axisBottom(x).ticks(5))
+      .selectAll("text")
+      .style("font-size", "11px");
+
+    svg
+      .selectAll(".bar")
+      .data(data)
+      .enter()
+      .append("rect")
+      .attr("class", "bar")
+      .attr("y", d => y(String(d[labelKey] ?? ""))!)
+      .attr("height", y.bandwidth())
+      .attr("x", 0)
+      .attr("width", d => x(Number(d[valueKey] ?? 0)))
+      .attr("fill", barColor)
+      .attr("rx", 3);
+
+    svg
+      .selectAll(".label")
+      .data(data)
+      .enter()
+      .append("text")
+      .attr("class", "label")
+      .attr("x", d => x(Number(d[valueKey] ?? 0)) + 5)
+      .attr("y", d => (y(String(d[labelKey] ?? ""))! + y.bandwidth() / 2 + 4))
+      .style("font-size", "11px")
+      .style("fill", "#475569")
+      .text(d => String(d[valueKey] ?? ""));
+
+    // Axis labels
+    svg
+      .append("text")
+      .attr("x", width / 2)
+      .attr("y", height + margin.bottom - 10)
+      .style("text-anchor", "middle")
+      .style("font-size", "12px")
+      .style("fill", "#64748b")
+      .text(valueKey);
+  };
+
+  const publishToGraph = async () => {
+    if (!sqlResult.trim()) return;
+    setGraphLoading(true);
+    setGraphData([]);
+    setSqlTranslation(null);
+    setGraphError("");
+    try {
+      const uid = localStorage.getItem("uid") || "";
+      // Step 1 — GET all records from the selected endpoint
+      const endpoint = queryTarget === "GRouter"
+        ? API_CONFIG.ENDPOINTS.GROUTER
+        : API_CONFIG.ENDPOINTS.GSWITCH;
+      const url = getApiUrl(endpoint);
+      const response = await fetch(url, {
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${uid}` },
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const raw = await response.json();
+      const allRows: Record<string, unknown>[] = Array.isArray(raw) ? raw : raw.results ?? raw.data ?? [];
+
+      // Step 2 — Translate SQL → JS filter and apply client-side
+      const { rows, translation } = applySqlToData(sqlResult, allRows);
+      setSqlTranslation(translation);
+      setGraphData(rows);
+    } catch (err) {
+      setGraphError(err instanceof Error ? err.message : "Request failed");
+    } finally {
+      setGraphLoading(false);
+    }
+  };
+
+  // Redraw graph whenever data or target changes
+  useEffect(() => {
+    if (graphData.length > 0) drawQueryGraph(graphData);
+  }, [graphData, queryTarget]);
+
+  const executeQuery = async () => {
+    if (!sqlQuery.trim()) return;
+    setSqlLoading(true);
+    setSqlResult("");
+    setSqlError("");
+    try {
+      const uid = localStorage.getItem("uid") || "";
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.VOICE_SEARCH);
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${uid}` },
+        body: JSON.stringify({
+          question: `Enterprise Query: ${sqlQuery.trim()}`,
+          requestType: 2,
+          uid,
+          model: "voice-search",
+        }),
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      setSqlResult(data.response || data.Response || "");
+    } catch (err) {
+      setSqlError(err instanceof Error ? err.message : "Request failed");
+    } finally {
+      setSqlLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto">
       <h2 className="text-3xl mb-6">Visualizations</h2>
@@ -336,6 +489,182 @@ export function Visualizations() {
           <Tab label="Real-Time Graphics" />
         </Tabs>
       </Box>
+
+      {/* SQL Query Bar */}
+      {activeTab === 1 && (
+        <div className="bg-white border border-slate-200 rounded-lg p-5 mb-5" style={{ width: "800px" }}>
+          <div className="flex items-center gap-2 mb-3">
+            <h3 className="text-lg font-semibold text-slate-800">Enterprise SQL Query</h3>
+            <Chip
+              label="AI-Generated"
+              size="small"
+              sx={{ backgroundColor: "#f0f4ff", color: "#3b5bdb", fontSize: "0.7rem" }}
+            />
+          </div>
+          <p className="text-xs text-slate-500 mb-3">
+            Describe what you want to query — the AI generates SQL against the enterprise database (Grouter, Gswitch, Gserver, Gemployee, etc.)
+          </p>
+          <div className="flex gap-2 items-start">
+            <TextField
+              fullWidth
+              multiline
+              minRows={2}
+              maxRows={5}
+              placeholder="e.g. Show all routers added in the last 30 days"
+              value={sqlQuery}
+              onChange={(e) => setSqlQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) executeQuery();
+              }}
+              size="small"
+              sx={{ "& .MuiOutlinedInput-root": { fontSize: "0.875rem" } }}
+            />
+            <Button
+              variant="contained"
+              onClick={executeQuery}
+              disabled={sqlLoading || !sqlQuery.trim()}
+              sx={{
+                minWidth: 100,
+                backgroundColor: "#1e293b",
+                textTransform: "none",
+                fontWeight: 500,
+                alignSelf: "flex-start",
+                "&:hover": { backgroundColor: "#334155" },
+              }}
+            >
+              {sqlLoading ? <CircularProgress size={18} color="inherit" /> : "Generate SQL"}
+            </Button>
+          </div>
+          {sqlError && (
+            <p className="text-xs text-red-600 mt-2">{sqlError}</p>
+          )}
+          {sqlResult && (
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Generated SQL</span>
+                <button
+                  className="text-xs text-slate-400 hover:text-slate-600"
+                  onClick={() => navigator.clipboard.writeText(sqlResult)}
+                >
+                  Copy
+                </button>
+              </div>
+              <pre className="bg-slate-900 text-green-300 text-xs rounded-lg p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed">
+                {sqlResult}
+              </pre>
+
+              {/* Publish to Graph */}
+              <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-6 flex-wrap">
+                <Box>
+                  <FormLabel sx={{ fontSize: "0.75rem", fontWeight: 600, color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    Publish Target
+                  </FormLabel>
+                  <RadioGroup
+                    row
+                    value={queryTarget}
+                    onChange={(e) => setQueryTarget(e.target.value as "GRouter" | "GSwitch")}
+                    sx={{ mt: 0.5 }}
+                  >
+                    <FormControlLabel
+                      value="GRouter"
+                      control={<Radio size="small" sx={{ color: "#0ea5e9", "&.Mui-checked": { color: "#0ea5e9" } }} />}
+                      label={<span style={{ fontSize: "0.85rem", color: "#0ea5e9", fontWeight: 600 }}>GRouter</span>}
+                    />
+                    <FormControlLabel
+                      value="GSwitch"
+                      control={<Radio size="small" sx={{ color: "#6366f1", "&.Mui-checked": { color: "#6366f1" } }} />}
+                      label={<span style={{ fontSize: "0.85rem", color: "#6366f1", fontWeight: 600 }}>GSwitch</span>}
+                    />
+                  </RadioGroup>
+                </Box>
+                <Button
+                  variant="contained"
+                  onClick={publishToGraph}
+                  disabled={graphLoading}
+                  sx={{
+                    backgroundColor: queryTarget === "GRouter" ? "#0ea5e9" : "#6366f1",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    "&:hover": { backgroundColor: queryTarget === "GRouter" ? "#0284c7" : "#4f46e5" },
+                  }}
+                >
+                  {graphLoading
+                    ? <><CircularProgress size={16} color="inherit" sx={{ mr: 1 }} />Running…</>
+                    : `Publish to Graph — ${queryTarget}`}
+                </Button>
+                {graphError && <p className="text-xs text-red-600">{graphError}</p>}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* SQL Translation Summary */}
+      {activeTab === 1 && sqlTranslation && (
+        <div className="rounded-lg p-4 mb-3 border text-xs" style={{ width: "800px", backgroundColor: "#f8fafc", borderColor: "#e2e8f0" }}>
+          <p className="font-semibold text-slate-600 uppercase tracking-wide mb-2">SQL → JS Translation</p>
+          <div className="flex flex-wrap gap-3">
+            <span className="text-slate-500">
+              <span className="font-medium text-slate-700">Source:</span> {sqlTranslation.rowsIn} rows from {queryTarget}
+            </span>
+            {sqlTranslation.filters.length > 0 && (
+              <span className="text-slate-500">
+                <span className="font-medium text-slate-700">Filters:</span>{" "}
+                {sqlTranslation.filters.join(" AND ")}
+              </span>
+            )}
+            {sqlTranslation.orderBy && (
+              <span className="text-slate-500">
+                <span className="font-medium text-slate-700">Sort:</span>{" "}
+                {sqlTranslation.orderBy} {sqlTranslation.orderDir}
+              </span>
+            )}
+            {sqlTranslation.limit !== null && (
+              <span className="text-slate-500">
+                <span className="font-medium text-slate-700">Limit:</span> {sqlTranslation.limit}
+              </span>
+            )}
+            <span className="font-semibold" style={{ color: queryTarget === "GRouter" ? "#0369a1" : "#4f46e5" }}>
+              → {sqlTranslation.rowsOut} rows matched
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* D3 Query Results Graph */}
+      {activeTab === 1 && graphData.length > 0 && (
+        <div className="bg-white border border-slate-200 rounded-lg p-5 mb-5" style={{ width: "800px" }}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-slate-800">Query Results</h3>
+              <Chip
+                label={queryTarget}
+                size="small"
+                sx={{
+                  backgroundColor: queryTarget === "GRouter" ? "#e0f2fe" : "#ede9fe",
+                  color: queryTarget === "GRouter" ? "#0369a1" : "#4f46e5",
+                  fontSize: "0.7rem",
+                  fontWeight: 600,
+                }}
+              />
+              <Chip
+                label={`${graphData.length} rows`}
+                size="small"
+                sx={{ backgroundColor: "#f1f5f9", color: "#64748b", fontSize: "0.7rem" }}
+              />
+            </div>
+            <button
+              className="text-xs text-slate-400 hover:text-slate-600"
+              onClick={() => { setGraphData([]); setSqlTranslation(null); }}
+            >
+              Clear
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <svg ref={queryGraphRef}></svg>
+          </div>
+        </div>
+      )}
 
       {/* Centercourt Tab */}
       {activeTab === 1 && (
