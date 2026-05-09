@@ -7,7 +7,7 @@ export function About() {
       <Box className="flex items-center justify-between mb-6">
         <h2 className="text-3xl">About LunaAI</h2>
         <Chip
-          label="Version 24"
+          label="Version 25"
           color="success"
           icon={<NewReleases />}
           sx={{ fontSize: '1rem', padding: '20px 10px' }}
@@ -75,15 +75,34 @@ export function About() {
             </AccordionSummary>
             <AccordionDetails>
               <Box className="space-y-4">
-                {/* Version 24 */}
+                {/* Version 25 */}
                 <Paper className="p-4 border-l-4 border-green-600 bg-green-50">
                   <Box className="flex items-center justify-between mb-2">
                     <Typography variant="h6" className="font-bold text-green-800">
-                      Version 24 - Current Build
+                      Version 25 - Current Build
+                    </Typography>
+                    <Chip label="May 9, 2026" color="success" size="small" />
+                  </Box>
+                  <Typography variant="subtitle2" className="mb-3 text-green-700">
+                    HR &amp; Administrator Stability, Search Parameters &amp; Adbase Improvements
+                  </Typography>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">
+                    <li><strong>HR Manager Stability</strong> - Full CRUD operations for all tabs: Employees, Store Locations, Business Units, PTO Requests, Timesheets, and Employee Documents</li>
+                    <li><strong>Administrator Stability</strong> - Complete Edit/Update functionality for Users, Business Units, Companies, and User Groups with icon-based actions</li>
+                    <li><strong>Search Parameters</strong> - Enhanced search filtering and query parameter support across all search modules</li>
+                    <li><strong>Adbase Improvements</strong> - Enhanced activity detail tracking, management features, and data integrity</li>
+                  </ul>
+                </Paper>
+
+                {/* Version 24 */}
+                <Paper className="p-4 border-l-4 border-teal-600 bg-teal-50">
+                  <Box className="flex items-center justify-between mb-2">
+                    <Typography variant="h6" className="font-bold text-teal-800">
+                      Version 24
                     </Typography>
                     <Chip label="May 8, 2026" color="success" size="small" />
                   </Box>
-                  <Typography variant="subtitle2" className="mb-3 text-green-700">
+                  <Typography variant="subtitle2" className="mb-3 text-teal-700">
                     Claude &amp; Grok Search, Enterprise SQL Query Builder with D3 Graph
                   </Typography>
                   <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">

@@ -7,6 +7,7 @@ import { DATA_URLS, fetchExternalData } from "../config/dataUrls";
 import lunaLogo from "figma:asset/97a2e4984c2367786c9db0dc16a816860615bd7e.png";
 import { ApiWarmupLoader } from "./ApiWarmupLoader";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { BannerAd } from "./BannerAd";
 
 const seasideImages = [
   "https://images.unsplash.com/photo-1610289795012-6b0cebf95f0f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtYWxkaXZlcyUyMHR1cnF1b2lzZSUyMGJlYWNofGVufDF8fHx8MTc3MzA3MjAzMXww&ixlib=rb-4.1.0&q=80&w=1080",
@@ -390,10 +391,10 @@ export function Login() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
-      <div className="w-full h-[800px] flex flex-col items-center">
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-2 md:p-4">
+      <div className="w-full flex flex-col items-center gap-4 md:gap-0">
         {/* Login Form */}
-        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg">
+        <div className="bg-white p-6 md:p-8 rounded-lg shadow-lg w-full max-w-[600px]">
           {/* Luna Logo inside form */}
           <div className="flex justify-center mb-6">
             <img src={lunaLogo} alt="LunaAI Logo" className="w-[60px] h-[60px] rounded-lg object-cover" />
@@ -478,60 +479,60 @@ export function Login() {
         </div>
 
         {/* System Messages Panel - Row Layout */}
-        <div className="w-full mt-[100px] max-h-[350px] bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-lg shadow-lg text-white overflow-auto hidden min-[700px]:block">
-          <div className="border-b border-slate-600 pb-3 mb-4">
-            <h3 className="text-xl font-bold text-center flex items-center justify-center gap-2">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="w-full lg:max-w-[1600px] mt-4 md:mt-8 h-[200px] bg-gradient-to-br from-slate-800 to-slate-900 p-3 lg:p-4 rounded-lg shadow-lg text-white overflow-auto" style={{ fontSize: '8pt' }}>
+          <div className="border-b border-slate-600 pb-1.5 mb-2">
+            <h3 className="font-bold text-center flex items-center justify-center gap-1.5" style={{ fontSize: '10pt' }}>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               System Messages
             </h3>
           </div>
-          
-          <div className="grid grid-cols-3 gap-4">
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             {/* Current Build Version */}
-            <div className="bg-slate-700 bg-opacity-50 p-4 rounded-lg border border-slate-600">
-              <div className="flex items-center gap-2 mb-2">
-                <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-slate-700 bg-opacity-50 p-2 rounded-lg border border-slate-600">
+              <div className="flex items-center gap-1 mb-0.5">
+                <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <h4 className="font-semibold text-green-400">Current Build</h4>
               </div>
-              <p className="text-2xl font-bold text-white mb-1">Version 24</p>
-              <p className="text-xs text-slate-400 mb-2">Released: May 8, 2026</p>
-              <a 
-                href="/versionhistory.html" 
-                target="_blank" 
+              <p className="font-bold text-white mb-0.5" style={{ fontSize: '14pt' }}>Version 25</p>
+              <p className="text-slate-400 mb-0.5">Released: May 9, 2026</p>
+              <a
+                href="/versionhistory.html"
+                target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 underline transition-colors"
+                className="inline-flex items-center gap-0.5 text-blue-400 hover:text-blue-300 underline transition-colors"
               >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                View full history
+                View history
               </a>
             </div>
 
             {/* System Status */}
-            <div className="bg-slate-700 bg-opacity-50 p-4 rounded-lg border border-slate-600">
-              <div className="flex items-center gap-2 mb-3">
-                <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-slate-700 bg-opacity-50 p-2 rounded-lg border border-slate-600">
+              <div className="flex items-center gap-1 mb-1">
+                <svg className="w-3 h-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <h4 className="font-semibold text-blue-400">System Status</h4>
               </div>
-              <div className="space-y-2 text-sm">
+              <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-slate-300">API Status:</span>
-                  <span className="flex items-center gap-1 text-green-400">
-                    <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                  <span className="flex items-center gap-0.5 text-green-400">
+                    <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
                     Online
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-300">Database:</span>
-                  <span className="flex items-center gap-1 text-green-400">
-                    <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                  <span className="flex items-center gap-0.5 text-green-400">
+                    <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
                     Connected
                   </span>
                 </div>
@@ -543,37 +544,38 @@ export function Login() {
             </div>
 
             {/* Latest Updates */}
-            <div className="bg-slate-700 bg-opacity-50 p-4 rounded-lg border border-slate-600">
-              <div className="flex items-center gap-2 mb-3">
-                <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-slate-700 bg-opacity-50 p-2 rounded-lg border border-slate-600">
+              <div className="flex items-center gap-1 mb-1">
+                <svg className="w-3 h-3 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                 </svg>
                 <h4 className="font-semibold text-purple-400">What's New</h4>
               </div>
-              <ul className="text-xs text-slate-300 space-y-2">
-                <li className="flex items-start gap-2">
+              <ul className="text-slate-300 space-y-0.5">
+                <li className="flex items-start gap-1">
                   <span className="text-purple-400 mt-0.5">•</span>
-                  <span>Claude AI Search — direct Anthropic Claude queries via /api/Zclaude</span>
+                  <span>HR Manager Stability — Full CRUD operations</span>
                 </li>
-                <li className="flex items-start gap-2">
+                <li className="flex items-start gap-1">
                   <span className="text-purple-400 mt-0.5">•</span>
-                  <span>Grok AI Search — xAI Grok queries via /api/ZGrok</span>
+                  <span>Administrator Stability — Edit/Update for all entities</span>
                 </li>
-                <li className="flex items-start gap-2">
+                <li className="flex items-start gap-1">
                   <span className="text-purple-400 mt-0.5">•</span>
-                  <span>Enterprise SQL Query — AI-generated SQL executed against GRouter/GSwitch with D3 graph</span>
+                  <span>Search Parameters — Enhanced filtering</span>
                 </li>
-                <li className="flex items-start gap-2">
+                <li className="flex items-start gap-1">
                   <span className="text-purple-400 mt-0.5">•</span>
-                  <span>SQL → JS Translation — client-side filter engine with WHERE, ORDER BY, TOP, LIKE, IN support</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-purple-400 mt-0.5">•</span>
-                  <span>Publish to Graph — radio target (GRouter/GSwitch) renders filtered results as adaptive D3 chart</span>
+                  <span>Adbase Improvements — Activity tracking</span>
                 </li>
               </ul>
             </div>
           </div>
+        </div>
+
+        {/* Banner Ads */}
+        <div className="w-full lg:max-w-[1600px] mt-4 md:mt-8 mb-4">
+          <BannerAd />
         </div>
       </div>
       </div>
