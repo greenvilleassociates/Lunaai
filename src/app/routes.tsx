@@ -44,7 +44,7 @@ export const router = createBrowserRouter([
       { path: "home", element: <Home /> },
       { path: "login", element: <Login /> },
       { path: "register", element: <Register /> },
-      { path: "about", element: <ProtectedRoute><About /></ProtectedRoute> },
+      { path: "about", element: <About /> },
       { path: "contact", element: <ProtectedRoute><Contact /></ProtectedRoute> },
       { path: "profile", element: <ProtectedRoute><Profile /></ProtectedRoute> },
       { path: "mydesktop", element: <ProtectedRoute><MyDesktop /></ProtectedRoute> },
