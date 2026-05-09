@@ -190,6 +190,10 @@ export const API_CONFIG = {
     GROUTER_QUERY: '/GRouter/query',
     GSWITCH: '/GSwitch',
     GSWITCH_QUERY: '/GSwitch/query',
+
+    // Grid Apps (uses /api/Gapp)
+    GAPP: '/Gapp',
+    GAPP_BY_ID: (id: number) => `/Gapp/${id}`,
   },
 };
 

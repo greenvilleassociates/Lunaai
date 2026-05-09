@@ -321,6 +321,30 @@ export interface Timesheet {
   approveddate?: string | null;
 }
 
+export interface Gapp {
+  id?: number;
+  appid?: string | null;
+  appdescription?: string | null;
+  apptype?: number | null;
+  appregion?: number | null;
+  dbmstype?: string | null;
+  dbmsvendor?: string | null;
+  dbmstopology?: string | null;
+  gridid?: number | null;
+  targetgeometry?: string | null;
+  targetgrid?: string | null;
+  targetgridid?: number | null;
+  iscompliant?: number | null;
+  licenseid?: string | null;
+  vendorid?: number | null;
+  versionnumber?: string | null;
+  totalseats?: number | null;
+  licenseexpiration?: string | null;
+  licensetype?: number | null;
+  legalcontactid?: number | null;
+  whynoncompliant?: string | null;
+}
+
 // ============================================================================
 // API Response Types
 // ============================================================================

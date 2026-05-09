@@ -21,290 +21,195 @@ import {
   InputLabel,
   Chip,
   IconButton,
-  Tabs,
-  Tab,
   Card,
   CardContent,
   Alert,
   Tooltip,
+  Grid,
 } from "@mui/material";
 import {
   Public,
   Add,
   Edit,
   Delete,
-  KeyOutlined,
+  Refresh,
   CheckCircle,
   Cancel,
-  Business,
   Storage,
-  CloudQueue,
 } from "@mui/icons-material";
-
-// Grid Region types
-type GridRegion = "NA" | "ISLES" | "EU" | "ASIA" | "INDIA" | "AMERICAS";
-
-interface GridLicense {
-  id: string;
-  appName: string;
-  region: GridRegion;
-  licenseKey: string;
-  companyId: string;
-  companyName: string;
-  issuedDate: string;
-  expiryDate: string;
-  maxUsers: number;
-  currentUsers: number;
-  status: "Active" | "Expired" | "Suspended";
-  modules: string[];
-}
-
-interface GridApp {
-  id: string;
-  name: string;
-  version: string;
-  description: string;
-  modules: string[];
-}
-
-const GRID_REGIONS: { value: GridRegion; label: string; icon: string }[] = [
-  { value: "NA", label: "North America", icon: "🌎" },
-  { value: "ISLES", label: "British Isles", icon: "🏝️" },
-  { value: "EU", label: "Europe", icon: "🇪🇺" },
-  { value: "ASIA", label: "Asia", icon: "🌏" },
-  { value: "INDIA", label: "India", icon: "🇮🇳" },
-  { value: "AMERICAS", label: "Americas", icon: "🌎" },
-];
-
-// Mock CTS Grid Apps
-const GRID_APPS: GridApp[] = [
-  {
-    id: "1",
-    name: "CTS Payment Services",
-    version: "3.2.1",
-    description: "Payment processing and transaction management",
-    modules: ["Payment Gateway", "Transaction History", "Refund Management"],
-  },
-  {
-    id: "2",
-    name: "CTS Inventory Plus",
-    version: "2.5.0",
-    description: "Advanced inventory management system",
-    modules: ["Stock Management", "Warehouse", "Forecasting"],
-  },
-  {
-    id: "3",
-    name: "CTS Retail Manager",
-    version: "4.1.3",
-    description: "Complete retail management solution",
-    modules: ["POS", "Customer Management", "Sales Analytics"],
-  },
-  {
-    id: "4",
-    name: "CTS Mobile Commerce",
-    version: "1.8.0",
-    description: "Mobile-first commerce platform",
-    modules: ["Mobile POS", "Customer App", "Delivery Tracking"],
-  },
-];
+import { gappApi } from "../services/apiService";
+import type { Gapp } from "../types/api";
 
 export function GridLicenseManager() {
-  const [activeTab, setActiveTab] = useState(0);
-  const [licenses, setLicenses] = useState<GridLicense[]>([]);
-  const [filteredLicenses, setFilteredLicenses] = useState<GridLicense[]>([]);
-  const [selectedRegion, setSelectedRegion] = useState<GridRegion | "ALL">("ALL");
+  const [gridApps, setGridApps] = useState<Gapp[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [openDialog, setOpenDialog] = useState(false);
-  const [editingLicense, setEditingLicense] = useState<GridLicense | null>(null);
+  const [editingApp, setEditingApp] = useState<Gapp | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  
+
   // Form state
-  const [formData, setFormData] = useState({
-    appName: "",
-    region: "NA" as GridRegion,
-    companyId: "",
-    companyName: "",
-    maxUsers: 10,
-    expiryDate: "",
-    modules: [] as string[],
+  const [formData, setFormData] = useState<Partial<Gapp>>({
+    appid: "",
+    appdescription: "",
+    apptype: 0,
+    appregion: 0,
+    dbmstype: "",
+    dbmsvendor: "",
+    dbmstopology: "",
+    gridid: 0,
+    targetgeometry: "",
+    targetgrid: "",
+    targetgridid: 0,
+    iscompliant: 1,
+    licenseid: "",
+    vendorid: 0,
+    versionnumber: "",
+    totalseats: 0,
+    licenseexpiration: "",
+    licensetype: 0,
+    legalcontactid: 0,
+    whynoncompliant: "",
   });
 
-  // Load licenses from localStorage
   useEffect(() => {
-    const storedLicenses = localStorage.getItem("gridLicenses");
-    if (storedLicenses) {
-      setLicenses(JSON.parse(storedLicenses));
-    } else {
-      // Initialize with mock data
-      const mockLicenses: GridLicense[] = [
-        {
-          id: "1",
-          appName: "CTS Payment Services",
-          region: "NA",
-          licenseKey: "NA-CTS-PAY-2024-A1B2C3D4",
-          companyId: "comp1",
-          companyName: "Acme Corp",
-          issuedDate: "2024-01-15",
-          expiryDate: "2025-01-15",
-          maxUsers: 50,
-          currentUsers: 35,
-          status: "Active",
-          modules: ["Payment Gateway", "Transaction History"],
-        },
-        {
-          id: "2",
-          appName: "CTS Inventory Plus",
-          region: "EU",
-          licenseKey: "EU-CTS-INV-2024-E5F6G7H8",
-          companyId: "comp2",
-          companyName: "Euro Retail Ltd",
-          issuedDate: "2024-02-01",
-          expiryDate: "2025-02-01",
-          maxUsers: 100,
-          currentUsers: 78,
-          status: "Active",
-          modules: ["Stock Management", "Warehouse"],
-        },
-        {
-          id: "3",
-          appName: "CTS Retail Manager",
-          region: "ASIA",
-          licenseKey: "ASIA-CTS-RET-2023-I9J0K1L2",
-          companyId: "comp3",
-          companyName: "Pacific Trade Inc",
-          issuedDate: "2023-06-01",
-          expiryDate: "2024-06-01",
-          maxUsers: 25,
-          currentUsers: 25,
-          status: "Expired",
-          modules: ["POS", "Sales Analytics"],
-        },
-        {
-          id: "4",
-          appName: "CTS Mobile Commerce",
-          region: "INDIA",
-          licenseKey: "INDIA-CTS-MOB-2024-M3N4O5P6",
-          companyId: "comp4",
-          companyName: "Mumbai Traders",
-          issuedDate: "2024-03-10",
-          expiryDate: "2025-03-10",
-          maxUsers: 75,
-          currentUsers: 42,
-          status: "Active",
-          modules: ["Mobile POS", "Delivery Tracking"],
-        },
-      ];
-      setLicenses(mockLicenses);
-      localStorage.setItem("gridLicenses", JSON.stringify(mockLicenses));
-    }
+    loadGridApps();
   }, []);
 
-  // Filter licenses
-  useEffect(() => {
-    let filtered = licenses;
-    
-    if (selectedRegion !== "ALL") {
-      filtered = filtered.filter(l => l.region === selectedRegion);
+  const loadGridApps = async () => {
+    try {
+      setLoading(true);
+      const data = await gappApi.getAll();
+      setGridApps(data);
+      setError("");
+    } catch (err) {
+      console.error("Failed to load grid apps:", err);
+      setError("Failed to load grid apps. Please try again.");
+    } finally {
+      setLoading(false);
     }
-    
-    if (searchTerm) {
-      filtered = filtered.filter(l =>
-        l.appName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        l.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        l.licenseKey.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    setFilteredLicenses(filtered);
-  }, [licenses, selectedRegion, searchTerm]);
-
-  const handleAddLicense = () => {
-    setEditingLicense(null);
-    setFormData({
-      appName: "",
-      region: "NA",
-      companyId: "",
-      companyName: "",
-      maxUsers: 10,
-      expiryDate: "",
-      modules: [],
-    });
-    setOpenDialog(true);
   };
 
-  const handleEditLicense = (license: GridLicense) => {
-    setEditingLicense(license);
-    setFormData({
-      appName: license.appName,
-      region: license.region,
-      companyId: license.companyId,
-      companyName: license.companyName,
-      maxUsers: license.maxUsers,
-      expiryDate: license.expiryDate,
-      modules: license.modules,
-    });
-    setOpenDialog(true);
-  };
-
-  const handleSaveLicense = () => {
-    const today = new Date().toISOString().split("T")[0];
-    const licenseKey = `${formData.region}-CTS-${formData.appName.substring(0, 3).toUpperCase()}-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-
-    if (editingLicense) {
-      // Update existing license
-      const updatedLicenses = licenses.map(l =>
-        l.id === editingLicense.id
-          ? { ...l, ...formData, licenseKey: l.licenseKey }
-          : l
-      );
-      setLicenses(updatedLicenses);
-      localStorage.setItem("gridLicenses", JSON.stringify(updatedLicenses));
+  const handleOpenDialog = (app?: Gapp) => {
+    if (app) {
+      setEditingApp(app);
+      setFormData({
+        appid: app.appid || "",
+        appdescription: app.appdescription || "",
+        apptype: app.apptype || 0,
+        appregion: app.appregion || 0,
+        dbmstype: app.dbmstype || "",
+        dbmsvendor: app.dbmsvendor || "",
+        dbmstopology: app.dbmstopology || "",
+        gridid: app.gridid || 0,
+        targetgeometry: app.targetgeometry || "",
+        targetgrid: app.targetgrid || "",
+        targetgridid: app.targetgridid || 0,
+        iscompliant: app.iscompliant || 1,
+        licenseid: app.licenseid || "",
+        vendorid: app.vendorid || 0,
+        versionnumber: app.versionnumber || "",
+        totalseats: app.totalseats || 0,
+        licenseexpiration: app.licenseexpiration || "",
+        licensetype: app.licensetype || 0,
+        legalcontactid: app.legalcontactid || 0,
+        whynoncompliant: app.whynoncompliant || "",
+      });
     } else {
-      // Create new license
-      const newLicense: GridLicense = {
-        id: Date.now().toString(),
-        ...formData,
-        licenseKey,
-        issuedDate: today,
-        currentUsers: 0,
-        status: "Active",
-      };
-      const updatedLicenses = [...licenses, newLicense];
-      setLicenses(updatedLicenses);
-      localStorage.setItem("gridLicenses", JSON.stringify(updatedLicenses));
+      setEditingApp(null);
+      setFormData({
+        appid: "",
+        appdescription: "",
+        apptype: 0,
+        appregion: 0,
+        dbmstype: "",
+        dbmsvendor: "",
+        dbmstopology: "",
+        gridid: 0,
+        targetgeometry: "",
+        targetgrid: "",
+        targetgridid: 0,
+        iscompliant: 1,
+        licenseid: "",
+        vendorid: 0,
+        versionnumber: "",
+        totalseats: 0,
+        licenseexpiration: "",
+        licensetype: 0,
+        legalcontactid: 0,
+        whynoncompliant: "",
+      });
     }
+    setOpenDialog(true);
+  };
 
+  const handleCloseDialog = () => {
     setOpenDialog(false);
+    setEditingApp(null);
   };
 
-  const handleDeleteLicense = (id: string) => {
-    if (confirm("Are you sure you want to delete this license?")) {
-      const updatedLicenses = licenses.filter(l => l.id !== id);
-      setLicenses(updatedLicenses);
-      localStorage.setItem("gridLicenses", JSON.stringify(updatedLicenses));
+  const handleSave = async () => {
+    try {
+      if (editingApp && editingApp.id) {
+        await gappApi.update(editingApp.id, formData);
+        setSuccessMessage("Grid app updated successfully");
+      } else {
+        await gappApi.create(formData);
+        setSuccessMessage("Grid app created successfully");
+      }
+      handleCloseDialog();
+      loadGridApps();
+      setTimeout(() => setSuccessMessage(""), 3000);
+    } catch (err) {
+      console.error("Failed to save grid app:", err);
+      setError("Failed to save grid app. Please try again.");
+      setTimeout(() => setError(""), 3000);
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Active":
-        return "success";
-      case "Expired":
-        return "error";
-      case "Suspended":
-        return "warning";
-      default:
-        return "default";
+  const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this grid app?")) return;
+
+    try {
+      await gappApi.delete(id);
+      setSuccessMessage("Grid app deleted successfully");
+      loadGridApps();
+      setTimeout(() => setSuccessMessage(""), 3000);
+    } catch (err) {
+      console.error("Failed to delete grid app:", err);
+      setError("Failed to delete grid app. Please try again.");
+      setTimeout(() => setError(""), 3000);
     }
   };
 
-  // Statistics
-  const totalLicenses = licenses.length;
-  const activeLicenses = licenses.filter(l => l.status === "Active").length;
-  const totalUsers = licenses.reduce((sum, l) => sum + l.currentUsers, 0);
-  const licensesByRegion = GRID_REGIONS.map(region => ({
-    ...region,
-    count: licenses.filter(l => l.region === region.value).length,
-  }));
+  const filteredApps = gridApps.filter((app) =>
+    searchTerm
+      ? (app.appid?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+         app.appdescription?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+         app.licenseid?.toLowerCase().includes(searchTerm.toLowerCase()))
+      : true
+  );
+
+  const compliantApps = gridApps.filter((app) => app.iscompliant === 1).length;
+  const totalSeats = gridApps.reduce((sum, app) => sum + (app.totalseats || 0), 0);
+
+  const appRegionLabels: Record<number, string> = {
+    0: "Global",
+    1: "North America",
+    2: "Europe",
+    3: "Asia-Pacific",
+    4: "Latin America",
+    5: "Middle East & Africa",
+  };
+
+  const licenseTypeLabels: Record<number, string> = {
+    0: "Perpetual",
+    1: "Subscription",
+    2: "Trial",
+    3: "Educational",
+    4: "Enterprise",
+  };
 
   return (
     <Box className="max-w-7xl mx-auto">
@@ -329,361 +234,422 @@ export function GridLicenseManager() {
               CTS Grid App License Manager
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Manage Grid App Licenses across Global Regions
+              Manage Grid Applications and Licensing Compliance
             </Typography>
           </Box>
         </Box>
       </Box>
 
+      {/* Alert Messages */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError("")}>
+          {error}
+        </Alert>
+      )}
+      {successMessage && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMessage("")}>
+          {successMessage}
+        </Alert>
+      )}
+
       {/* Statistics Cards */}
-      <Box className="mb-6" sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-        <Box sx={{ flex: '1 1 calc(25% - 18px)', minWidth: '200px' }}>
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Box className="flex items-center justify-between">
                 <Box>
                   <Typography variant="body2" color="text.secondary">
-                    Total Licenses
+                    Total Apps
                   </Typography>
-                  <Typography variant="h4">{totalLicenses}</Typography>
+                  <Typography variant="h4">{gridApps.length}</Typography>
                 </Box>
-                <KeyOutlined sx={{ fontSize: 40, color: "#8B0000" }} />
+                <Storage sx={{ fontSize: 40, color: "#8B0000", opacity: 0.3 }} />
               </Box>
             </CardContent>
           </Card>
-        </Box>
-        <Box sx={{ flex: '1 1 calc(25% - 18px)', minWidth: '200px' }}>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Box className="flex items-center justify-between">
                 <Box>
                   <Typography variant="body2" color="text.secondary">
-                    Active Licenses
+                    Compliant
                   </Typography>
-                  <Typography variant="h4">{activeLicenses}</Typography>
+                  <Typography variant="h4">{compliantApps}</Typography>
                 </Box>
-                <CheckCircle sx={{ fontSize: 40, color: "green" }} />
+                <CheckCircle sx={{ fontSize: 40, color: "#28a745", opacity: 0.3 }} />
               </Box>
             </CardContent>
           </Card>
-        </Box>
-        <Box sx={{ flex: '1 1 calc(25% - 18px)', minWidth: '200px' }}>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Box className="flex items-center justify-between">
                 <Box>
                   <Typography variant="body2" color="text.secondary">
-                    Total Users
+                    Non-Compliant
                   </Typography>
-                  <Typography variant="h4">{totalUsers}</Typography>
+                  <Typography variant="h4">{gridApps.length - compliantApps}</Typography>
                 </Box>
-                <Business sx={{ fontSize: 40, color: "#1976d2" }} />
+                <Cancel sx={{ fontSize: 40, color: "#dc3545", opacity: 0.3 }} />
               </Box>
             </CardContent>
           </Card>
-        </Box>
-        <Box sx={{ flex: '1 1 calc(25% - 18px)', minWidth: '200px' }}>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
               <Box className="flex items-center justify-between">
                 <Box>
                   <Typography variant="body2" color="text.secondary">
-                    Grid Regions
+                    Total Seats
                   </Typography>
-                  <Typography variant="h4">{GRID_REGIONS.length}</Typography>
+                  <Typography variant="h4">{totalSeats}</Typography>
                 </Box>
-                <Public sx={{ fontSize: 40, color: "#8B0000" }} />
+                <Public sx={{ fontSize: 40, color: "#1976d2", opacity: 0.3 }} />
               </Box>
             </CardContent>
           </Card>
-        </Box>
-      </Box>
+        </Grid>
+      </Grid>
 
-      {/* Tabs */}
-      <Paper className="mb-4">
-        <Tabs value={activeTab} onChange={(e, v) => setActiveTab(v)}>
-          <Tab label="All Licenses" />
-          <Tab label="Grid Apps" />
-          <Tab label="Region Overview" />
-        </Tabs>
-      </Paper>
-
-      {/* Tab 0: All Licenses */}
-      {activeTab === 0 && (
-        <Paper className="p-6">
-          <Box className="flex justify-between items-center mb-4">
-            <Typography variant="h5">License Management</Typography>
+      {/* Main Content */}
+      <Paper className="p-6">
+        <Box className="flex justify-between items-center mb-4">
+          <Typography variant="h5">Grid Applications</Typography>
+          <Box className="flex gap-2">
+            <Tooltip title="Refresh">
+              <IconButton onClick={loadGridApps} sx={{ bgcolor: "#f5f5f5" }}>
+                <Refresh />
+              </IconButton>
+            </Tooltip>
             <Button
               variant="contained"
               startIcon={<Add />}
-              onClick={handleAddLicense}
-              sx={{ backgroundColor: "#8B0000" }}
+              onClick={() => handleOpenDialog()}
+              sx={{ bgcolor: "#8B0000", "&:hover": { bgcolor: "#660000" } }}
             >
-              Add License
+              Add Grid App
             </Button>
           </Box>
+        </Box>
 
-          {/* Filters */}
-          <Box className="flex gap-4 mb-4">
-            <TextField
-              label="Search"
-              variant="outlined"
-              size="small"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by app, company, or license key..."
-              sx={{ flex: 1 }}
-            />
-            <FormControl size="small" sx={{ minWidth: 200 }}>
-              <InputLabel>Region</InputLabel>
-              <Select
-                value={selectedRegion}
-                label="Region"
-                onChange={(e) => setSelectedRegion(e.target.value as GridRegion | "ALL")}
-              >
-                <MenuItem value="ALL">All Regions</MenuItem>
-                {GRID_REGIONS.map((region) => (
-                  <MenuItem key={region.value} value={region.value}>
-                    {region.icon} {region.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
+        {/* Search */}
+        <Box className="mb-4">
+          <TextField
+            fullWidth
+            label="Search"
+            variant="outlined"
+            size="small"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by App ID, Description, or License ID..."
+          />
+        </Box>
 
-          {/* Licenses Table */}
-          <TableContainer>
-            <Table>
-              <TableHead>
+        {/* Grid Apps Table */}
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow sx={{ bgcolor: "#f5f5f5" }}>
+                <TableCell sx={{ fontWeight: 600 }}>App ID</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Version</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Region</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Seats</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>License Exp</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Compliant</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {loading ? (
                 <TableRow>
-                  <TableCell>App Name</TableCell>
-                  <TableCell>Region</TableCell>
-                  <TableCell>Company</TableCell>
-                  <TableCell>License Key</TableCell>
-                  <TableCell>Users</TableCell>
-                  <TableCell>Expiry Date</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Actions</TableCell>
+                  <TableCell colSpan={8} align="center">
+                    Loading grid apps...
+                  </TableCell>
                 </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredLicenses.map((license) => (
-                  <TableRow key={license.id}>
-                    <TableCell>{license.appName}</TableCell>
+              ) : filteredApps.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} align="center">
+                    No grid apps found. Create your first grid app!
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredApps.map((app) => (
+                  <TableRow key={app.id} hover>
                     <TableCell>
-                      <Chip
-                        label={`${GRID_REGIONS.find(r => r.value === license.region)?.icon} ${license.region}`}
-                        size="small"
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>{license.companyName}</TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontFamily: "monospace", fontSize: "0.75rem" }}>
-                        {license.licenseKey}
+                      <Typography variant="body2" sx={{ fontFamily: "monospace" }}>
+                        {app.appid}
                       </Typography>
                     </TableCell>
-                    <TableCell>
-                      {license.currentUsers} / {license.maxUsers}
-                    </TableCell>
-                    <TableCell>{license.expiryDate}</TableCell>
+                    <TableCell>{app.appdescription}</TableCell>
+                    <TableCell>{app.versionnumber}</TableCell>
                     <TableCell>
                       <Chip
-                        label={license.status}
-                        color={getStatusColor(license.status) as any}
+                        label={appRegionLabels[app.appregion || 0] || "Unknown"}
+                        size="small"
+                        sx={{ bgcolor: "#e3f2fd", color: "#1976d2" }}
+                      />
+                    </TableCell>
+                    <TableCell>{app.totalseats}</TableCell>
+                    <TableCell>{app.licenseexpiration}</TableCell>
+                    <TableCell>
+                      <Chip
+                        icon={app.iscompliant === 1 ? <CheckCircle /> : <Cancel />}
+                        label={app.iscompliant === 1 ? "Yes" : "No"}
+                        color={app.iscompliant === 1 ? "success" : "error"}
                         size="small"
                       />
                     </TableCell>
                     <TableCell>
-                      <IconButton size="small" onClick={() => handleEditLicense(license)}>
-                        <Edit fontSize="small" />
-                      </IconButton>
-                      <IconButton size="small" onClick={() => handleDeleteLicense(license.id)}>
-                        <Delete fontSize="small" />
-                      </IconButton>
+                      <Box sx={{ display: "flex", gap: 0.5 }}>
+                        <Tooltip title="Edit">
+                          <IconButton size="small" onClick={() => handleOpenDialog(app)}>
+                            <Edit fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete">
+                          <IconButton size="small" onClick={() => app.id && handleDelete(app.id)}>
+                            <Delete fontSize="small" sx={{ color: "#8B0000" }} />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          {filteredLicenses.length === 0 && (
-            <Alert severity="info" className="mt-4">
-              No licenses found matching your criteria.
-            </Alert>
-          )}
-        </Paper>
-      )}
-
-      {/* Tab 1: Grid Apps */}
-      {activeTab === 1 && (
-        <Paper className="p-6">
-          <Typography variant="h5" className="mb-4">
-            Available CTS Grid Apps
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-            {GRID_APPS.map((app) => (
-              <Box key={app.id} sx={{ flex: '1 1 calc(50% - 12px)', minWidth: '300px' }}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Box className="flex items-start justify-between mb-2">
-                      <Box>
-                        <Typography variant="h6">{app.name}</Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Version {app.version}
-                        </Typography>
-                      </Box>
-                      <Storage sx={{ color: "#8B0000" }} />
-                    </Box>
-                    <Typography variant="body2" className="mb-3">
-                      {app.description}
-                    </Typography>
-                    <Box className="flex flex-wrap gap-1">
-                      {app.modules.map((module, idx) => (
-                        <Chip key={idx} label={module} size="small" variant="outlined" />
-                      ))}
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Box>
-            ))}
-          </Box>
-        </Paper>
-      )}
-
-      {/* Tab 2: Region Overview */}
-      {activeTab === 2 && (
-        <Paper className="p-6">
-          <Typography variant="h5" className="mb-4">
-            Grid Region Overview
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-            {licensesByRegion.map((region) => {
-              const regionLicenses = licenses.filter(l => l.region === region.value);
-              const activeCount = regionLicenses.filter(l => l.status === "Active").length;
-              const totalRegionUsers = regionLicenses.reduce((sum, l) => sum + l.currentUsers, 0);
-
-              return (
-                <Box key={region.value} sx={{ flex: '1 1 calc(33.333% - 16px)', minWidth: '250px' }}>
-                  <Card>
-                    <CardContent>
-                      <Box className="flex items-center gap-2 mb-3">
-                        <Typography variant="h4">{region.icon}</Typography>
-                        <Box>
-                          <Typography variant="h6">{region.label}</Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {region.value}
-                          </Typography>
-                        </Box>
-                      </Box>
-                      <Box className="space-y-2">
-                        <Box className="flex justify-between">
-                          <Typography variant="body2">Total Licenses:</Typography>
-                          <Typography variant="body2" fontWeight="bold">
-                            {region.count}
-                          </Typography>
-                        </Box>
-                        <Box className="flex justify-between">
-                          <Typography variant="body2">Active:</Typography>
-                          <Typography variant="body2" fontWeight="bold" color="green">
-                            {activeCount}
-                          </Typography>
-                        </Box>
-                        <Box className="flex justify-between">
-                          <Typography variant="body2">Total Users:</Typography>
-                          <Typography variant="body2" fontWeight="bold">
-                            {totalRegionUsers}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </CardContent>
-                  </Card>
-                </Box>
-              );
-            })}
-          </Box>
-        </Paper>
-      )}
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
 
       {/* Add/Edit Dialog */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth>
-        <DialogTitle>
-          {editingLicense ? "Edit License" : "Add New License"}
-        </DialogTitle>
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+        <DialogTitle>{editingApp ? "Edit Grid App" : "Add New Grid App"}</DialogTitle>
         <DialogContent>
           <Box className="space-y-4 mt-2">
-            <FormControl fullWidth>
-              <InputLabel>Grid App</InputLabel>
-              <Select
-                value={formData.appName}
-                label="Grid App"
-                onChange={(e) => setFormData({ ...formData, appName: e.target.value })}
-              >
-                {GRID_APPS.map((app) => (
-                  <MenuItem key={app.id} value={app.name}>
-                    {app.name} (v{app.version})
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl fullWidth>
-              <InputLabel>Grid Region</InputLabel>
-              <Select
-                value={formData.region}
-                label="Grid Region"
-                onChange={(e) => setFormData({ ...formData, region: e.target.value as GridRegion })}
-              >
-                {GRID_REGIONS.map((region) => (
-                  <MenuItem key={region.value} value={region.value}>
-                    {region.icon} {region.label} ({region.value})
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <TextField
-              fullWidth
-              label="Company ID"
-              value={formData.companyId}
-              onChange={(e) => setFormData({ ...formData, companyId: e.target.value })}
-            />
-
-            <TextField
-              fullWidth
-              label="Company Name"
-              value={formData.companyName}
-              onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-            />
-
-            <TextField
-              fullWidth
-              type="number"
-              label="Max Users"
-              value={formData.maxUsers}
-              onChange={(e) => setFormData({ ...formData, maxUsers: parseInt(e.target.value) })}
-            />
-
-            <TextField
-              fullWidth
-              type="date"
-              label="Expiry Date"
-              value={formData.expiryDate}
-              onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
-              InputLabelProps={{ shrink: true }}
-            />
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="App ID"
+                  value={formData.appid || ""}
+                  onChange={(e) => setFormData({ ...formData, appid: e.target.value })}
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Version Number"
+                  value={formData.versionnumber || ""}
+                  onChange={(e) => setFormData({ ...formData, versionnumber: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Description"
+                  value={formData.appdescription || ""}
+                  onChange={(e) => setFormData({ ...formData, appdescription: e.target.value })}
+                  multiline
+                  rows={2}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>App Type</InputLabel>
+                  <Select
+                    value={formData.apptype || 0}
+                    label="App Type"
+                    onChange={(e) => setFormData({ ...formData, apptype: Number(e.target.value) })}
+                  >
+                    <MenuItem value={0}>Standard</MenuItem>
+                    <MenuItem value={1}>Enterprise</MenuItem>
+                    <MenuItem value={2}>Cloud</MenuItem>
+                    <MenuItem value={3}>Hybrid</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Region</InputLabel>
+                  <Select
+                    value={formData.appregion || 0}
+                    label="Region"
+                    onChange={(e) => setFormData({ ...formData, appregion: Number(e.target.value) })}
+                  >
+                    {Object.entries(appRegionLabels).map(([value, label]) => (
+                      <MenuItem key={value} value={Number(value)}>
+                        {label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="DBMS Type"
+                  value={formData.dbmstype || ""}
+                  onChange={(e) => setFormData({ ...formData, dbmstype: e.target.value })}
+                  placeholder="e.g., SQL Server, PostgreSQL"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="DBMS Vendor"
+                  value={formData.dbmsvendor || ""}
+                  onChange={(e) => setFormData({ ...formData, dbmsvendor: e.target.value })}
+                  placeholder="e.g., Microsoft, Oracle"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="DBMS Topology"
+                  value={formData.dbmstopology || ""}
+                  onChange={(e) => setFormData({ ...formData, dbmstopology: e.target.value })}
+                  placeholder="e.g., Cluster, Standalone"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Grid ID"
+                  value={formData.gridid || 0}
+                  onChange={(e) => setFormData({ ...formData, gridid: Number(e.target.value) })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Target Grid"
+                  value={formData.targetgrid || ""}
+                  onChange={(e) => setFormData({ ...formData, targetgrid: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Target Grid ID"
+                  value={formData.targetgridid || 0}
+                  onChange={(e) => setFormData({ ...formData, targetgridid: Number(e.target.value) })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Target Geometry"
+                  value={formData.targetgeometry || ""}
+                  onChange={(e) => setFormData({ ...formData, targetgeometry: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="License ID"
+                  value={formData.licenseid || ""}
+                  onChange={(e) => setFormData({ ...formData, licenseid: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>License Type</InputLabel>
+                  <Select
+                    value={formData.licensetype || 0}
+                    label="License Type"
+                    onChange={(e) => setFormData({ ...formData, licensetype: Number(e.target.value) })}
+                  >
+                    {Object.entries(licenseTypeLabels).map(([value, label]) => (
+                      <MenuItem key={value} value={Number(value)}>
+                        {label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Total Seats"
+                  value={formData.totalseats || 0}
+                  onChange={(e) => setFormData({ ...formData, totalseats: Number(e.target.value) })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  type="date"
+                  label="License Expiration"
+                  value={formData.licenseexpiration || ""}
+                  onChange={(e) => setFormData({ ...formData, licenseexpiration: e.target.value })}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Vendor ID"
+                  value={formData.vendorid || 0}
+                  onChange={(e) => setFormData({ ...formData, vendorid: Number(e.target.value) })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Legal Contact ID"
+                  value={formData.legalcontactid || 0}
+                  onChange={(e) => setFormData({ ...formData, legalcontactid: Number(e.target.value) })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Compliant</InputLabel>
+                  <Select
+                    value={formData.iscompliant || 1}
+                    label="Compliant"
+                    onChange={(e) => setFormData({ ...formData, iscompliant: Number(e.target.value) })}
+                  >
+                    <MenuItem value={1}>Yes</MenuItem>
+                    <MenuItem value={0}>No</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Why Non-Compliant"
+                  value={formData.whynoncompliant || ""}
+                  onChange={(e) => setFormData({ ...formData, whynoncompliant: e.target.value })}
+                  multiline
+                  rows={2}
+                  disabled={formData.iscompliant === 1}
+                  placeholder="Explain why this app is non-compliant (if applicable)"
+                />
+              </Grid>
+            </Grid>
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
+          <Button onClick={handleCloseDialog}>Cancel</Button>
           <Button
-            onClick={handleSaveLicense}
+            onClick={handleSave}
             variant="contained"
-            sx={{ backgroundColor: "#8B0000" }}
-            disabled={!formData.appName || !formData.companyName || !formData.expiryDate}
+            sx={{ bgcolor: "#8B0000", "&:hover": { bgcolor: "#660000" } }}
+            disabled={!formData.appid}
           >
-            {editingLicense ? "Update" : "Create"} License
+            {editingApp ? "Update" : "Create"} Grid App
           </Button>
         </DialogActions>
       </Dialog>

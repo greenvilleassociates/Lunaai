@@ -29,6 +29,7 @@ import type {
   Batchtype,
   Activitydetail,
   Addbase,
+  Gapp,
   Timesheet,
   Companyevent,
   CreateUsersessionRequest,
@@ -984,6 +985,60 @@ export const addbaseApi = {
    */
   async delete(id: number): Promise<any> {
     return apiRequest(API_CONFIG.ENDPOINTS.ADDBASE_BY_ID(id), {
+      method: 'DELETE',
+    });
+  },
+};
+
+// ============================================================================
+// Grid App APIs
+// ============================================================================
+
+export const gappApi = {
+  /**
+   * Get all grid apps
+   * GET /api/Gapp
+   */
+  async getAll(): Promise<Gapp[]> {
+    return apiRequest<Gapp[]>(API_CONFIG.ENDPOINTS.GAPP);
+  },
+
+  /**
+   * Get grid app by ID
+   * GET /api/Gapp/{id}
+   */
+  async getById(id: number): Promise<Gapp> {
+    return apiRequest<Gapp>(API_CONFIG.ENDPOINTS.GAPP_BY_ID(id));
+  },
+
+  /**
+   * Create new grid app
+   * POST /api/Gapp
+   */
+  async create(gapp: Partial<Gapp>): Promise<any> {
+    return apiRequest(API_CONFIG.ENDPOINTS.GAPP, {
+      method: 'POST',
+      body: JSON.stringify(gapp),
+    });
+  },
+
+  /**
+   * Update grid app
+   * PUT /api/Gapp/{id}
+   */
+  async update(id: number, gapp: Partial<Gapp>): Promise<any> {
+    return apiRequest(API_CONFIG.ENDPOINTS.GAPP_BY_ID(id), {
+      method: 'PUT',
+      body: JSON.stringify(gapp),
+    });
+  },
+
+  /**
+   * Delete grid app
+   * DELETE /api/Gapp/{id}
+   */
+  async delete(id: number): Promise<any> {
+    return apiRequest(API_CONFIG.ENDPOINTS.GAPP_BY_ID(id), {
       method: 'DELETE',
     });
   },
