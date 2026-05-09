@@ -38,6 +38,7 @@ export function Settings() {
   const [defaultSearchEngine, setDefaultSearchEngine] = useState<string>("1");
   const [maxSearchEngines, setMaxSearchEngines] = useState<string>("1");
   const [chainSearch, setChainSearch] = useState<string>("0");
+  const [debugMode, setDebugMode] = useState<boolean>(true);
 
   // Check if user is superuser
   const currentUserRole = localStorage.getItem("role");
@@ -63,6 +64,15 @@ export function Settings() {
 
     const savedChainSearch = localStorage.getItem("chainsearch");
     if (savedChainSearch) setChainSearch(savedChainSearch);
+
+    const savedDebugMode = localStorage.getItem("debugMode");
+    if (savedDebugMode !== null) {
+      setDebugMode(savedDebugMode === "true");
+    } else {
+      // Default to true if not set
+      localStorage.setItem("debugMode", "true");
+      setDebugMode(true);
+    }
 
     setLoading(false);
   }, []);
@@ -182,6 +192,12 @@ export function Settings() {
   const handleToggleBackup = (checked: boolean) => {
     setUseBackupApi(checked);
     localStorage.setItem("useBackupApi", checked ? "true" : "false");
+  };
+
+  const handleToggleDebugMode = (checked: boolean) => {
+    setDebugMode(checked);
+    localStorage.setItem("debugMode", checked ? "true" : "false");
+    window.dispatchEvent(new StorageEvent("storage", { key: "debugMode", newValue: checked ? "true" : "false" }));
   };
 
   const handleTestBackupConnection = async () => {
@@ -577,6 +593,55 @@ export function Settings() {
 
               <Typography variant="caption" color="text.secondary" className="mt-3 block">
                 This setting is saved locally and will be applied to all voice recording features.
+              </Typography>
+            </Paper>
+
+            {/* Debug Mode Settings */}
+            <Paper className="p-6">
+              <Box className="flex items-center gap-2 mb-4">
+                <Build className="text-slate-700" />
+                <Typography variant="h6">Debug Mode</Typography>
+              </Box>
+              <Typography variant="body2" color="text.secondary" className="mb-4">
+                Control whether debug messages are logged to the browser console.
+              </Typography>
+
+              <Alert severity="info" className="mb-4">
+                Disabling debug mode will suppress console.log messages throughout the application, providing a cleaner browser console.
+              </Alert>
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={debugMode}
+                    onChange={(e) => handleToggleDebugMode(e.target.checked)}
+                    sx={{
+                      "& .MuiSwitch-switchBase.Mui-checked": {
+                        color: "#8B0000",
+                      },
+                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                        backgroundColor: "#8B0000",
+                      },
+                    }}
+                  />
+                }
+                label={
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {debugMode ? "Debug Mode Enabled" : "Debug Mode Disabled"}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {debugMode
+                        ? "Console messages are visible in browser developer tools"
+                        : "Console messages are suppressed for cleaner output"
+                      }
+                    </Typography>
+                  </Box>
+                }
+              />
+
+              <Typography variant="caption" color="text.secondary" className="mt-3 block">
+                This setting is saved locally and affects all pages in the application.
               </Typography>
             </Paper>
 

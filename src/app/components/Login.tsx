@@ -55,7 +55,33 @@ export function Login() {
   const [showWarmupLoader, setShowWarmupLoader] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [debugMode, setDebugMode] = useState(true);
   const navigate = useNavigate();
+
+  // Helper function for conditional debug logging
+  const debugLog = (...args: any[]) => {
+    if (debugMode) {
+      console.log(...args);
+    }
+  };
+
+  // Load debug mode setting
+  useEffect(() => {
+    const savedDebugMode = localStorage.getItem("debugMode");
+    if (savedDebugMode !== null) {
+      setDebugMode(savedDebugMode === "true");
+    }
+
+    // Listen for changes to debug mode from Settings
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "debugMode") {
+        setDebugMode(e.newValue === "true");
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -80,7 +106,7 @@ export function Login() {
       
       if (localUser) {
         // Local JSON authentication successful
-        console.log("Local JSON authentication successful for user:", localUser.username);
+        debugLog("Local JSON authentication successful for user:", localUser.username);
         
         // Get current time
         const loginTime = new Date().toLocaleString();
@@ -95,7 +121,7 @@ export function Login() {
           latitude = position.coords.latitude.toFixed(6);
           longitude = position.coords.longitude.toFixed(6);
         } catch (error) {
-          console.log("Location access denied or unavailable");
+          debugLog("Location access denied or unavailable");
         }
 
         // Get IP address
@@ -104,9 +130,9 @@ export function Login() {
           const response = await fetch("https://api.ipify.org?format=json");
           const data = await response.json();
           ipAddress = data.ip;
-          console.log("🌐 Client IP Address detected:", ipAddress);
+          debugLog("🌐 Client IP Address detected:", ipAddress);
         } catch (error) {
-          console.log("IP address fetch failed:", error);
+          debugLog("IP address fetch failed:", error);
         }
 
         // Store uid and session information in localStorage
@@ -124,10 +150,10 @@ export function Login() {
         localStorage.setItem("maxsearchengines", (localUser.maxsearchengines ?? 1).toString());
         localStorage.setItem("chainsearch", (localUser.chainsearch ?? 0).toString());
         
-        console.log("LocalStorage updated with uid:", localStorage.getItem("uid"));
-        console.log("LocalStorage updated with userid:", localStorage.getItem("userid"));
-        console.log("LocalStorage updated with email:", localStorage.getItem("email"));
-        console.log("LocalStorage updated with companyId:", localStorage.getItem("companyId"));
+        debugLog("LocalStorage updated with uid:", localStorage.getItem("uid"));
+        debugLog("LocalStorage updated with userid:", localStorage.getItem("userid"));
+        debugLog("LocalStorage updated with email:", localStorage.getItem("email"));
+        debugLog("LocalStorage updated with companyId:", localStorage.getItem("companyId"));
         
         // Post login log to Azure API
         try {
@@ -155,7 +181,7 @@ export function Login() {
             body: JSON.stringify(logEntry),
           });
           
-          console.log("Login logged successfully");
+          debugLog("Login logged successfully");
         } catch (error) {
           // Don't block login if logging fails
           console.error("Failed to log user login:", error);
@@ -198,19 +224,19 @@ export function Login() {
             body: JSON.stringify(sessionEntry),
           });
           
-          console.log("User session created successfully (local JSON auth)");
+          debugLog("User session created successfully (local JSON auth)");
         } catch (error) {
           // Don't block login if session creation fails
           console.error("Failed to create user session:", error);
         }
         
         // Redirect to home page
-        console.log("About to navigate to / ...");
+        debugLog("About to navigate to / ...");
         setLoading(false);
         
         // Use setTimeout to ensure state updates complete before navigation
         setTimeout(() => {
-          console.log("Navigating now with uid:", localStorage.getItem("uid"));
+          debugLog("Navigating now with uid:", localStorage.getItem("uid"));
           navigate("/", { replace: true });
         }, 100);
         
@@ -242,7 +268,7 @@ export function Login() {
         // Azure API returns { user: {...}, token: "..." }
         user = apiResponse.user || apiResponse;
         authToken = apiResponse.token || "";
-        console.log("Azure API login successful - session created automatically");
+        debugLog("Azure API login successful - session created automatically");
       }
 
       // Get current time
@@ -258,7 +284,7 @@ export function Login() {
         latitude = position.coords.latitude.toFixed(6);
         longitude = position.coords.longitude.toFixed(6);
       } catch (error) {
-        console.log("Location access denied or unavailable");
+        debugLog("Location access denied or unavailable");
       }
 
       // Get IP address
@@ -267,9 +293,9 @@ export function Login() {
         const response = await fetch("https://api.ipify.org?format=json");
         const data = await response.json();
         ipAddress = data.ip;
-        console.log("🌐 Client IP Address detected:", ipAddress);
+        debugLog("🌐 Client IP Address detected:", ipAddress);
       } catch (error) {
-        console.log("IP address fetch failed:", error);
+        debugLog("IP address fetch failed:", error);
       }
 
       // Store uid and session information in localStorage
@@ -288,7 +314,7 @@ export function Login() {
       // Store auth token if using API authentication
       if (authToken) {
         localStorage.setItem("authToken", authToken);
-        console.log("Auth token stored");
+        debugLog("Auth token stored");
       }
       
       // Post login log to Azure API
@@ -317,22 +343,22 @@ export function Login() {
           body: JSON.stringify(logEntry),
         });
         
-        console.log("Login logged successfully");
+        debugLog("Login logged successfully");
       } catch (error) {
         // Don't block login if logging fails
         console.error("Failed to log user login:", error);
       }
       
       // Azure API already created the session
-      console.log("Session already created by Azure API");
+      debugLog("Session already created by Azure API");
       
       // Redirect to home page
-      console.log("About to navigate to / ...");
+      debugLog("About to navigate to / ...");
       setLoading(false);
       
       // Use setTimeout to ensure state updates complete before navigation
       setTimeout(() => {
-        console.log("Navigating now with uid:", localStorage.getItem("uid"));
+        debugLog("Navigating now with uid:", localStorage.getItem("uid"));
         navigate("/", { replace: true });
       }, 100);
     } catch (error) {

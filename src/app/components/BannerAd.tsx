@@ -93,6 +93,38 @@ export function BannerAd() {
   const [commercials, setCommercials] = useState<BannerAdData[]>(fallbackCommercials);
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const [debugMode, setDebugMode] = useState(true);
+
+  // Helper functions for conditional debug logging
+  const debugLog = (...args: any[]) => {
+    if (debugMode) {
+      console.log(...args);
+    }
+  };
+
+  const debugWarn = (...args: any[]) => {
+    if (debugMode) {
+      console.warn(...args);
+    }
+  };
+
+  // Load debug mode setting
+  useEffect(() => {
+    const savedDebugMode = localStorage.getItem("debugMode");
+    if (savedDebugMode !== null) {
+      setDebugMode(savedDebugMode === "true");
+    }
+
+    // Listen for changes to debug mode from Settings
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "debugMode") {
+        setDebugMode(e.newValue === "true");
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
 
   // Load commercials from JSON file
   useEffect(() => {
@@ -105,10 +137,10 @@ export function BannerAd() {
         const data = await response.json();
         if (Array.isArray(data) && data.length > 0) {
           setCommercials(data);
-          console.log("✅ Commercials loaded from JSON:", data.length);
+          debugLog("✅ Commercials loaded from JSON:", data.length);
         }
       } catch (error) {
-        console.warn("⚠️ Failed to load commercials from JSON, using fallback:", error);
+        debugWarn("⚠️ Failed to load commercials from JSON, using fallback:", error);
         // Keep fallback commercials that were already set
       }
     };
@@ -163,9 +195,9 @@ export function BannerAd() {
           body: JSON.stringify(impressionData),
         });
 
-        console.log(`✅ Ad impression tracked: ${currentAd.title}`);
+        debugLog(`✅ Ad impression tracked: ${currentAd.title}`);
       } catch (error) {
-        console.warn("⚠️ Failed to track ad impression:", error);
+        debugWarn("⚠️ Failed to track ad impression:", error);
       }
     };
 
