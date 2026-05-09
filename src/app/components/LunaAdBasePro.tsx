@@ -234,6 +234,49 @@ export function LunaAdBasePro() {
   // Get unique platforms
   const platforms = ["all", ...new Set(adbaseEntries.map(e => e.origplatform).filter(Boolean))];
 
+  // Banner Ad Impression Statistics
+  const bannerAdImpressions = adbaseEntries.filter(
+    e => e.origplatform === "web-login" && e.targetplatform === "banner-ad"
+  );
+
+  // Commercial names mapping
+  const commercialNames: Record<string, string> = {
+    "ad-001": "World Cup 2026",
+    "ad-002": "Corona Extra",
+    "ad-003": "Coppertone SPORT",
+    "ad-004": "Heineken",
+    "ad-005": "Neutrogena Beach Defense",
+    "ad-006": "Premier League",
+    "ad-007": "Modelo Especial",
+    "ad-008": "Hawaiian Tropic",
+  };
+
+  // Aggregate impressions by ad
+  const impressionsByAd = bannerAdImpressions.reduce((acc, entry) => {
+    const addid = entry.addid || "unknown";
+    if (!acc[addid]) {
+      acc[addid] = {
+        addid,
+        count: 0,
+        uniqueUsers: new Set<string>(),
+        firstSeen: entry.id,
+        lastSeen: entry.id,
+      };
+    }
+    acc[addid].count += 1;
+    if (entry.uid) acc[addid].uniqueUsers.add(entry.uid);
+    return acc;
+  }, {} as Record<string, { addid: string; count: number; uniqueUsers: Set<string>; firstSeen: number; lastSeen: number }>);
+
+  const bannerAdStats = Object.values(impressionsByAd).map(stat => ({
+    addid: stat.addid,
+    name: commercialNames[stat.addid] || stat.addid,
+    impressions: stat.count,
+    uniqueUsers: stat.uniqueUsers.size,
+  }));
+
+  const totalBannerImpressions = bannerAdImpressions.length;
+
   return (
     <Box sx={{ p: 3 }}>
       {/* Header */}
@@ -279,6 +322,91 @@ export function LunaAdBasePro() {
           {successMessage}
         </Alert>
       )}
+
+      {/* Banner Ad Impressions Section */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h5" sx={{ fontWeight: 600, color: "#000", mb: 2 }}>
+          Banner Ad Impressions
+        </Typography>
+        <Grid container spacing={2} sx={{ mb: 2 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ bgcolor: "#f0f4ff" }}>
+              <CardContent>
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Total Impressions
+                    </Typography>
+                    <Typography variant="h5" sx={{ fontWeight: 600, color: "#1976d2" }}>
+                      {totalBannerImpressions.toLocaleString()}
+                    </Typography>
+                  </Box>
+                  <Visibility sx={{ fontSize: 40, color: "#1976d2", opacity: 0.3 }} />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ bgcolor: "#fff3e0" }}>
+              <CardContent>
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Active Ads
+                    </Typography>
+                    <Typography variant="h5" sx={{ fontWeight: 600, color: "#f57c00" }}>
+                      {bannerAdStats.length}
+                    </Typography>
+                  </Box>
+                  <Campaign sx={{ fontSize: 40, color: "#f57c00", opacity: 0.3 }} />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        <TableContainer component={Paper} sx={{ mb: 3 }}>
+          <Table size="small">
+            <TableHead>
+              <TableRow sx={{ bgcolor: "#e3f2fd" }}>
+                <TableCell sx={{ fontWeight: 600 }}>Ad ID</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Commercial Name</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Total Impressions</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Unique Users</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {bannerAdStats.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} align="center">
+                    No banner ad impressions tracked yet
+                  </TableCell>
+                </TableRow>
+              ) : (
+                bannerAdStats
+                  .sort((a, b) => b.impressions - a.impressions)
+                  .map((stat) => (
+                    <TableRow key={stat.addid} hover>
+                      <TableCell>
+                        <Chip label={stat.addid} size="small" sx={{ bgcolor: "#e3f2fd" }} />
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 500 }}>{stat.name}</TableCell>
+                      <TableCell>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <Visibility fontSize="small" sx={{ color: "#1976d2" }} />
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {stat.impressions.toLocaleString()}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>{stat.uniqueUsers.toLocaleString()}</TableCell>
+                    </TableRow>
+                  ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
 
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>

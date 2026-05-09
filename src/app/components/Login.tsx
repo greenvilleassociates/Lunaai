@@ -356,7 +356,43 @@ export function Login() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden flex flex-col">
+      {/* Top Navigation Bar */}
+      <header className="w-full bg-slate-900 text-white px-6 py-3 shadow-md z-50 relative">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img src={lunaLogo} alt="LunaAI Logo" className="h-10 w-10 rounded-lg object-cover" />
+            <h1 className="text-xl">LunaAI</h1>
+          </div>
+          <nav className="flex gap-6 items-center">
+            <Link
+              to="/"
+              className="hover:text-slate-300 transition-colors text-slate-400"
+            >
+              Home
+            </Link>
+            <Link
+              to="/about"
+              className="hover:text-slate-300 transition-colors text-slate-400"
+            >
+              About
+            </Link>
+            <Link
+              to="/contact"
+              className="hover:text-slate-300 transition-colors text-slate-400"
+            >
+              Contact
+            </Link>
+            <Link
+              to="/register"
+              className="text-sm bg-slate-800 hover:bg-slate-700 px-4 py-1 rounded transition-colors"
+            >
+              Register
+            </Link>
+          </nav>
+        </div>
+      </header>
+
       {/* Background Image Slideshow */}
       {seasideImages.map((image, index) => (
         <div
@@ -427,7 +463,7 @@ export function Login() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="flex-1 px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  className="w-[calc(100%-60px)] px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900"
                   required
                 />
                 <IconButton
@@ -469,17 +505,20 @@ export function Login() {
             </p>
           </div>
 
-          <div className="mt-6 text-sm text-slate-600 text-center border-t border-slate-200 pt-4">
-            <p className="mb-2">Test Users:</p>
-            <p>john, marco, brian, portia, joey, jws</p>
-            <p className="mt-3 text-xs bg-blue-50 p-2 rounded border border-blue-200">
+          <div className="mt-3 text-sm text-slate-600 text-center border-t border-slate-200 pt-2">
+            <p className="text-xs bg-blue-50 px-3 py-1.5 rounded border border-blue-200 inline-block">
               <strong>Guest Access:</strong> Username: <code className="bg-white px-1 rounded">guest</code> / Password: <code className="bg-white px-1 rounded">guest</code>
             </p>
           </div>
         </div>
 
+        {/* Banner Ads */}
+        <div className="w-full lg:max-w-[1600px] mt-4 md:mt-8 mb-[2px]">
+          <BannerAd />
+        </div>
+
         {/* System Messages Panel - Row Layout */}
-        <div className="w-full lg:max-w-[1600px] mt-4 md:mt-8 h-[200px] bg-gradient-to-br from-slate-800 to-slate-900 p-3 lg:p-4 rounded-lg shadow-lg text-white overflow-auto" style={{ fontSize: '8pt' }}>
+        <div className="w-full lg:max-w-[1600px] mt-[2px] h-[200px] bg-gradient-to-br from-slate-800 to-slate-900 p-3 lg:p-4 rounded-lg shadow-lg text-white overflow-auto" style={{ fontSize: '8pt' }}>
           <div className="border-b border-slate-600 pb-1.5 mb-2">
             <h3 className="font-bold text-center flex items-center justify-center gap-1.5" style={{ fontSize: '10pt' }}>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -571,11 +610,6 @@ export function Login() {
               </ul>
             </div>
           </div>
-        </div>
-
-        {/* Banner Ads */}
-        <div className="w-full lg:max-w-[1600px] mt-4 md:mt-8 mb-4">
-          <BannerAd />
         </div>
       </div>
       </div>

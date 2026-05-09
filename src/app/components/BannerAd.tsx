@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Box, IconButton } from "@mui/material";
 import { ChevronLeft, ChevronRight } from "@mui/icons-material";
+import { API_CONFIG, getApiUrl } from "../config/api";
 
 interface BannerAdData {
   id: string;
@@ -123,6 +124,53 @@ export function BannerAd() {
 
     return () => clearInterval(interval);
   }, [isHovered, commercials]);
+
+  // Track ad impressions
+  useEffect(() => {
+    if (commercials.length === 0) return;
+
+    const trackImpression = async () => {
+      const currentAd = commercials[currentAdIndex];
+      const uid = localStorage.getItem("uid") || "guest";
+      const ipAddress = localStorage.getItem("ipAddress") || "N/A";
+      const latitude = localStorage.getItem("latitude") || "0";
+      const longitude = localStorage.getItem("longitude") || "0";
+
+      try {
+        const addbaseUrl = getApiUrl(API_CONFIG.ENDPOINTS.ADDBASE);
+        const impressionData = {
+          addid: currentAd.id,
+          sourceip: ipAddress,
+          destinationip: "login-banner",
+          clientid: uid,
+          mktgurl: currentAd.linkUrl,
+          origplatform: "web-login",
+          targetplatform: "banner-ad",
+          uid: uid,
+          ulat: parseFloat(latitude),
+          ulong: parseFloat(longitude),
+          cost: 0,
+          price: 0,
+          discount: 0,
+        };
+
+        await fetch(addbaseUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${uid}`,
+          },
+          body: JSON.stringify(impressionData),
+        });
+
+        console.log(`✅ Ad impression tracked: ${currentAd.title}`);
+      } catch (error) {
+        console.warn("⚠️ Failed to track ad impression:", error);
+      }
+    };
+
+    trackImpression();
+  }, [currentAdIndex, commercials]);
 
   const currentAd = commercials[currentAdIndex];
 
