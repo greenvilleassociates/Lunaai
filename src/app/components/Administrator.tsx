@@ -22,7 +22,8 @@ import {
   Select,
   MenuItem,
 } from "@mui/material";
-import { PersonAdd, Business, AddBusiness, Group } from "@mui/icons-material";
+import { PersonAdd, Business, AddBusiness, Group, Edit, Delete } from "@mui/icons-material";
+import IconButton from "@mui/material/IconButton";
 import { DATA_URLS, fetchExternalData } from "../config/dataUrls";
 import { API_CONFIG, getApiUrl } from "../config/api";
 
@@ -94,6 +95,12 @@ export function Administrator() {
   const [apiCompanies, setApiCompanies] = useState<ApiCompany[]>([]);
   const [userGroups, setUserGroups] = useState<UserGroup[]>([]);
   const [addGroupDialogOpen, setAddGroupDialogOpen] = useState(false);
+
+  // Selected items for edit mode
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedBu, setSelectedBu] = useState<BusinessUnit | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<ApiCompany | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<UserGroup | null>(null);
 
   // New user form state
   const [newUser, setNewUser] = useState({
@@ -320,6 +327,74 @@ export function Administrator() {
     }
   };
 
+  const handleEditUser = (user: User) => {
+    setSelectedUser(user);
+    setNewUser({
+      username: user.username,
+      password: user.password,
+      role: user.role,
+      address1: user.address1,
+      address2: user.address2,
+      city: user.city,
+      state: user.state,
+      zip: user.zip,
+      phone: user.phone,
+      cell: user.cell,
+    });
+    setAddUserDialogOpen(true);
+  };
+
+  const handleUpdateUser = () => {
+    if (!selectedUser) return;
+
+    if (!newUser.username || !newUser.password) {
+      setErrorMessage("Username and password are required");
+      return;
+    }
+
+    // Create updated user object
+    const updatedUser: User = {
+      ...selectedUser,
+      username: newUser.username,
+      password: newUser.password,
+      role: newUser.role,
+      address1: newUser.address1,
+      address2: newUser.address2,
+      city: newUser.city,
+      state: newUser.state,
+      zip: newUser.zip,
+      phone: newUser.phone,
+      cell: newUser.cell,
+    };
+
+    // Update user list
+    setUserList(userList.map((u) => (u.uid === selectedUser.uid ? updatedUser : u)));
+
+    // Show success message
+    setSuccessMessage(`User "${newUser.username}" updated successfully!`);
+
+    // Reset form and selected user
+    setNewUser({
+      username: "",
+      password: "",
+      role: "user",
+      address1: "",
+      address2: "",
+      city: "",
+      state: "",
+      zip: "",
+      phone: "",
+      cell: "",
+    });
+    setSelectedUser(null);
+
+    // Close dialog
+    setAddUserDialogOpen(false);
+
+    // Clear success message after 3 seconds
+    setTimeout(() => setSuccessMessage(""), 3000);
+  };
+
   const handleAddBusinessUnit = () => {
     if (!newBu.buname) {
       setErrorMessage("Business Unit name is required");
@@ -385,6 +460,68 @@ export function Administrator() {
       setSuccessMessage("Business Unit deleted successfully");
       setTimeout(() => setSuccessMessage(""), 3000);
     }
+  };
+
+  const handleEditBusinessUnit = (bu: BusinessUnit) => {
+    setSelectedBu(bu);
+    setNewBu({
+      buname: bu.buname,
+      buhqaddress1: bu.buhqaddress1,
+      buhqaddress2: bu.buhqaddress2,
+      buhqcity: bu.buhqcity,
+      buhqstate: bu.buhqstate,
+      buhqpostal: bu.buhqpostal,
+      companyid: bu.companyid,
+      instanceid: bu.instanceid,
+    });
+    setAddBuDialogOpen(true);
+  };
+
+  const handleUpdateBusinessUnit = () => {
+    if (!selectedBu) return;
+
+    if (!newBu.buname) {
+      setErrorMessage("Business Unit name is required");
+      return;
+    }
+
+    // Create updated business unit object
+    const updatedBu: BusinessUnit = {
+      ...selectedBu,
+      buname: newBu.buname,
+      buhqaddress1: newBu.buhqaddress1,
+      buhqaddress2: newBu.buhqaddress2,
+      buhqcity: newBu.buhqcity,
+      buhqstate: newBu.buhqstate,
+      buhqpostal: newBu.buhqpostal,
+      companyid: newBu.companyid,
+      instanceid: newBu.instanceid,
+    };
+
+    // Update business unit list
+    setBusinessUnits(businessUnits.map((bu) => (bu.id === selectedBu.id ? updatedBu : bu)));
+
+    // Show success message
+    setSuccessMessage(`Business Unit "${newBu.buname}" updated successfully!`);
+
+    // Reset form and selected business unit
+    setNewBu({
+      buname: "",
+      buhqaddress1: "",
+      buhqaddress2: "",
+      buhqcity: "",
+      buhqstate: "",
+      buhqpostal: "",
+      companyid: 0,
+      instanceid: "",
+    });
+    setSelectedBu(null);
+
+    // Close dialog
+    setAddBuDialogOpen(false);
+
+    // Clear success message after 3 seconds
+    setTimeout(() => setSuccessMessage(""), 3000);
   };
 
   const handleAddCompany = () => {
@@ -543,6 +680,62 @@ export function Administrator() {
     }
   };
 
+  const handleEditCompany = (company: ApiCompany) => {
+    setSelectedCompany(company);
+    setNewCompany({
+      companyname: company.companyname,
+      dynamicsid: company.dynamicsid,
+      ncralohaid: company.ncralohaid,
+      oracleid: company.oracleid,
+      certAuthority: company.certAuthority,
+      instancedid: company.instancedid,
+    });
+    setAddCompanyDialogOpen(true);
+  };
+
+  const handleUpdateCompany = () => {
+    if (!selectedCompany) return;
+
+    if (!newCompany.companyname) {
+      setErrorMessage("Company name is required");
+      return;
+    }
+
+    // Create updated company object
+    const updatedCompany: ApiCompany = {
+      ...selectedCompany,
+      companyname: newCompany.companyname,
+      dynamicsid: newCompany.dynamicsid,
+      ncralohaid: newCompany.ncralohaid,
+      oracleid: newCompany.oracleid,
+      certAuthority: newCompany.certAuthority,
+      instancedid: newCompany.instancedid,
+    };
+
+    // Update company list
+    setApiCompanies(apiCompanies.map((c) => (c.id === selectedCompany.id ? updatedCompany : c)));
+
+    // Show success message
+    setSuccessMessage(`Company "${newCompany.companyname}" updated successfully!`);
+
+    // Reset form and selected company
+    setNewCompany({
+      companyname: "",
+      dynamicsid: "",
+      ncralohaid: "",
+      oracleid: "",
+      certAuthority: "",
+      instancedid: "",
+    });
+    setSelectedCompany(null);
+
+    // Close dialog
+    setAddCompanyDialogOpen(false);
+
+    // Clear success message after 3 seconds
+    setTimeout(() => setSuccessMessage(""), 3000);
+  };
+
   const handleAddUserGroup = () => {
     if (!newGroup.groupid) {
       setErrorMessage("Group ID is required");
@@ -600,6 +793,56 @@ export function Administrator() {
       setSuccessMessage("User Group deleted successfully");
       setTimeout(() => setSuccessMessage(""), 3000);
     }
+  };
+
+  const handleEditUserGroup = (group: UserGroup) => {
+    setSelectedGroup(group);
+    setNewGroup({
+      groupid: group.groupid,
+      groupdescription: group.groupdescription,
+      groupownerid: group.groupownerid,
+      groupcompanyid: group.groupcompanyid,
+    });
+    setAddGroupDialogOpen(true);
+  };
+
+  const handleUpdateUserGroup = () => {
+    if (!selectedGroup) return;
+
+    if (!newGroup.groupid) {
+      setErrorMessage("Group ID is required");
+      return;
+    }
+
+    // Create updated user group object
+    const updatedGroup: UserGroup = {
+      ...selectedGroup,
+      groupid: newGroup.groupid,
+      groupdescription: newGroup.groupdescription,
+      groupownerid: newGroup.groupownerid,
+      groupcompanyid: newGroup.groupcompanyid,
+    };
+
+    // Update user group list
+    setUserGroups(userGroups.map((g) => (g.id === selectedGroup.id ? updatedGroup : g)));
+
+    // Show success message
+    setSuccessMessage(`User Group "${newGroup.groupid}" updated successfully!`);
+
+    // Reset form and selected group
+    setNewGroup({
+      groupid: "",
+      groupdescription: "",
+      groupownerid: 0,
+      groupcompanyid: "",
+    });
+    setSelectedGroup(null);
+
+    // Close dialog
+    setAddGroupDialogOpen(false);
+
+    // Clear success message after 3 seconds
+    setTimeout(() => setSuccessMessage(""), 3000);
   };
 
   // Check if current user is admin for their company
@@ -707,14 +950,21 @@ export function Administrator() {
                     <TableCell>{user.phone}</TableCell>
                     <TableCell>{user.city}, {user.state}</TableCell>
                     <TableCell>
-                      <Button
+                      <IconButton
+                        onClick={() => handleEditUser(user)}
+                        disabled={user.uid === currentUser.uid}
                         size="small"
-                        color="error"
+                      >
+                        <Edit fontSize="small" />
+                      </IconButton>
+                      <IconButton
                         onClick={() => handleDeleteUser(user.uid)}
                         disabled={user.uid === currentUser.uid}
+                        size="small"
+                        color="error"
                       >
-                        Delete
-                      </Button>
+                        <Delete fontSize="small" />
+                      </IconButton>
                     </TableCell>
                   </TableRow>
                 );
@@ -776,13 +1026,19 @@ export function Administrator() {
                     <TableCell>{bu.buhqpostal}</TableCell>
                     <TableCell>{bu.instanceid}</TableCell>
                     <TableCell>
-                      <Button
+                      <IconButton
+                        onClick={() => handleEditBusinessUnit(bu)}
+                        size="small"
+                      >
+                        <Edit fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        onClick={() => handleDeleteBusinessUnit(bu.id)}
                         size="small"
                         color="error"
-                        onClick={() => handleDeleteBusinessUnit(bu.id)}
                       >
-                        Delete
-                      </Button>
+                        <Delete fontSize="small" />
+                      </IconButton>
                     </TableCell>
                   </TableRow>
                 ))
@@ -842,13 +1098,19 @@ export function Administrator() {
                     <TableCell>{group.groupownerid}</TableCell>
                     <TableCell>{group.groupcompanyid}</TableCell>
                     <TableCell>
-                      <Button
+                      <IconButton
+                        onClick={() => handleEditUserGroup(group)}
+                        size="small"
+                      >
+                        <Edit fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        onClick={() => handleDeleteUserGroup(group.id)}
                         size="small"
                         color="error"
-                        onClick={() => handleDeleteUserGroup(group.id)}
                       >
-                        Delete
-                      </Button>
+                        <Delete fontSize="small" />
+                      </IconButton>
                     </TableCell>
                   </TableRow>
                 ))
@@ -909,13 +1171,19 @@ export function Administrator() {
                       <TableCell>{company.oracleid}</TableCell>
                       <TableCell>{company.certAuthority}</TableCell>
                       <TableCell>
-                        <Button
+                        <IconButton
+                          onClick={() => handleEditCompany(company)}
+                          size="small"
+                        >
+                          <Edit fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          onClick={() => handleDeleteCompany(company.id)}
                           size="small"
                           color="error"
-                          onClick={() => handleDeleteCompany(company.id)}
                         >
-                          Delete
-                        </Button>
+                          <Delete fontSize="small" />
+                        </IconButton>
                       </TableCell>
                     </TableRow>
                   ))
@@ -968,14 +1236,17 @@ export function Administrator() {
       )}
 
       {/* Add User Dialog */}
-      <Dialog 
-        open={addUserDialogOpen} 
-        onClose={() => setAddUserDialogOpen(false)}
+      <Dialog
+        open={addUserDialogOpen}
+        onClose={() => {
+          setAddUserDialogOpen(false);
+          setSelectedUser(null);
+        }}
         maxWidth="md"
         fullWidth
       >
         <DialogTitle>
-          Add New User to {currentCompany?.companyName}
+          {selectedUser ? "Edit User" : `Add New User to ${currentCompany?.companyName}`}
         </DialogTitle>
         <DialogContent>
           {errorMessage && (
@@ -1070,29 +1341,39 @@ export function Administrator() {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setAddUserDialogOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={handleAddUser} 
+          <Button
+            onClick={() => {
+              setAddUserDialogOpen(false);
+              setSelectedUser(null);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={selectedUser ? handleUpdateUser : handleAddUser}
             variant="contained"
             sx={{
               backgroundColor: "#1a1a1a",
               "&:hover": { backgroundColor: "#2a2a2a" },
             }}
           >
-            Add User
+            {selectedUser ? "Update User" : "Add User"}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Add Business Unit Dialog */}
-      <Dialog 
-        open={addBuDialogOpen} 
-        onClose={() => setAddBuDialogOpen(false)}
+      <Dialog
+        open={addBuDialogOpen}
+        onClose={() => {
+          setAddBuDialogOpen(false);
+          setSelectedBu(null);
+        }}
         maxWidth="md"
         fullWidth
       >
         <DialogTitle>
-          Add New Business Unit to {currentCompany?.companyName}
+          {selectedBu ? "Edit Business Unit" : `Add New Business Unit to ${currentCompany?.companyName}`}
         </DialogTitle>
         <DialogContent>
           {errorMessage && (
@@ -1165,29 +1446,39 @@ export function Administrator() {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setAddBuDialogOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={handleAddBusinessUnit} 
+          <Button
+            onClick={() => {
+              setAddBuDialogOpen(false);
+              setSelectedBu(null);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={selectedBu ? handleUpdateBusinessUnit : handleAddBusinessUnit}
             variant="contained"
             sx={{
               backgroundColor: "#1a1a1a",
               "&:hover": { backgroundColor: "#2a2a2a" },
             }}
           >
-            Add Business Unit
+            {selectedBu ? "Update Business Unit" : "Add Business Unit"}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Add Company Dialog */}
-      <Dialog 
-        open={addCompanyDialogOpen} 
-        onClose={() => setAddCompanyDialogOpen(false)}
+      <Dialog
+        open={addCompanyDialogOpen}
+        onClose={() => {
+          setAddCompanyDialogOpen(false);
+          setSelectedCompany(null);
+        }}
         maxWidth="md"
         fullWidth
       >
         <DialogTitle>
-          Add New Company
+          {selectedCompany ? "Edit Company" : "Add New Company"}
         </DialogTitle>
         <DialogContent>
           {errorMessage && (
@@ -1242,29 +1533,39 @@ export function Administrator() {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setAddCompanyDialogOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={handleAddCompany} 
+          <Button
+            onClick={() => {
+              setAddCompanyDialogOpen(false);
+              setSelectedCompany(null);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={selectedCompany ? handleUpdateCompany : handleAddCompany}
             variant="contained"
             sx={{
               backgroundColor: "#1a1a1a",
               "&:hover": { backgroundColor: "#2a2a2a" },
             }}
           >
-            Add Company
+            {selectedCompany ? "Update Company" : "Add Company"}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Add User Group Dialog */}
-      <Dialog 
-        open={addGroupDialogOpen} 
-        onClose={() => setAddGroupDialogOpen(false)}
+      <Dialog
+        open={addGroupDialogOpen}
+        onClose={() => {
+          setAddGroupDialogOpen(false);
+          setSelectedGroup(null);
+        }}
         maxWidth="md"
         fullWidth
       >
         <DialogTitle>
-          Add New User Group
+          {selectedGroup ? "Edit User Group" : "Add New User Group"}
         </DialogTitle>
         <DialogContent>
           {errorMessage && (
@@ -1307,16 +1608,23 @@ export function Administrator() {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setAddGroupDialogOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={handleAddUserGroup} 
+          <Button
+            onClick={() => {
+              setAddGroupDialogOpen(false);
+              setSelectedGroup(null);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={selectedGroup ? handleUpdateUserGroup : handleAddUserGroup}
             variant="contained"
             sx={{
               backgroundColor: "#1a1a1a",
               "&:hover": { backgroundColor: "#2a2a2a" },
             }}
           >
-            Add User Group
+            {selectedGroup ? "Update User Group" : "Add User Group"}
           </Button>
         </DialogActions>
       </Dialog>

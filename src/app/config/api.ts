@@ -156,6 +156,14 @@ export const API_CONFIG = {
     TIMESHEETS: '/Timesheet',
     TIMESHEET_BY_ID: (id: number) => `/Timesheet/${id}`,
 
+    // PTO Requests (uses /api/Pto)
+    PTO_REQUESTS: '/Pto',
+    PTO_REQUEST_BY_ID: (id: number) => `/Pto/${id}`,
+
+    // Employee Documents (uses /api/Employeedocument)
+    EMPLOYEE_DOCUMENTS: '/Employeedocument',
+    EMPLOYEE_DOCUMENT_BY_ID: (id: number) => `/Employeedocument/${id}`,
+
     // SuperLuna (uses /api/SuperLuna)
     SUPER_LUNA: '/SuperLuna',
     SUPER_LUNA_BY_ID: (id: number) => `/SuperLuna/${id}`,

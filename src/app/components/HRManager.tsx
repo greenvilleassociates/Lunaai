@@ -161,15 +161,22 @@ export function HRManager() {
   // Dialog states
   const [employeeDialogOpen, setEmployeeDialogOpen] = useState(false);
   const [storeDialogOpen, setStoreDialogOpen] = useState(false);
-  const [managerDialogOpen, setManagerDialogOpen] = useState(false);
+  const [buDialogOpen, setBuDialogOpen] = useState(false);
   const [ptoDialogOpen, setPtoDialogOpen] = useState(false);
   const [timesheetDialogOpen, setTimesheetDialogOpen] = useState(false);
   const [documentDialogOpen, setDocumentDialogOpen] = useState(false);
 
   // Form states
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [selectedStore, setSelectedStore] = useState<StoreLocation | null>(null);
+  const [selectedBU, setSelectedBU] = useState<BusinessUnit | null>(null);
+  const [selectedPTO, setSelectedPTO] = useState<PTORequest | null>(null);
+  const [selectedTimesheet, setSelectedTimesheet] = useState<Timesheet | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<EmployeeDocument | null>(null);
+
   const [newEmployee, setNewEmployee] = useState<Partial<Employee>>({});
   const [newStore, setNewStore] = useState<Partial<StoreLocation>>({});
+  const [newBU, setNewBU] = useState<Partial<BusinessUnit>>({});
   const [newPTO, setNewPTO] = useState<Partial<PTORequest>>({});
   const [newTimesheet, setNewTimesheet] = useState<Partial<Timesheet>>({});
   const [newDocument, setNewDocument] = useState<Partial<EmployeeDocument>>({});
@@ -197,8 +204,8 @@ export function HRManager() {
   const loadCompanyInfo = async () => {
     try {
       const uid = localStorage.getItem("uid");
-      const url = getApiUrl(`${API_CONFIG.ENDPOINTS.COMPANY}/${currentCompanyId}`);
-      
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.COMPANY_BY_ID(Number(currentCompanyId)));
+
       const response = await fetch(url, {
         headers: {
           "Content-Type": "application/json",
@@ -220,9 +227,9 @@ export function HRManager() {
             (c: any) => c.companyId === currentCompanyId
           );
           if (company) {
-            setCurrentCompany({ 
-              id: company.companyId, 
-              companyname: company.companyName 
+            setCurrentCompany({
+              id: company.companyId,
+              companyname: company.companyName
             });
             console.log("✅ Company info loaded from local JSON:", company.companyName);
           } else {
@@ -242,9 +249,9 @@ export function HRManager() {
           (c: any) => c.companyId === currentCompanyId
         );
         if (company) {
-          setCurrentCompany({ 
-            id: company.companyId, 
-            companyname: company.companyName 
+          setCurrentCompany({
+            id: company.companyId,
+            companyname: company.companyName
           });
           console.log("✅ Company info loaded from local JSON (fallback):", company.companyName);
         }
@@ -257,8 +264,8 @@ export function HRManager() {
   const loadBusinessUnits = async () => {
     try {
       const uid = localStorage.getItem("uid");
-      const url = getApiUrl(API_CONFIG.ENDPOINTS.BU);
-      
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.BUSINESS_UNITS);
+
       const response = await fetch(url, {
         headers: {
           "Content-Type": "application/json",
@@ -282,8 +289,8 @@ export function HRManager() {
   const loadStores = async () => {
     try {
       const uid = localStorage.getItem("uid");
-      const url = getApiUrl("/api/stores");
-      
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.STORES);
+
       const response = await fetch(url, {
         headers: {
           "Content-Type": "application/json",
@@ -294,7 +301,7 @@ export function HRManager() {
       if (response.ok) {
         const data = await response.json();
         // Filter by company if needed
-        const filteredData = currentCompanyId 
+        const filteredData = currentCompanyId
           ? data.filter((store: StoreLocation) => store.companyid?.toString() === currentCompanyId)
           : data;
         setStores(filteredData);
@@ -333,8 +340,8 @@ export function HRManager() {
   const loadManagers = async () => {
     try {
       const uid = localStorage.getItem("uid");
-      const url = getApiUrl("/api/managers");
-      
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.MANAGERS);
+
       const response = await fetch(url, {
         headers: {
           "Content-Type": "application/json",
@@ -369,8 +376,8 @@ export function HRManager() {
   const loadPTORequests = async () => {
     try {
       const uid = localStorage.getItem("uid");
-      const url = getApiUrl("/api/pto");
-      
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.PTO_REQUESTS);
+
       const response = await fetch(url, {
         headers: {
           "Content-Type": "application/json",
@@ -394,8 +401,8 @@ export function HRManager() {
   const loadTimesheets = async () => {
     try {
       const uid = localStorage.getItem("uid");
-      const url = getApiUrl("/api/timesheets");
-      
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.TIMESHEETS);
+
       const response = await fetch(url, {
         headers: {
           "Content-Type": "application/json",
@@ -419,8 +426,8 @@ export function HRManager() {
   const loadDocuments = async () => {
     try {
       const uid = localStorage.getItem("uid");
-      const url = getApiUrl("/api/employeedocuments");
-      
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.EMPLOYEE_DOCUMENTS);
+
       const response = await fetch(url, {
         headers: {
           "Content-Type": "application/json",
@@ -490,8 +497,8 @@ export function HRManager() {
 
     try {
       const uid = localStorage.getItem("uid");
-      const url = getApiUrl("/api/stores");
-      
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.STORES);
+
       const response = await fetch(url, {
         method: "POST",
         headers: {
@@ -500,7 +507,7 @@ export function HRManager() {
         },
         body: JSON.stringify({
           ...newStore,
-          companyid: currentCompanyId,
+          companyid: currentCompanyId ? Number(currentCompanyId) : undefined,
           iscorporatehq: newStore.iscorporatehq || false,
         }),
       });
@@ -509,12 +516,547 @@ export function HRManager() {
         setSuccess("Store added successfully!");
         setStoreDialogOpen(false);
         setNewStore({});
+        setSelectedStore(null);
         loadStores();
       } else {
         setError("Failed to add store");
       }
     } catch (err) {
       setError("Failed to add store: " + err);
+    }
+  };
+
+  const handleEditEmployee = (employee: Employee) => {
+    setSelectedEmployee(employee);
+    setNewEmployee(employee);
+    setEmployeeDialogOpen(true);
+  };
+
+  const handleUpdateEmployee = async () => {
+    if (!selectedEmployee || !newEmployee.firstname || !newEmployee.lastname || !newEmployee.email) {
+      setError("First name, last name, and email are required");
+      return;
+    }
+
+    try {
+      const employeeData = {
+        ...newEmployee,
+        companyid: currentCompanyId ? Number(currentCompanyId) : newEmployee.companyid,
+      };
+
+      await employeeApi.update(selectedEmployee.id, employeeData);
+
+      setSuccess("Employee updated successfully!");
+      setEmployeeDialogOpen(false);
+      setNewEmployee({});
+      setSelectedEmployee(null);
+      loadEmployees();
+      loadManagers();
+    } catch (err) {
+      console.error("Failed to update employee:", err);
+      setError("Failed to update employee: " + err);
+    }
+  };
+
+  const handleDeleteEmployee = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this employee?")) {
+      return;
+    }
+
+    try {
+      await employeeApi.delete(id);
+      setSuccess("Employee deleted successfully!");
+      loadEmployees();
+      loadManagers();
+    } catch (err) {
+      console.error("Failed to delete employee:", err);
+      setError("Failed to delete employee: " + err);
+    }
+  };
+
+  const handleEditStore = (store: StoreLocation) => {
+    setSelectedStore(store);
+    setNewStore(store);
+    setStoreDialogOpen(true);
+  };
+
+  const handleUpdateStore = async () => {
+    if (!selectedStore || !newStore.storename) {
+      setError("Store name is required");
+      return;
+    }
+
+    try {
+      const uid = localStorage.getItem("uid");
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.STORE_BY_ID(selectedStore.id));
+
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(uid && { Authorization: `Bearer ${uid}` }),
+        },
+        body: JSON.stringify({
+          ...newStore,
+          companyid: currentCompanyId ? Number(currentCompanyId) : newStore.companyid,
+        }),
+      });
+
+      if (response.ok) {
+        setSuccess("Store updated successfully!");
+        setStoreDialogOpen(false);
+        setNewStore({});
+        setSelectedStore(null);
+        loadStores();
+      } else {
+        setError("Failed to update store");
+      }
+    } catch (err) {
+      setError("Failed to update store: " + err);
+    }
+  };
+
+  const handleDeleteStore = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this store?")) {
+      return;
+    }
+
+    try {
+      const uid = localStorage.getItem("uid");
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.STORE_BY_ID(id));
+
+      const response = await fetch(url, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          ...(uid && { Authorization: `Bearer ${uid}` }),
+        },
+      });
+
+      if (response.ok) {
+        setSuccess("Store deleted successfully!");
+        loadStores();
+      } else {
+        setError("Failed to delete store");
+      }
+    } catch (err) {
+      setError("Failed to delete store: " + err);
+    }
+  };
+
+  const handleAddBU = async () => {
+    if (!newBU.buname) {
+      setError("Business unit name is required");
+      return;
+    }
+
+    try {
+      const uid = localStorage.getItem("uid");
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.BUSINESS_UNITS);
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(uid && { Authorization: `Bearer ${uid}` }),
+        },
+        body: JSON.stringify(newBU),
+      });
+
+      if (response.ok) {
+        setSuccess("Business unit added successfully!");
+        setBuDialogOpen(false);
+        setNewBU({});
+        setSelectedBU(null);
+        loadBusinessUnits();
+      } else {
+        setError("Failed to add business unit");
+      }
+    } catch (err) {
+      setError("Failed to add business unit: " + err);
+    }
+  };
+
+  const handleEditBU = (bu: BusinessUnit) => {
+    setSelectedBU(bu);
+    setNewBU(bu);
+    setBuDialogOpen(true);
+  };
+
+  const handleUpdateBU = async () => {
+    if (!selectedBU || !newBU.buname) {
+      setError("Business unit name is required");
+      return;
+    }
+
+    try {
+      const uid = localStorage.getItem("uid");
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.BUSINESS_UNIT_BY_ID(selectedBU.id));
+
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(uid && { Authorization: `Bearer ${uid}` }),
+        },
+        body: JSON.stringify(newBU),
+      });
+
+      if (response.ok) {
+        setSuccess("Business unit updated successfully!");
+        setBuDialogOpen(false);
+        setNewBU({});
+        setSelectedBU(null);
+        loadBusinessUnits();
+      } else {
+        setError("Failed to update business unit");
+      }
+    } catch (err) {
+      setError("Failed to update business unit: " + err);
+    }
+  };
+
+  const handleDeleteBU = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this business unit?")) {
+      return;
+    }
+
+    try {
+      const uid = localStorage.getItem("uid");
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.BUSINESS_UNIT_BY_ID(id));
+
+      const response = await fetch(url, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          ...(uid && { Authorization: `Bearer ${uid}` }),
+        },
+      });
+
+      if (response.ok) {
+        setSuccess("Business unit deleted successfully!");
+        loadBusinessUnits();
+      } else {
+        setError("Failed to delete business unit");
+      }
+    } catch (err) {
+      setError("Failed to delete business unit: " + err);
+    }
+  };
+
+  const handleAddPTO = async () => {
+    if (!newPTO.employeeid || !newPTO.startdate || !newPTO.enddate || !newPTO.type) {
+      setError("Employee, start date, end date, and type are required");
+      return;
+    }
+
+    try {
+      const uid = localStorage.getItem("uid");
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.PTO_REQUESTS);
+
+      // Calculate days between dates
+      const start = new Date(newPTO.startdate);
+      const end = new Date(newPTO.enddate);
+      const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(uid && { Authorization: `Bearer ${uid}` }),
+        },
+        body: JSON.stringify({
+          ...newPTO,
+          days,
+          status: newPTO.status || "pending",
+          requestdate: new Date().toISOString().split('T')[0],
+        }),
+      });
+
+      if (response.ok) {
+        setSuccess("PTO request added successfully!");
+        setPtoDialogOpen(false);
+        setNewPTO({});
+        setSelectedPTO(null);
+        loadPTORequests();
+      } else {
+        setError("Failed to add PTO request");
+      }
+    } catch (err) {
+      setError("Failed to add PTO request: " + err);
+    }
+  };
+
+  const handleEditPTO = (pto: PTORequest) => {
+    setSelectedPTO(pto);
+    setNewPTO(pto);
+    setPtoDialogOpen(true);
+  };
+
+  const handleUpdatePTO = async () => {
+    if (!selectedPTO || !newPTO.employeeid || !newPTO.startdate || !newPTO.enddate) {
+      setError("Employee, start date, and end date are required");
+      return;
+    }
+
+    try {
+      const uid = localStorage.getItem("uid");
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.PTO_REQUEST_BY_ID(selectedPTO.id));
+
+      // Calculate days between dates
+      const start = new Date(newPTO.startdate);
+      const end = new Date(newPTO.enddate);
+      const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(uid && { Authorization: `Bearer ${uid}` }),
+        },
+        body: JSON.stringify({
+          ...newPTO,
+          days,
+        }),
+      });
+
+      if (response.ok) {
+        setSuccess("PTO request updated successfully!");
+        setPtoDialogOpen(false);
+        setNewPTO({});
+        setSelectedPTO(null);
+        loadPTORequests();
+      } else {
+        setError("Failed to update PTO request");
+      }
+    } catch (err) {
+      setError("Failed to update PTO request: " + err);
+    }
+  };
+
+  const handleDeletePTO = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this PTO request?")) {
+      return;
+    }
+
+    try {
+      const uid = localStorage.getItem("uid");
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.PTO_REQUEST_BY_ID(id));
+
+      const response = await fetch(url, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          ...(uid && { Authorization: `Bearer ${uid}` }),
+        },
+      });
+
+      if (response.ok) {
+        setSuccess("PTO request deleted successfully!");
+        loadPTORequests();
+      } else {
+        setError("Failed to delete PTO request");
+      }
+    } catch (err) {
+      setError("Failed to delete PTO request: " + err);
+    }
+  };
+
+  const handleAddTimesheet = async () => {
+    if (!newTimesheet.employeeid || !newTimesheet.weekending) {
+      setError("Employee and week ending date are required");
+      return;
+    }
+
+    try {
+      const uid = localStorage.getItem("uid");
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.TIMESHEETS);
+
+      // Calculate total hours
+      const totalhours =
+        (newTimesheet.mondayhours || 0) +
+        (newTimesheet.tuesdayhours || 0) +
+        (newTimesheet.wednesdayhours || 0) +
+        (newTimesheet.thursdayhours || 0) +
+        (newTimesheet.fridayhours || 0) +
+        (newTimesheet.saturdayhours || 0) +
+        (newTimesheet.sundayhours || 0);
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(uid && { Authorization: `Bearer ${uid}` }),
+        },
+        body: JSON.stringify({
+          ...newTimesheet,
+          totalhours,
+          status: newTimesheet.status || "draft",
+          mondayhours: newTimesheet.mondayhours || 0,
+          tuesdayhours: newTimesheet.tuesdayhours || 0,
+          wednesdayhours: newTimesheet.wednesdayhours || 0,
+          thursdayhours: newTimesheet.thursdayhours || 0,
+          fridayhours: newTimesheet.fridayhours || 0,
+          saturdayhours: newTimesheet.saturdayhours || 0,
+          sundayhours: newTimesheet.sundayhours || 0,
+        }),
+      });
+
+      if (response.ok) {
+        setSuccess("Timesheet added successfully!");
+        setTimesheetDialogOpen(false);
+        setNewTimesheet({});
+        setSelectedTimesheet(null);
+        loadTimesheets();
+      } else {
+        setError("Failed to add timesheet");
+      }
+    } catch (err) {
+      setError("Failed to add timesheet: " + err);
+    }
+  };
+
+  const handleEditTimesheet = (timesheet: Timesheet) => {
+    setSelectedTimesheet(timesheet);
+    setNewTimesheet(timesheet);
+    setTimesheetDialogOpen(true);
+  };
+
+  const handleUpdateTimesheet = async () => {
+    if (!selectedTimesheet || !newTimesheet.employeeid || !newTimesheet.weekending) {
+      setError("Employee and week ending date are required");
+      return;
+    }
+
+    try {
+      const uid = localStorage.getItem("uid");
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.TIMESHEET_BY_ID(selectedTimesheet.id));
+
+      // Calculate total hours
+      const totalhours =
+        (newTimesheet.mondayhours || 0) +
+        (newTimesheet.tuesdayhours || 0) +
+        (newTimesheet.wednesdayhours || 0) +
+        (newTimesheet.thursdayhours || 0) +
+        (newTimesheet.fridayhours || 0) +
+        (newTimesheet.saturdayhours || 0) +
+        (newTimesheet.sundayhours || 0);
+
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(uid && { Authorization: `Bearer ${uid}` }),
+        },
+        body: JSON.stringify({
+          ...newTimesheet,
+          totalhours,
+        }),
+      });
+
+      if (response.ok) {
+        setSuccess("Timesheet updated successfully!");
+        setTimesheetDialogOpen(false);
+        setNewTimesheet({});
+        setSelectedTimesheet(null);
+        loadTimesheets();
+      } else {
+        setError("Failed to update timesheet");
+      }
+    } catch (err) {
+      setError("Failed to update timesheet: " + err);
+    }
+  };
+
+  const handleDeleteTimesheet = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this timesheet?")) {
+      return;
+    }
+
+    try {
+      const uid = localStorage.getItem("uid");
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.TIMESHEET_BY_ID(id));
+
+      const response = await fetch(url, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          ...(uid && { Authorization: `Bearer ${uid}` }),
+        },
+      });
+
+      if (response.ok) {
+        setSuccess("Timesheet deleted successfully!");
+        loadTimesheets();
+      } else {
+        setError("Failed to delete timesheet");
+      }
+    } catch (err) {
+      setError("Failed to delete timesheet: " + err);
+    }
+  };
+
+  const handleAddDocument = async () => {
+    if (!newDocument.employeeid || !newDocument.documenttype || !newDocument.filename) {
+      setError("Employee, document type, and file name are required");
+      return;
+    }
+
+    try {
+      const uid = localStorage.getItem("uid");
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.EMPLOYEE_DOCUMENTS);
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(uid && { Authorization: `Bearer ${uid}` }),
+        },
+        body: JSON.stringify({
+          ...newDocument,
+          uploaddate: new Date().toISOString().split('T')[0],
+        }),
+      });
+
+      if (response.ok) {
+        setSuccess("Document added successfully!");
+        setDocumentDialogOpen(false);
+        setNewDocument({});
+        setSelectedDocument(null);
+        loadDocuments();
+      } else {
+        setError("Failed to add document");
+      }
+    } catch (err) {
+      setError("Failed to add document: " + err);
+    }
+  };
+
+  const handleDeleteDocument = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this document?")) {
+      return;
+    }
+
+    try {
+      const uid = localStorage.getItem("uid");
+      const url = getApiUrl(API_CONFIG.ENDPOINTS.EMPLOYEE_DOCUMENT_BY_ID(id));
+
+      const response = await fetch(url, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          ...(uid && { Authorization: `Bearer ${uid}` }),
+        },
+      });
+
+      if (response.ok) {
+        setSuccess("Document deleted successfully!");
+        loadDocuments();
+      } else {
+        setError("Failed to delete document");
+      }
+    } catch (err) {
+      setError("Failed to delete document: " + err);
     }
   };
 
@@ -723,10 +1265,18 @@ export function HRManager() {
                           />
                         </TableCell>
                         <TableCell>
-                          <IconButton size="small" color="primary">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleEditEmployee(emp)}
+                          >
                             <Edit fontSize="small" />
                           </IconButton>
-                          <IconButton size="small" color="error">
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleDeleteEmployee(emp.id)}
+                          >
                             <Delete fontSize="small" />
                           </IconButton>
                         </TableCell>
@@ -876,11 +1426,19 @@ export function HRManager() {
                           <Chip label={storeEmployeeCount} size="small" />
                         </TableCell>
                         <TableCell>
-                          <IconButton size="small" color="primary">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleEditStore(store)}
+                          >
                             <Edit fontSize="small" />
                           </IconButton>
                           {!store.iscorporatehq && (
-                            <IconButton size="small" color="error">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleDeleteStore(store.id)}
+                            >
                               <Delete fontSize="small" />
                             </IconButton>
                           )}
@@ -900,6 +1458,21 @@ export function HRManager() {
         <Box>
           <Box className="flex justify-between items-center mb-4">
             <Typography variant="h5">Business Units</Typography>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => {
+                setSelectedBU(null);
+                setNewBU({});
+                setBuDialogOpen(true);
+              }}
+              sx={{
+                backgroundColor: "#8B0000",
+                "&:hover": { backgroundColor: "#a00" }
+              }}
+            >
+              Add Business Unit
+            </Button>
           </Box>
 
           <TableContainer component={Paper}>
@@ -908,13 +1481,14 @@ export function HRManager() {
                 <TableRow>
                   <TableCell><strong>Business Unit Name</strong></TableCell>
                   <TableCell><strong>Description</strong></TableCell>
+                  <TableCell><strong>Actions</strong></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {businessUnits.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={2} align="center">
-                      No business units found.
+                    <TableCell colSpan={3} align="center">
+                      No business units found. Add your first business unit!
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -922,6 +1496,22 @@ export function HRManager() {
                     <TableRow key={bu.id}>
                       <TableCell>{bu.buname}</TableCell>
                       <TableCell>{bu.description || "N/A"}</TableCell>
+                      <TableCell>
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={() => handleEditBU(bu)}
+                        >
+                          <Edit fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => handleDeleteBU(bu.id)}
+                        >
+                          <Delete fontSize="small" />
+                        </IconButton>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -939,10 +1529,14 @@ export function HRManager() {
             <Button
               variant="contained"
               startIcon={<Add />}
-              onClick={() => setPtoDialogOpen(true)}
-              sx={{ 
-                backgroundColor: "#8B0000", 
-                "&:hover": { backgroundColor: "#a00" } 
+              onClick={() => {
+                setSelectedPTO(null);
+                setNewPTO({});
+                setPtoDialogOpen(true);
+              }}
+              sx={{
+                backgroundColor: "#8B0000",
+                "&:hover": { backgroundColor: "#a00" }
               }}
             >
               New PTO Request
@@ -992,22 +1586,38 @@ export function HRManager() {
                       <TableCell>
                         {pto.status === "pending" && (
                           <>
-                            <Button 
-                              size="small" 
-                              color="success" 
+                            <Button
+                              size="small"
+                              color="success"
                               onClick={() => handleApprovePTO(pto.id, "approved")}
+                              sx={{ mr: 1 }}
                             >
                               Approve
                             </Button>
-                            <Button 
-                              size="small" 
+                            <Button
+                              size="small"
                               color="error"
                               onClick={() => handleApprovePTO(pto.id, "denied")}
+                              sx={{ mr: 1 }}
                             >
                               Deny
                             </Button>
                           </>
                         )}
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={() => handleEditPTO(pto)}
+                        >
+                          <Edit fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => handleDeletePTO(pto.id)}
+                        >
+                          <Delete fontSize="small" />
+                        </IconButton>
                       </TableCell>
                     </TableRow>
                   ))
@@ -1026,10 +1636,14 @@ export function HRManager() {
             <Button
               variant="contained"
               startIcon={<Add />}
-              onClick={() => setTimesheetDialogOpen(true)}
-              sx={{ 
-                backgroundColor: "#8B0000", 
-                "&:hover": { backgroundColor: "#a00" } 
+              onClick={() => {
+                setSelectedTimesheet(null);
+                setNewTimesheet({});
+                setTimesheetDialogOpen(true);
+              }}
+              sx={{
+                backgroundColor: "#8B0000",
+                "&:hover": { backgroundColor: "#a00" }
               }}
             >
               Add Timesheet
@@ -1071,8 +1685,19 @@ export function HRManager() {
                         />
                       </TableCell>
                       <TableCell>
-                        <IconButton size="small" color="primary">
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={() => handleEditTimesheet(ts)}
+                        >
                           <Edit fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => handleDeleteTimesheet(ts.id)}
+                        >
+                          <Delete fontSize="small" />
                         </IconButton>
                       </TableCell>
                     </TableRow>
@@ -1092,10 +1717,14 @@ export function HRManager() {
             <Button
               variant="contained"
               startIcon={<Upload />}
-              onClick={() => setDocumentDialogOpen(true)}
-              sx={{ 
-                backgroundColor: "#8B0000", 
-                "&:hover": { backgroundColor: "#a00" } 
+              onClick={() => {
+                setSelectedDocument(null);
+                setNewDocument({});
+                setDocumentDialogOpen(true);
+              }}
+              sx={{
+                backgroundColor: "#8B0000",
+                "&:hover": { backgroundColor: "#a00" }
               }}
             >
               Upload Document
@@ -1130,10 +1759,14 @@ export function HRManager() {
                       <TableCell>{doc.filename}</TableCell>
                       <TableCell>{formatDate(doc.uploaddate)}</TableCell>
                       <TableCell>
-                        <Button size="small" variant="outlined">
+                        <Button size="small" variant="outlined" sx={{ mr: 1 }}>
                           Download
                         </Button>
-                        <IconButton size="small" color="error">
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => handleDeleteDocument(doc.id)}
+                        >
                           <Delete fontSize="small" />
                         </IconButton>
                       </TableCell>
@@ -1146,9 +1779,13 @@ export function HRManager() {
         </Box>
       )}
 
-      {/* ADD EMPLOYEE DIALOG */}
-      <Dialog open={employeeDialogOpen} onClose={() => setEmployeeDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Add New Employee</DialogTitle>
+      {/* ADD/EDIT EMPLOYEE DIALOG */}
+      <Dialog open={employeeDialogOpen} onClose={() => {
+        setEmployeeDialogOpen(false);
+        setSelectedEmployee(null);
+        setNewEmployee({});
+      }} maxWidth="md" fullWidth>
+        <DialogTitle>{selectedEmployee ? "Edit Employee" : "Add New Employee"}</DialogTitle>
         <DialogContent>
           <Box className="pt-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1270,23 +1907,31 @@ export function HRManager() {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setEmployeeDialogOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={handleAddEmployee} 
+          <Button onClick={() => {
+            setEmployeeDialogOpen(false);
+            setSelectedEmployee(null);
+            setNewEmployee({});
+          }}>Cancel</Button>
+          <Button
+            onClick={selectedEmployee ? handleUpdateEmployee : handleAddEmployee}
             variant="contained"
-            sx={{ 
-              backgroundColor: "#8B0000", 
-              "&:hover": { backgroundColor: "#a00" } 
+            sx={{
+              backgroundColor: "#8B0000",
+              "&:hover": { backgroundColor: "#a00" }
             }}
           >
-            Add Employee
+            {selectedEmployee ? "Update Employee" : "Add Employee"}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* ADD STORE DIALOG */}
-      <Dialog open={storeDialogOpen} onClose={() => setStoreDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Add New Store/Branch</DialogTitle>
+      {/* ADD/EDIT STORE DIALOG */}
+      <Dialog open={storeDialogOpen} onClose={() => {
+        setStoreDialogOpen(false);
+        setSelectedStore(null);
+        setNewStore({});
+      }} maxWidth="sm" fullWidth>
+        <DialogTitle>{selectedStore ? "Edit Store/Branch" : "Add New Store/Branch"}</DialogTitle>
         <DialogContent>
           <Box className="space-y-2.5 pt-2">
             <TextField
@@ -1333,16 +1978,363 @@ export function HRManager() {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setStoreDialogOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={handleAddStore} 
+          <Button onClick={() => {
+            setStoreDialogOpen(false);
+            setSelectedStore(null);
+            setNewStore({});
+          }}>Cancel</Button>
+          <Button
+            onClick={selectedStore ? handleUpdateStore : handleAddStore}
             variant="contained"
-            sx={{ 
-              backgroundColor: "#8B0000", 
-              "&:hover": { backgroundColor: "#a00" } 
+            sx={{
+              backgroundColor: "#8B0000",
+              "&:hover": { backgroundColor: "#a00" }
             }}
           >
-            Add Store
+            {selectedStore ? "Update Store" : "Add Store"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ADD/EDIT BUSINESS UNIT DIALOG */}
+      <Dialog open={buDialogOpen} onClose={() => {
+        setBuDialogOpen(false);
+        setSelectedBU(null);
+        setNewBU({});
+      }} maxWidth="sm" fullWidth>
+        <DialogTitle>{selectedBU ? "Edit Business Unit" : "Add New Business Unit"}</DialogTitle>
+        <DialogContent>
+          <Box className="space-y-2.5 pt-2">
+            <TextField
+              fullWidth
+              label="Business Unit Name *"
+              value={newBU.buname || ""}
+              onChange={(e) => setNewBU({ ...newBU, buname: e.target.value })}
+            />
+            <TextField
+              fullWidth
+              label="Description"
+              multiline
+              rows={3}
+              value={newBU.description || ""}
+              onChange={(e) => setNewBU({ ...newBU, description: e.target.value })}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setBuDialogOpen(false);
+            setSelectedBU(null);
+            setNewBU({});
+          }}>Cancel</Button>
+          <Button
+            onClick={selectedBU ? handleUpdateBU : handleAddBU}
+            variant="contained"
+            sx={{
+              backgroundColor: "#8B0000",
+              "&:hover": { backgroundColor: "#a00" }
+            }}
+          >
+            {selectedBU ? "Update Business Unit" : "Add Business Unit"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ADD/EDIT PTO REQUEST DIALOG */}
+      <Dialog open={ptoDialogOpen} onClose={() => {
+        setPtoDialogOpen(false);
+        setSelectedPTO(null);
+        setNewPTO({});
+      }} maxWidth="sm" fullWidth>
+        <DialogTitle>{selectedPTO ? "Edit PTO Request" : "New PTO Request"}</DialogTitle>
+        <DialogContent>
+          <Box className="space-y-2.5 pt-2">
+            <FormControl fullWidth>
+              <InputLabel>Employee *</InputLabel>
+              <Select
+                value={newPTO.employeeid || ""}
+                onChange={(e) => setNewPTO({ ...newPTO, employeeid: Number(e.target.value) })}
+                label="Employee *"
+              >
+                {employees.map(emp => (
+                  <MenuItem key={emp.id} value={emp.id}>
+                    {emp.firstname} {emp.lastname}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth>
+              <InputLabel>PTO Type *</InputLabel>
+              <Select
+                value={newPTO.type || ""}
+                onChange={(e) => setNewPTO({ ...newPTO, type: e.target.value })}
+                label="PTO Type *"
+              >
+                <MenuItem value="vacation">Vacation</MenuItem>
+                <MenuItem value="sick">Sick Leave</MenuItem>
+                <MenuItem value="personal">Personal</MenuItem>
+                <MenuItem value="other">Other</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              fullWidth
+              label="Start Date *"
+              type="date"
+              InputLabelProps={{ shrink: true }}
+              value={newPTO.startdate || ""}
+              onChange={(e) => setNewPTO({ ...newPTO, startdate: e.target.value })}
+            />
+            <TextField
+              fullWidth
+              label="End Date *"
+              type="date"
+              InputLabelProps={{ shrink: true }}
+              value={newPTO.enddate || ""}
+              onChange={(e) => setNewPTO({ ...newPTO, enddate: e.target.value })}
+            />
+            <TextField
+              fullWidth
+              label="Reason"
+              multiline
+              rows={3}
+              value={newPTO.reason || ""}
+              onChange={(e) => setNewPTO({ ...newPTO, reason: e.target.value })}
+            />
+            <FormControl fullWidth>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={newPTO.status || "pending"}
+                onChange={(e) => setNewPTO({ ...newPTO, status: e.target.value })}
+                label="Status"
+              >
+                <MenuItem value="pending">Pending</MenuItem>
+                <MenuItem value="approved">Approved</MenuItem>
+                <MenuItem value="denied">Denied</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setPtoDialogOpen(false);
+            setSelectedPTO(null);
+            setNewPTO({});
+          }}>Cancel</Button>
+          <Button
+            onClick={selectedPTO ? handleUpdatePTO : handleAddPTO}
+            variant="contained"
+            sx={{
+              backgroundColor: "#8B0000",
+              "&:hover": { backgroundColor: "#a00" }
+            }}
+          >
+            {selectedPTO ? "Update PTO Request" : "Add PTO Request"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ADD/EDIT TIMESHEET DIALOG */}
+      <Dialog open={timesheetDialogOpen} onClose={() => {
+        setTimesheetDialogOpen(false);
+        setSelectedTimesheet(null);
+        setNewTimesheet({});
+      }} maxWidth="md" fullWidth>
+        <DialogTitle>{selectedTimesheet ? "Edit Timesheet" : "Add New Timesheet"}</DialogTitle>
+        <DialogContent>
+          <Box className="pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <FormControl fullWidth>
+                <InputLabel>Employee *</InputLabel>
+                <Select
+                  value={newTimesheet.employeeid || ""}
+                  onChange={(e) => setNewTimesheet({ ...newTimesheet, employeeid: Number(e.target.value) })}
+                  label="Employee *"
+                >
+                  {employees.map(emp => (
+                    <MenuItem key={emp.id} value={emp.id}>
+                      {emp.firstname} {emp.lastname}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                fullWidth
+                label="Week Ending Date *"
+                type="date"
+                InputLabelProps={{ shrink: true }}
+                value={newTimesheet.weekending || ""}
+                onChange={(e) => setNewTimesheet({ ...newTimesheet, weekending: e.target.value })}
+              />
+            </div>
+            <Typography variant="subtitle2" className="mb-2">Daily Hours:</Typography>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+              <TextField
+                label="Monday"
+                type="number"
+                inputProps={{ min: 0, max: 24, step: 0.5 }}
+                value={newTimesheet.mondayhours || 0}
+                onChange={(e) => setNewTimesheet({ ...newTimesheet, mondayhours: Number(e.target.value) })}
+              />
+              <TextField
+                label="Tuesday"
+                type="number"
+                inputProps={{ min: 0, max: 24, step: 0.5 }}
+                value={newTimesheet.tuesdayhours || 0}
+                onChange={(e) => setNewTimesheet({ ...newTimesheet, tuesdayhours: Number(e.target.value) })}
+              />
+              <TextField
+                label="Wednesday"
+                type="number"
+                inputProps={{ min: 0, max: 24, step: 0.5 }}
+                value={newTimesheet.wednesdayhours || 0}
+                onChange={(e) => setNewTimesheet({ ...newTimesheet, wednesdayhours: Number(e.target.value) })}
+              />
+              <TextField
+                label="Thursday"
+                type="number"
+                inputProps={{ min: 0, max: 24, step: 0.5 }}
+                value={newTimesheet.thursdayhours || 0}
+                onChange={(e) => setNewTimesheet({ ...newTimesheet, thursdayhours: Number(e.target.value) })}
+              />
+              <TextField
+                label="Friday"
+                type="number"
+                inputProps={{ min: 0, max: 24, step: 0.5 }}
+                value={newTimesheet.fridayhours || 0}
+                onChange={(e) => setNewTimesheet({ ...newTimesheet, fridayhours: Number(e.target.value) })}
+              />
+              <TextField
+                label="Saturday"
+                type="number"
+                inputProps={{ min: 0, max: 24, step: 0.5 }}
+                value={newTimesheet.saturdayhours || 0}
+                onChange={(e) => setNewTimesheet({ ...newTimesheet, saturdayhours: Number(e.target.value) })}
+              />
+              <TextField
+                label="Sunday"
+                type="number"
+                inputProps={{ min: 0, max: 24, step: 0.5 }}
+                value={newTimesheet.sundayhours || 0}
+                onChange={(e) => setNewTimesheet({ ...newTimesheet, sundayhours: Number(e.target.value) })}
+              />
+              <TextField
+                label="Total"
+                type="number"
+                disabled
+                value={
+                  (newTimesheet.mondayhours || 0) +
+                  (newTimesheet.tuesdayhours || 0) +
+                  (newTimesheet.wednesdayhours || 0) +
+                  (newTimesheet.thursdayhours || 0) +
+                  (newTimesheet.fridayhours || 0) +
+                  (newTimesheet.saturdayhours || 0) +
+                  (newTimesheet.sundayhours || 0)
+                }
+              />
+            </div>
+            <FormControl fullWidth>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={newTimesheet.status || "draft"}
+                onChange={(e) => setNewTimesheet({ ...newTimesheet, status: e.target.value })}
+                label="Status"
+              >
+                <MenuItem value="draft">Draft</MenuItem>
+                <MenuItem value="submitted">Submitted</MenuItem>
+                <MenuItem value="approved">Approved</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setTimesheetDialogOpen(false);
+            setSelectedTimesheet(null);
+            setNewTimesheet({});
+          }}>Cancel</Button>
+          <Button
+            onClick={selectedTimesheet ? handleUpdateTimesheet : handleAddTimesheet}
+            variant="contained"
+            sx={{
+              backgroundColor: "#8B0000",
+              "&:hover": { backgroundColor: "#a00" }
+            }}
+          >
+            {selectedTimesheet ? "Update Timesheet" : "Add Timesheet"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ADD EMPLOYEE DOCUMENT DIALOG */}
+      <Dialog open={documentDialogOpen} onClose={() => {
+        setDocumentDialogOpen(false);
+        setSelectedDocument(null);
+        setNewDocument({});
+      }} maxWidth="sm" fullWidth>
+        <DialogTitle>Upload Employee Document</DialogTitle>
+        <DialogContent>
+          <Box className="space-y-2.5 pt-2">
+            <FormControl fullWidth>
+              <InputLabel>Employee *</InputLabel>
+              <Select
+                value={newDocument.employeeid || ""}
+                onChange={(e) => setNewDocument({ ...newDocument, employeeid: Number(e.target.value) })}
+                label="Employee *"
+              >
+                {employees.map(emp => (
+                  <MenuItem key={emp.id} value={emp.id}>
+                    {emp.firstname} {emp.lastname}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth>
+              <InputLabel>Document Type *</InputLabel>
+              <Select
+                value={newDocument.documenttype || ""}
+                onChange={(e) => setNewDocument({ ...newDocument, documenttype: e.target.value })}
+                label="Document Type *"
+              >
+                <MenuItem value="Resume">Resume</MenuItem>
+                <MenuItem value="I-9">I-9</MenuItem>
+                <MenuItem value="W-4">W-4</MenuItem>
+                <MenuItem value="Direct Deposit">Direct Deposit</MenuItem>
+                <MenuItem value="Handbook">Handbook Acknowledgment</MenuItem>
+                <MenuItem value="Performance Review">Performance Review</MenuItem>
+                <MenuItem value="Other">Other</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              fullWidth
+              label="File Name *"
+              value={newDocument.filename || ""}
+              onChange={(e) => setNewDocument({ ...newDocument, filename: e.target.value })}
+              helperText="Enter the document file name"
+            />
+            <TextField
+              fullWidth
+              label="File URL"
+              value={newDocument.fileurl || ""}
+              onChange={(e) => setNewDocument({ ...newDocument, fileurl: e.target.value })}
+              helperText="Optional: Azure Blob Storage URL or file path"
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setDocumentDialogOpen(false);
+            setSelectedDocument(null);
+            setNewDocument({});
+          }}>Cancel</Button>
+          <Button
+            onClick={handleAddDocument}
+            variant="contained"
+            sx={{
+              backgroundColor: "#8B0000",
+              "&:hover": { backgroundColor: "#a00" }
+            }}
+          >
+            Upload Document
           </Button>
         </DialogActions>
       </Dialog>
