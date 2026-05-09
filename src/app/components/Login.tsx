@@ -243,33 +243,25 @@ export function Login() {
         return;
       }
 
-      // Try Azure API if local JSON authentication fails
-      const loginUrl = getApiUrl(API_CONFIG.ENDPOINTS.AUTH_LOGIN);
-      const loginResponse = await fetch(loginUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username,
-          password,
-        }),
-      });
+      // Try API - GET /api/Users and filter by username and password
+      const usersUrl = getApiUrl(API_CONFIG.ENDPOINTS.USERS);
+      const usersResponse = await fetch(usersUrl);
 
-      let user;
-      let useApiAuth = true;
-      let authToken = "";
-
-      if (!loginResponse.ok) {
-        // Invalid credentials
-        throw new Error("Invalid username or password");
-      } else {
-        const apiResponse = await loginResponse.json();
-        // Azure API returns { user: {...}, token: "..." }
-        user = apiResponse.user || apiResponse;
-        authToken = apiResponse.token || "";
-        debugLog("Azure API login successful - session created automatically");
+      if (!usersResponse.ok) {
+        throw new Error("Unable to reach authentication server");
       }
+
+      const allUsers = await usersResponse.json();
+      const user = allUsers.find(
+        (u: any) => u.username === username && u.plainpassword === password
+      );
+
+      if (!user) {
+        throw new Error("Invalid username or password");
+      }
+
+      const authToken = "";
+      debugLog("API login successful for user:", user.username);
 
       // Get current time
       const loginTime = new Date().toLocaleString();
@@ -303,6 +295,8 @@ export function Login() {
       localStorage.setItem("userid", user.userid?.toString() || user.id?.toString() || "");
       localStorage.setItem("username", user.username || username);
       localStorage.setItem("role", user.role || "user");
+      localStorage.setItem("companyId", user.companyid || user.companyId || "");
+      localStorage.setItem("email", user.email || "");
       localStorage.setItem("loginTime", loginTime);
       localStorage.setItem("latitude", latitude);
       localStorage.setItem("longitude", longitude);
