@@ -1,0 +1,74 @@
+[
+  {
+    "id": "ad-001",
+    "title": "World Cup 2026 - USA • CANADA • MEXICO",
+    "description": "The world's greatest soccer tournament comes to North America! Get your tickets now!",
+    "imageUrl": "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=1200&h=300&fit=crop",
+    "linkUrl": "https://www.fifa.com/fifaplus/en/tournaments/mens/worldcup/canadamexicousa2026",
+    "bgColor": "linear-gradient(135deg, #00843D 0%, #006633 100%)",
+    "textColor": "#ffffff"
+  },
+  {
+    "id": "ad-002",
+    "title": "Corona Extra - Find Your Beach",
+    "description": "Relax with an ice-cold Corona. The perfect beer for sunny days and good times.",
+    "imageUrl": "https://images.unsplash.com/photo-1608270586620-248524c67de9?w=1200&h=300&fit=crop",
+    "linkUrl": "https://www.corona.com",
+    "bgColor": "linear-gradient(135deg, #FFD700 0%, #FFA500 100%)",
+    "textColor": "#1a1a1a"
+  },
+  {
+    "id": "ad-003",
+    "title": "Coppertone SPORT - Play Longer, Stay Protected",
+    "description": "Waterproof • Sweatproof • SPF 50+ protection for active days in the sun",
+    "imageUrl": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=1200&h=300&fit=crop",
+    "linkUrl": "https://www.coppertone.com",
+    "bgColor": "linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)",
+    "textColor": "#ffffff"
+  },
+  {
+    "id": "ad-004",
+    "title": "Heineken - Open Your World",
+    "description": "Brewed with pure malt, water and hops. Premium lager beer since 1873.",
+    "imageUrl": "https://images.unsplash.com/photo-1618885472179-5e474019f2a9?w=1200&h=300&fit=crop",
+    "linkUrl": "https://www.heineken.com",
+    "bgColor": "linear-gradient(135deg, #008200 0%, #005700 100%)",
+    "textColor": "#ffffff"
+  },
+  {
+    "id": "ad-005",
+    "title": "Neutrogena Beach Defense - Water + Sun = No Problem",
+    "description": "SPF 70 • Beach-strength sunscreen that's proven to protect in 7 skin-damaging conditions",
+    "imageUrl": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&h=300&fit=crop",
+    "linkUrl": "https://www.neutrogena.com",
+    "bgColor": "linear-gradient(135deg, #0099CC 0%, #006699 100%)",
+    "textColor": "#ffffff"
+  },
+  {
+    "id": "ad-006",
+    "title": "Premier League - The World's Best Football",
+    "description": "Watch every match live! Arsenal, Man City, Liverpool, Chelsea & more!",
+    "imageUrl": "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1200&h=300&fit=crop",
+    "linkUrl": "https://www.premierleague.com",
+    "bgColor": "linear-gradient(135deg, #3D195B 0%, #2B0A3D 100%)",
+    "textColor": "#ffffff"
+  },
+  {
+    "id": "ad-007",
+    "title": "Modelo Especial - Fighting Spirit",
+    "description": "The beer with a rich golden hue and a crisp, refreshing taste. Brewed for those with a fighting spirit.",
+    "imageUrl": "https://images.unsplash.com/photo-1589988944170-745eb5926452?w=1200&h=300&fit=crop",
+    "linkUrl": "https://www.modelousa.com",
+    "bgColor": "linear-gradient(135deg, #D4AF37 0%, #C5A028 100%)",
+    "textColor": "#1a1a1a"
+  },
+  {
+    "id": "ad-008",
+    "title": "Hawaiian Tropic - Island-Inspired Protection",
+    "description": "Exotic botanicals with SPF 50. Indulge your senses while protecting your skin.",
+    "imageUrl": "https://images.unsplash.com/photo-1473496169904-658ba7c44d8a?w=1200&h=300&fit=crop",
+    "linkUrl": "https://www.hawaiiantropic.com",
+    "bgColor": "linear-gradient(135deg, #FF1493 0%, #FF6347 100%)",
+    "textColor": "#ffffff"
+  }
+]
