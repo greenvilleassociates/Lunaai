@@ -47,6 +47,133 @@ function generateSessionToken(): string {
   return `sess_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
 }
 
+/**
+ * Post login events to the appropriate role-based log APIs.
+ * All calls are fire-and-forget via Promise.allSettled — none block login.
+ *
+ * All roles  → /api/Authlog, /api/Usernotices, /api/Userlog
+ * admin      → also /api/Adminlogs
+ * superuser  → also /api/Superuserlog
+ */
+async function postLoginEvents(
+  uid: string,
+  username: string,
+  role: string,
+  ipAddress: string,
+  latitude: string,
+  longitude: string,
+  loginTime: string
+): Promise<void> {
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${uid}`,
+  };
+  const now = new Date().toISOString();
+  const numericUid = parseInt(uid.replace(/\D/g, ""), 10) || 0;
+  const secPriority = role === "superuser" ? 3 : role === "admin" ? 2 : 1;
+  const baseDescr = `${role} login from ${ipAddress} at ${latitude}, ${longitude}`;
+
+  const tasks: Promise<unknown>[] = [
+    // Auth Log — every login
+    fetch(getApiUrl(API_CONFIG.ENDPOINTS.AUTH_LOG), {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        userid: numericUid,
+        username,
+        action: "login",
+        authdate: now,
+        ipaddress: ipAddress,
+        latitude,
+        longitude,
+        success: 1,
+        role,
+        descr: baseDescr,
+      }),
+    }),
+
+    // User Notices — every login
+    fetch(getApiUrl(API_CONFIG.ENDPOINTS.USER_NOTICES), {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        userid: numericUid,
+        username,
+        noticetext: `${role.charAt(0).toUpperCase() + role.slice(1)} login from ${ipAddress} at ${loginTime}`,
+        noticetype: "login",
+        noticedate: now,
+        acknowledged: 0,
+        role,
+        ipaddress: ipAddress,
+        latitude,
+        longitude,
+      }),
+    }),
+
+    // User Log — every login
+    fetch(getApiUrl(API_CONFIG.ENDPOINTS.USER_LOG), {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        descr: baseDescr,
+        emplid: 0,
+        fullname: username,
+        logdate: now,
+        secpriority: secPriority,
+        noccomments: `Successful login at ${loginTime}`,
+        nocOpId: 0,
+        escalationId: 0,
+        triagecasenumber: "",
+        userid: numericUid,
+        role,
+        ipaddress: ipAddress,
+      }),
+    }),
+  ];
+
+  // Superuser — also post to Superuserlog
+  if (role === "superuser") {
+    tasks.push(
+      fetch(getApiUrl(API_CONFIG.ENDPOINTS.SUPERUSER_LOG), {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          userid: numericUid,
+          username,
+          action: "login",
+          descr: `Superuser login from ${ipAddress} at ${latitude}, ${longitude}`,
+          logdate: now,
+          secpriority: secPriority,
+          ipaddress: ipAddress,
+          role,
+        }),
+      })
+    );
+  }
+
+  // Admin — also post to Adminlogs
+  if (role === "admin") {
+    tasks.push(
+      fetch(getApiUrl(API_CONFIG.ENDPOINTS.ADMIN_LOGS), {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          userid: numericUid,
+          username,
+          action: "login",
+          descr: `Admin login from ${ipAddress} at ${latitude}, ${longitude}`,
+          logdate: now,
+          secpriority: secPriority,
+          ipaddress: ipAddress,
+          role,
+        }),
+      })
+    );
+  }
+
+  await Promise.allSettled(tasks);
+}
+
 export function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -161,38 +288,19 @@ export function Login() {
         debugLog("LocalStorage updated with email:", localStorage.getItem("email"));
         debugLog("LocalStorage updated with companyId:", localStorage.getItem("companyId"));
         
-        // Post login log to Azure API
-        try {
-          const logUrl = getApiUrl(API_CONFIG.ENDPOINTS.USER_LOG);
-          const logEntry = {
-            descr: `User login from ${ipAddress} at ${latitude}, ${longitude}`,
-            emplid: 0, // Can be populated from user data if available
-            fullname: localUser.username,
-            logdate: new Date().toISOString(),
-            secpriority: 1, // 1 = Low priority for normal login
-            noccomments: `Successful login at ${loginTime}`,
-            nocOpId: 0,
-            escalationId: 0,
-            triagecasenumber: "",
-            userid: parseInt(localUser.uid) || 0,
-            role: localUser.role,
-          };
+        // Post login events to all role-appropriate log APIs
+        postLoginEvents(
+          localUser.uid || "",
+          localUser.username,
+          localUser.role || "user",
+          ipAddress,
+          latitude,
+          longitude,
+          loginTime
+        ).catch((e) => console.error("postLoginEvents failed:", e));
 
-          await fetch(logUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${localUser.uid}`,
-            },
-            body: JSON.stringify(logEntry),
-          });
-          
-          debugLog("Login logged successfully");
-        } catch (error) {
-          // Don't block login if logging fails
-          console.error("Failed to log user login:", error);
-        }
-        
+        debugLog("Login events dispatched for role:", localUser.role);
+
         // Create user session
         try {
           const sessionUrl = getApiUrl(API_CONFIG.ENDPOINTS.USER_SESSION);
@@ -317,38 +425,19 @@ export function Login() {
         debugLog("Auth token stored");
       }
       
-      // Post login log to Azure API
-      try {
-        const logUrl = getApiUrl(API_CONFIG.ENDPOINTS.USER_LOG);
-        const logEntry = {
-          descr: `User login from ${ipAddress} at ${latitude}, ${longitude}`,
-          emplid: 0, // Can be populated from user data if available
-          fullname: user.username,
-          logdate: new Date().toISOString(),
-          secpriority: 1, // 1 = Low priority for normal login
-          noccomments: `Successful login at ${loginTime}`,
-          nocOpId: 0,
-          escalationId: 0,
-          triagecasenumber: "",
-          userid: parseInt(user.uid) || 0,
-          role: user.role,
-        };
+      // Post login events to all role-appropriate log APIs
+      postLoginEvents(
+        user.uid || user.id?.toString() || "",
+        user.username,
+        user.role || "user",
+        ipAddress,
+        latitude,
+        longitude,
+        loginTime
+      ).catch((e) => console.error("postLoginEvents failed:", e));
 
-        await fetch(logUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${user.uid}`,
-          },
-          body: JSON.stringify(logEntry),
-        });
-        
-        debugLog("Login logged successfully");
-      } catch (error) {
-        // Don't block login if logging fails
-        console.error("Failed to log user login:", error);
-      }
-      
+      debugLog("Login events dispatched for role:", user.role);
+
       // Azure API already created the session
       debugLog("Session already created by Azure API");
       
@@ -563,7 +652,7 @@ export function Login() {
                 </svg>
                 <h4 className="font-semibold text-green-400">Current Build</h4>
               </div>
-              <p className="font-bold text-white mb-0.5" style={{ fontSize: '14pt' }}>Version 27</p>
+              <p className="font-bold text-white mb-0.5" style={{ fontSize: '14pt' }}>Version 28</p>
               <p className="text-slate-400 mb-0.5">Released: May 11, 2026</p>
               <a
                 href="/versionhistory.html"

@@ -9,6 +9,7 @@ import GoogleIcon from "@mui/icons-material/Google";
 import AbcIcon from "@mui/icons-material/Abc";
 import PsychologyIcon from "@mui/icons-material/Psychology";
 import PlaceIcon from "@mui/icons-material/Place";
+import MyLocationIcon from "@mui/icons-material/MyLocation";
 import { Box } from "@mui/material";
 import ctsLogo from "figma:asset/399d93660a307619ab55b61f935095fec4286492.png";
 import superLunaIcon from "figma:asset/cfadca739638cf837cbfaf51361c717172db777b.png";
@@ -204,6 +205,15 @@ export function Features() {
       icon: <PlaceIcon sx={{ fontSize: 48, color: "#DB4437" }} />,
       action: "Open Geocoder",
       route: "/geocoder",
+      external: false,
+    },
+    {
+      id: 15,
+      title: "My Location",
+      description: "View your current GPS coordinates on an interactive Google Map and get turn-by-turn driving directions to any destination.",
+      icon: <MyLocationIcon sx={{ fontSize: 48, color: "#8B0000" }} />,
+      action: "Open My Location",
+      route: "/mylocation",
       external: false,
     },
   ];

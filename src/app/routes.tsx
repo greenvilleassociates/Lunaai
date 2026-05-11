@@ -36,6 +36,7 @@ import { Claude } from "./components/Claude";
 import { Grok } from "./components/Grok";
 import { Geocoder } from "./components/Geocoder";
 import { SearchBilling } from "./components/SearchBilling";
+import { MyLocation } from "./components/MyLocation";
 
 export const router = createBrowserRouter([
   {
@@ -78,6 +79,7 @@ export const router = createBrowserRouter([
       { path: "grok", element: <ProtectedRoute><Grok /></ProtectedRoute> },
       { path: "geocoder", element: <ProtectedRoute><Geocoder /></ProtectedRoute> },
       { path: "searchbilling", element: <ProtectedRoute><SearchBilling /></ProtectedRoute> },
+      { path: "mylocation", element: <ProtectedRoute><MyLocation /></ProtectedRoute> },
     ],
   },
 ]);

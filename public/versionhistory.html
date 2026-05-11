@@ -186,12 +186,41 @@
         </header>
         
         <main>
+            <!-- Version 28 -->
+            <div class="version-card">
+                <div class="version-header">
+                    <div>
+                        <span class="version-number">Version 28</span>
+                        <span class="version-badge">Latest</span>
+                    </div>
+                    <div class="version-date">Released: May 11, 2026</div>
+                </div>
+                <div class="changes-section">
+                    <h3 class="changes-title">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                        </svg>
+                        What's New
+                    </h3>
+                    <ul class="changes-list">
+                        <li><strong>Search Billing</strong> — New home page panel showing all /api/Websearch activity per user with configurable per-search rebill rate and invoice generation</li>
+                        <li><strong>Search Pricing Settings</strong> — New Settings tab to configure the per-search rebill rate (default 5¢)</li>
+                        <li><strong>IBM Geocoder</strong> — New /geocoder page calling /api/Geocoder with lat/lon inputs, full IBM response display, and Google Maps embed</li>
+                        <li><strong>Empowr on Features</strong> — Empowr Enterprise Search added as Feature #13 on the Features page</li>
+                        <li><strong>Security9 Log Manager</strong> — All 9 log APIs wired with dynamic tab rendering and live API fetch; generic table auto-generates columns from API response</li>
+                        <li><strong>Log Manager Settings</strong> — New Settings tab to enable/disable each of the 9 Security log APIs individually</li>
+                        <li><strong>Ask Luna</strong> — Voice shortcut card on Home page navigating directly to Start Recording</li>
+                        <li><strong>API Warmup Ads</strong> — BannerAd commercials shown on the Getting Ready loader with 60-second countdown below Luna logo</li>
+                        <li><strong>Pre-login Warmup GET</strong> — Silent GET /api/Bu fires on Login page mount to wake the Azure API before any user input</li>
+                    </ul>
+                </div>
+            </div>
+
             <!-- Version 27 -->
             <div class="version-card">
                 <div class="version-header">
                     <div>
                         <span class="version-number">Version 27</span>
-                        <span class="version-badge">Latest</span>
                     </div>
                     <div class="version-date">Released: May 11, 2026</div>
                 </div>

@@ -20,7 +20,7 @@ export function About() {
           Intelligent orchestration platform for managing multiple Large Language Models
         </Typography>
         <Chip
-          label="Version 27 — Current Build"
+          label="Version 28 — Current Build"
           color="success"
           icon={<NewReleases />}
           sx={{ fontSize: '0.95rem', padding: '18px 10px', fontWeight: 600 }}
@@ -125,15 +125,39 @@ export function About() {
             <AccordionDetails>
               <Box className="space-y-4">
 
-                {/* Version 27 */}
+                {/* Version 28 */}
                 <Paper className="p-4 border-l-4 border-green-600 bg-green-50">
                   <Box className="flex items-center justify-between mb-2">
                     <Typography variant="h6" className="font-bold text-green-800">
-                      Version 27 - Current Build
+                      Version 28 - Current Build
                     </Typography>
                     <Chip label="May 11, 2026" color="success" size="small" />
                   </Box>
                   <Typography variant="subtitle2" className="mb-3 text-green-700">
+                    Search Billing, Geocoder, Security9 Log Manager &amp; Ask Luna
+                  </Typography>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">
+                    <li><strong>Search Billing</strong> — New home page panel showing all /api/Websearch activity per user with per-search rebill rate and invoice generation</li>
+                    <li><strong>Search Pricing Settings</strong> — New Settings tab to configure per-search rebill rate (default 5¢)</li>
+                    <li><strong>IBM Geocoder</strong> — New /geocoder page calling /api/Geocoder with lat/lon inputs, full IBM response display, and Google Maps embed</li>
+                    <li><strong>Empowr on Features</strong> — Empowr Enterprise Search added as Feature #13 on the Features page</li>
+                    <li><strong>Security9 Log Manager</strong> — All 9 log APIs wired (/api/Adminlogs, /api/Apilogs, /api/Authlog, /api/Sessionlog, /api/Superuserlog, /api/Useractions, /api/Userlog, /api/Usernotices, /api/Usersession) with dynamic tab rendering and live API fetch</li>
+                    <li><strong>Log Manager Settings</strong> — New Settings tab to enable/disable each of the 9 Security log APIs individually</li>
+                    <li><strong>Ask Luna</strong> — Voice shortcut on Home page navigating directly to Start Recording</li>
+                    <li><strong>API Warmup Ads</strong> — BannerAd commercials displayed on the Getting Ready loader; 60-second countdown shown below Luna logo</li>
+                    <li><strong>Pre-login Warmup GET</strong> — Silent GET /api/Bu fires on Login page mount to wake the Azure API before any user input</li>
+                  </ul>
+                </Paper>
+
+                {/* Version 27 */}
+                <Paper className="p-4 border-l-4 border-teal-600 bg-teal-50">
+                  <Box className="flex items-center justify-between mb-2">
+                    <Typography variant="h6" className="font-bold text-teal-800">
+                      Version 27
+                    </Typography>
+                    <Chip label="May 11, 2026" color="success" size="small" />
+                  </Box>
+                  <Typography variant="subtitle2" className="mb-3 text-teal-700">
                     Login Stability, API Warmup Timeout &amp; Adbase Helper
                   </Typography>
                   <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">

@@ -197,6 +197,13 @@ export const API_CONFIG = {
 
     // Geocoder (uses /api/Geocoder)
     GEOCODER: '/Geocoder',
+
+    // Security 9 Log APIs
+    SUPERUSER_LOG: '/Superuserlog',
+    USER_NOTICES: '/Usernotices',
+    SESSION_LOG: '/Sessionlog',
+    AUTH_LOG: '/Authlog',
+    USER_ACTIONS: '/Useractions',
   },
 };
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Box, Typography, Tabs, Tab, Paper, Alert, Chip, Button, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Switch, FormControlLabel, RadioGroup, Radio, FormLabel, IconButton, Divider, InputAdornment } from "@mui/material";
-import { Settings as SettingsIcon, Psychology, Security, Tune, Api, Memory, Build, OpenInNew, RecordVoiceOver, CheckCircle, Cancel, ManageSearch, Hub, Add, Delete, AttachMoney } from "@mui/icons-material";
+import { Settings as SettingsIcon, Psychology, Security, Tune, Api, Memory, Build, OpenInNew, RecordVoiceOver, CheckCircle, Cancel, ManageSearch, Hub, Add, Delete, AttachMoney, Storage } from "@mui/icons-material";
+import { ALL_LOG_APIS, ALL_LOG_API_KEYS, type LogApiKey } from "./Enterprise9Security";
 import { LLMAgentConfig } from "./LLMAgentConfig";
 import { CustomSLM } from "./CustomSLM";
 
@@ -41,7 +42,21 @@ export function Settings() {
   const [debugMode, setDebugMode] = useState<boolean>(true);
 
   const [searchPricingRate, setSearchPricingRate] = useState<string>("0.05");
+  const [searchPricingRateSuperluna, setSearchPricingRateSuperluna] = useState<string>("0.50");
   const [searchPricingSaved, setSearchPricingSaved] = useState(false);
+
+  const [enabledLogApis, setEnabledLogApis] = useState<LogApiKey[]>(() => {
+    try {
+      const raw = localStorage.getItem("security9EnabledApis");
+      if (raw) {
+        const parsed: string[] = JSON.parse(raw);
+        const valid = parsed.filter((k): k is LogApiKey => ALL_LOG_API_KEYS.includes(k as LogApiKey));
+        if (valid.length > 0) return valid;
+      }
+    } catch { /* ignore */ }
+    return [...ALL_LOG_API_KEYS];
+  });
+  const [logApisSaved, setLogApisSaved] = useState(false);
 
   const DEFAULT_CONTEXT_ROUTES = [
     { domain: "Sports",     llm: "grok" },
@@ -92,6 +107,11 @@ export function Settings() {
 
     const savedRate = localStorage.getItem("searchPricingRate");
     if (savedRate) setSearchPricingRate(savedRate);
+
+    const savedSuperlunaRate = localStorage.getItem("searchPricingRateSuperluna");
+    if (savedSuperlunaRate) setSearchPricingRateSuperluna(savedSuperlunaRate);
+
+    // Log APIs are already initialized from localStorage in useState initializer
 
     const savedContextRoutes = localStorage.getItem("contextRouterConfig");
     if (savedContextRoutes) {
@@ -299,6 +319,7 @@ export function Settings() {
           <Tab icon={<ManageSearch />} label="Search Engine" iconPosition="start" />
           <Tab icon={<Hub />} label="Context Router" iconPosition="start" />
           <Tab icon={<AttachMoney />} label="Search Pricing" iconPosition="start" />
+          <Tab icon={<Storage />} label="Log Manager" iconPosition="start" />
         </Tabs>
       </Paper>
 
@@ -900,13 +921,43 @@ export function Settings() {
                     }
                   />
                 </Box>
+
+                <Box className="p-3 mb-2 border border-slate-200 rounded hover:bg-slate-50 transition-colors">
+                  <FormControlLabel
+                    value="8"
+                    control={<Radio sx={{ color: "#8B0000", "&.Mui-checked": { color: "#8B0000" } }} />}
+                    label={
+                      <Box>
+                        <Typography variant="body1" sx={{ fontWeight: 600 }}>Context Search <Typography component="span" variant="caption" color="text.secondary">[8]</Typography></Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Luna Context Router — auto-routes by topic to the best-fit model
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                </Box>
+
+                <Box className="p-3 mb-2 border border-slate-200 rounded hover:bg-slate-50 transition-colors">
+                  <FormControlLabel
+                    value="9"
+                    control={<Radio sx={{ color: "#8B0000", "&.Mui-checked": { color: "#8B0000" } }} />}
+                    label={
+                      <Box>
+                        <Typography variant="body1" sx={{ fontWeight: 600 }}>P-Grok <Typography component="span" variant="caption" color="text.secondary">[9]</Typography></Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Route queries preferentially through xAI Grok
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                </Box>
               </RadioGroup>
             </FormControl>
 
             <Box className="mt-6 p-4 bg-slate-50 border border-slate-200 rounded">
               <Typography variant="subtitle2" className="mb-1 font-semibold">Current Selection</Typography>
               <Chip
-                label={{"1":"1 — SuperLuna","2":"2 — Keyword","3":"3 — P-ChatGPT","4":"4 — P-Google","5":"5 — P-Claude","6":"6 — P-Wikipedia","7":"7 — Empwr"}[defaultSearchEngine] ?? defaultSearchEngine}
+                label={{"1":"1 — SuperLuna","2":"2 — Keyword","3":"3 — P-ChatGPT","4":"4 — P-Google","5":"5 — P-Claude","6":"6 — P-Wikipedia","7":"7 — Empwr","8":"8 — Context Search","9":"9 — P-Grok"}[defaultSearchEngine] ?? defaultSearchEngine}
                 size="small"
                 sx={{ backgroundColor: "#8B0000", color: "white" }}
               />
@@ -1060,26 +1111,62 @@ export function Settings() {
               </Typography>
 
               <Alert severity="info" className="mb-4">
-                The default rate is <strong>$0.05 (5¢) per AI search</strong>. Adjust to match your billing model.
+                Standard searches default to <strong>$0.05 (5¢)</strong>. SuperLuna chained searches default to <strong>$0.50 (50¢)</strong>. Adjust to match your billing model.
               </Alert>
 
-              <Box sx={{ display: "flex", alignItems: "flex-end", gap: 2, flexWrap: "wrap", mb: 4 }}>
+              {/* Standard rate */}
+              <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5 }}>Standard AI Search Rate</Typography>
+              <Box sx={{ display: "flex", alignItems: "flex-end", gap: 2, flexWrap: "wrap", mb: 3 }}>
                 <TextField
                   label="Rate per AI Search"
                   type="number"
                   value={searchPricingRate}
-                  onChange={(e) => {
-                    setSearchPricingRate(e.target.value);
-                    setSearchPricingSaved(false);
-                  }}
+                  onChange={(e) => { setSearchPricingRate(e.target.value); setSearchPricingSaved(false); }}
                   size="small"
                   sx={{ width: 200 }}
                   inputProps={{ min: 0, step: 0.01 }}
-                  InputProps={{
-                    startAdornment: <InputAdornment position="start">$</InputAdornment>,
-                  }}
-                  helperText="Per-search charge (e.g. 0.05 = 5¢)"
+                  InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+                  helperText="e.g. 0.05 = 5¢ per search"
                 />
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => { setSearchPricingRate("0.05"); setSearchPricingSaved(false); }}
+                  sx={{ borderColor: "#64748b", color: "#64748b", height: 40 }}
+                >
+                  Reset to 5¢
+                </Button>
+              </Box>
+
+              {/* SuperLuna chained rate */}
+              <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5 }}>SuperLuna Chained Search Rate</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.5 }}>
+                Applied when the search record's model field contains "superluna" (multi-provider chained queries).
+              </Typography>
+              <Box sx={{ display: "flex", alignItems: "flex-end", gap: 2, flexWrap: "wrap", mb: 3 }}>
+                <TextField
+                  label="Rate per SuperLuna Search"
+                  type="number"
+                  value={searchPricingRateSuperluna}
+                  onChange={(e) => { setSearchPricingRateSuperluna(e.target.value); setSearchPricingSaved(false); }}
+                  size="small"
+                  sx={{ width: 200 }}
+                  inputProps={{ min: 0, step: 0.01 }}
+                  InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+                  helperText="e.g. 0.50 = 50¢ per chained search"
+                />
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => { setSearchPricingRateSuperluna("0.50"); setSearchPricingSaved(false); }}
+                  sx={{ borderColor: "#7c3aed", color: "#7c3aed", height: 40 }}
+                >
+                  Reset to 50¢
+                </Button>
+              </Box>
+
+              {/* Save both */}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 4, flexWrap: "wrap" }}>
                 <Button
                   variant="contained"
                   onClick={() => {
@@ -1088,22 +1175,18 @@ export function Settings() {
                     setSearchPricingRate(safe);
                     localStorage.setItem("searchPricingRate", safe);
                     window.dispatchEvent(new StorageEvent("storage", { key: "searchPricingRate", newValue: safe }));
+
+                    const slVal = parseFloat(searchPricingRateSuperluna);
+                    const slSafe = (!isNaN(slVal) && slVal >= 0 ? slVal : 0.50).toFixed(4);
+                    setSearchPricingRateSuperluna(slSafe);
+                    localStorage.setItem("searchPricingRateSuperluna", slSafe);
+                    window.dispatchEvent(new StorageEvent("storage", { key: "searchPricingRateSuperluna", newValue: slSafe }));
+
                     setSearchPricingSaved(true);
                   }}
                   sx={{ backgroundColor: "#8B0000", "&:hover": { backgroundColor: "#6B0000" }, height: 40 }}
                 >
-                  Save Rate
-                </Button>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => {
-                    setSearchPricingRate("0.05");
-                    setSearchPricingSaved(false);
-                  }}
-                  sx={{ borderColor: "#64748b", color: "#64748b", height: 40 }}
-                >
-                  Reset to Default
+                  Save All Rates
                 </Button>
                 {searchPricingSaved && (
                   <Box className="flex items-center gap-1 text-green-600">
@@ -1115,20 +1198,131 @@ export function Settings() {
 
               {/* Pricing Examples */}
               <Box sx={{ p: 3, backgroundColor: "#f8fafc", borderRadius: 1, border: "1px solid #e2e8f0" }}>
-                <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 2 }}>Billing Examples at Current Rate</Typography>
-                <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 2 }}>
+                <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 2 }}>Billing Examples</Typography>
+                <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 2 }}>
                   {[10, 50, 100, 500, 1000].map((count) => {
-                    const rate = parseFloat(searchPricingRate) || 0.05;
+                    const r = parseFloat(searchPricingRate) || 0.05;
+                    const sl = parseFloat(searchPricingRateSuperluna) || 0.50;
                     return (
                       <Box key={count} sx={{ p: 2, backgroundColor: "white", borderRadius: 1, border: "1px solid #e2e8f0", textAlign: "center" }}>
-                        <Typography variant="h6" fontWeight={700} color="#8B0000">
-                          ${(count * rate).toFixed(2)}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">{count} searches</Typography>
+                        <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>{count} searches</Typography>
+                        <Typography variant="body2" fontWeight={700} color="#8B0000">${(count * r).toFixed(2)} <Typography component="span" variant="caption" color="text.secondary">std</Typography></Typography>
+                        <Typography variant="body2" fontWeight={700} color="#7c3aed">${(count * sl).toFixed(2)} <Typography component="span" variant="caption" color="text.secondary">SL</Typography></Typography>
                       </Box>
                     );
                   })}
                 </Box>
+              </Box>
+            </Paper>
+          </Box>
+        </Box>
+      </TabPanel>
+
+      <TabPanel value={activeTab} index={9}>
+        <Box>
+          <Typography variant="h5" className="mb-4">Log Manager</Typography>
+          <Box className="space-y-4">
+            <Paper className="p-6">
+              <Box className="flex items-center gap-2 mb-4">
+                <Storage className="text-slate-700" />
+                <Typography variant="h6">Enterprise(9) Security Log APIs</Typography>
+              </Box>
+              <Typography variant="body2" color="text.secondary" className="mb-4">
+                Select which of the 9 log API sources are visible in the <strong>Security</strong> page. Disabled APIs are hidden from the tab bar but still exist in the backend.
+              </Typography>
+
+              <Alert severity="info" className="mb-4">
+                All 9 APIs are enabled by default. Changes take effect immediately when you save.
+              </Alert>
+
+              <Box className="space-y-2 mb-4">
+                {ALL_LOG_APIS.map((api) => {
+                  const isEnabled = enabledLogApis.includes(api.key);
+                  const IconComp = api.icon;
+                  return (
+                    <Box
+                      key={api.key}
+                      className={`p-3 border rounded flex items-center justify-between transition-colors ${isEnabled ? "border-slate-300 bg-white" : "border-slate-200 bg-slate-50"}`}
+                    >
+                      <Box className="flex items-center gap-3">
+                        <IconComp sx={{ fontSize: 20, color: isEnabled ? api.color : "#94a3b8" }} />
+                        <Box>
+                          <Typography variant="body2" fontWeight={600} color={isEnabled ? "text.primary" : "text.secondary"}>
+                            {api.label}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" fontFamily="monospace">
+                            /api{api.endpoint}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={isEnabled}
+                            size="small"
+                            onChange={(e) => {
+                              setEnabledLogApis((prev) =>
+                                e.target.checked
+                                  ? [...prev, api.key]
+                                  : prev.filter((k) => k !== api.key)
+                              );
+                              setLogApisSaved(false);
+                            }}
+                            sx={{
+                              "& .MuiSwitch-switchBase.Mui-checked": { color: api.color },
+                              "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { backgroundColor: api.color },
+                            }}
+                          />
+                        }
+                        label={<Typography variant="caption">{isEnabled ? "Enabled" : "Disabled"}</Typography>}
+                        labelPlacement="start"
+                      />
+                    </Box>
+                  );
+                })}
+              </Box>
+
+              <Divider className="my-4" />
+
+              <Box className="flex items-center gap-3 flex-wrap">
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={() => {
+                    const toSave = enabledLogApis.length === 0 ? [...ALL_LOG_API_KEYS] : enabledLogApis;
+                    localStorage.setItem("security9EnabledApis", JSON.stringify(toSave));
+                    window.dispatchEvent(new StorageEvent("storage", { key: "security9EnabledApis", newValue: JSON.stringify(toSave) }));
+                    setEnabledLogApis(toSave);
+                    setLogApisSaved(true);
+                  }}
+                  sx={{ backgroundColor: "#8B0000", "&:hover": { backgroundColor: "#6B0000" } }}
+                >
+                  Save Log Configuration
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => {
+                    setEnabledLogApis([...ALL_LOG_API_KEYS]);
+                    setLogApisSaved(false);
+                  }}
+                  sx={{ borderColor: "#64748b", color: "#64748b" }}
+                >
+                  Enable All 9
+                </Button>
+                {logApisSaved && (
+                  <Box className="flex items-center gap-1 text-green-600">
+                    <CheckCircle fontSize="small" />
+                    <Typography variant="caption">Saved — Security page will reflect changes</Typography>
+                  </Box>
+                )}
+              </Box>
+
+              <Box className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded">
+                <Typography variant="caption" color="text.secondary">
+                  Currently enabled: <strong>{enabledLogApis.length} / 9</strong> APIs &nbsp;—&nbsp;
+                  {enabledLogApis.map((k) => ALL_LOG_APIS.find((a) => a.key === k)?.label).filter(Boolean).join(", ")}
+                </Typography>
               </Box>
             </Paper>
           </Box>

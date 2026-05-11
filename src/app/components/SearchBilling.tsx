@@ -27,8 +27,14 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import { useNavigate } from "react-router";
 import { API_CONFIG, getApiUrl } from "../config/api";
 
-const DEFAULT_RATE = 0.05; // $0.05 per search
+const DEFAULT_RATE = 0.05;           // $0.05 per standard search
+const DEFAULT_SUPERLUNA_RATE = 0.50; // $0.50 per SuperLuna chained search
 const RATE_KEY = "searchPricingRate";
+const SUPERLUNA_RATE_KEY = "searchPricingRateSuperluna";
+
+function isSuperluna(record: WebsearchRecord): boolean {
+  return !!(record.model?.toLowerCase().includes("superluna"));
+}
 
 interface WebsearchRecord {
   id: number;
@@ -45,11 +51,14 @@ interface WebsearchRecord {
 
 function getRate(): number {
   const stored = localStorage.getItem(RATE_KEY);
-  if (stored) {
-    const n = parseFloat(stored);
-    if (!isNaN(n) && n >= 0) return n;
-  }
+  if (stored) { const n = parseFloat(stored); if (!isNaN(n) && n >= 0) return n; }
   return DEFAULT_RATE;
+}
+
+function getSuperlunaRate(): number {
+  const stored = localStorage.getItem(SUPERLUNA_RATE_KEY);
+  if (stored) { const n = parseFloat(stored); if (!isNaN(n) && n >= 0) return n; }
+  return DEFAULT_SUPERLUNA_RATE;
 }
 
 function formatCurrency(amount: number) {
@@ -73,6 +82,7 @@ export function SearchBilling() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rate, setRate] = useState<number>(getRate());
+  const [superlunaRate, setSuperlunaRate] = useState<number>(getSuperlunaRate());
   const [billedIds, setBilledIds] = useState<Set<number>>(new Set());
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [invoiceNote, setInvoiceNote] = useState("");
@@ -82,12 +92,16 @@ export function SearchBilling() {
     loadRecords();
   }, []);
 
-  // Keep rate in sync if settings change in another tab
+  // Keep rates in sync if settings change in another tab
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
       if (e.key === RATE_KEY && e.newValue) {
         const n = parseFloat(e.newValue);
         if (!isNaN(n)) setRate(n);
+      }
+      if (e.key === SUPERLUNA_RATE_KEY && e.newValue) {
+        const n = parseFloat(e.newValue);
+        if (!isNaN(n)) setSuperlunaRate(n);
       }
     };
     window.addEventListener("storage", handleStorage);
@@ -118,11 +132,14 @@ export function SearchBilling() {
     }
   };
 
+  const recordRate = (r: WebsearchRecord) => isSuperluna(r) ? superlunaRate : rate;
+
   const unbilledRecords = records.filter((r) => !billedIds.has(r.id));
   const totalSearches = records.length;
   const unbilledCount = unbilledRecords.length;
-  const totalRebill = unbilledRecords.length * rate;
-  const totalBilled = billedIds.size * rate;
+  const totalRebill = unbilledRecords.reduce((sum, r) => sum + recordRate(r), 0);
+  const totalBilled = records.filter((r) => billedIds.has(r.id)).reduce((sum, r) => sum + recordRate(r), 0);
+  const grandTotal = records.reduce((sum, r) => sum + recordRate(r), 0);
 
   const handleMarkAllBilled = () => {
     setBilledIds(new Set(records.map((r) => r.id)));
@@ -181,10 +198,11 @@ export function SearchBilling() {
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
             <AttachMoneyIcon sx={{ fontSize: 18, color: "#0062FF" }} />
             <Typography variant="caption" color="text.secondary" fontWeight={600} textTransform="uppercase" letterSpacing={0.5}>
-              Rate / Search
+              Rates
             </Typography>
           </Box>
-          <Typography variant="h4" fontWeight={700}>{formatCurrency(rate)}</Typography>
+          <Typography variant="body2" fontWeight={700}>{formatCurrency(rate)} <Typography component="span" variant="caption" color="text.secondary">standard</Typography></Typography>
+          <Typography variant="body2" fontWeight={700} color="#7c3aed">{formatCurrency(superlunaRate)} <Typography component="span" variant="caption" color="text.secondary">SuperLuna</Typography></Typography>
         </Paper>
 
         <Paper elevation={2} sx={{ p: 2.5, borderRadius: 2, borderTop: "3px solid #f59e0b" }}>
@@ -217,7 +235,7 @@ export function SearchBilling() {
             onClick={handleGenerateInvoice}
             sx={{ backgroundColor: "#8B0000", "&:hover": { backgroundColor: "#6B0000" } }}
           >
-            Generate Invoice ({unbilledCount} searches — {formatCurrency(totalRebill)})
+            Generate Invoice ({unbilledCount} search{unbilledCount !== 1 ? "es" : ""} — {formatCurrency(totalRebill)})
           </Button>
           <Button
             variant="outlined"
@@ -306,8 +324,13 @@ export function SearchBilling() {
                     <TableCell align="right" sx={{ fontSize: "0.8rem", fontFamily: "monospace", color: "#64748b" }}>
                       {record.expectedcost > 0 ? formatCurrency(record.expectedcost) : "—"}
                     </TableCell>
-                    <TableCell align="right" sx={{ fontSize: "0.8rem", fontFamily: "monospace", fontWeight: 600, color: isBilled ? "#16a34a" : "#f59e0b" }}>
-                      {formatCurrency(rate)}
+                    <TableCell align="right">
+                      <Typography variant="caption" fontFamily="monospace" fontWeight={700} color={isBilled ? "#16a34a" : "#f59e0b"}>
+                        {formatCurrency(recordRate(record))}
+                      </Typography>
+                      {isSuperluna(record) && (
+                        <Chip label="SL" size="small" sx={{ ml: 0.5, height: 16, fontSize: "0.6rem", backgroundColor: "#ede9fe", color: "#7c3aed", fontWeight: 700 }} />
+                      )}
                     </TableCell>
                     <TableCell align="center">
                       {isBilled ? (
@@ -345,7 +368,7 @@ export function SearchBilling() {
             <Divider orientation="vertical" flexItem />
             <Box sx={{ textAlign: "right" }}>
               <Typography variant="caption" color="text.secondary" display="block">Grand Total</Typography>
-              <Typography variant="subtitle1" fontWeight={700}>{formatCurrency(totalSearches * rate)}</Typography>
+              <Typography variant="subtitle1" fontWeight={700}>{formatCurrency(grandTotal)}</Typography>
             </Box>
           </Box>
         </TableContainer>
@@ -368,8 +391,12 @@ export function SearchBilling() {
               <Typography variant="body2" fontWeight={600}>{unbilledCount}</Typography>
             </Box>
             <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
-              <Typography variant="body2" color="text.secondary">Rate per search:</Typography>
+              <Typography variant="body2" color="text.secondary">Standard rate:</Typography>
               <Typography variant="body2" fontWeight={600}>{formatCurrency(rate)}</Typography>
+            </Box>
+            <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
+              <Typography variant="body2" color="text.secondary">SuperLuna rate:</Typography>
+              <Typography variant="body2" fontWeight={600} color="#7c3aed">{formatCurrency(superlunaRate)}</Typography>
             </Box>
             <Divider sx={{ my: 1 }} />
             <Box sx={{ display: "flex", justifyContent: "space-between" }}>
