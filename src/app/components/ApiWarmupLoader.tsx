@@ -16,15 +16,14 @@ export function ApiWarmupLoader({ onComplete }: ApiWarmupLoaderProps) {
       try {
         setStatusMessage("Getting ready.... please wait...");
         const usersUrl = getApiUrl(API_CONFIG.ENDPOINTS.USERS);
-        
-        // Make the API call to wake up the server
+
         await fetch(usersUrl, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
           },
         });
-        
+
         setStatusMessage("Getting ready.... please wait...");
       } catch (error) {
         console.log("API warmup call completed (may be in development mode)");
@@ -32,28 +31,28 @@ export function ApiWarmupLoader({ onComplete }: ApiWarmupLoaderProps) {
       }
     };
 
-    // Start the warmup call immediately
     warmupApi();
 
-    // Progress bar animation over 10 seconds
+    // Progress bar animation over 60 seconds (60000ms)
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
           return 100;
         }
-        return prev + 1; // Increment by 1% every 100ms for 10 seconds total
+        return prev + 1; // 1% every 600ms → 60 seconds total
       });
-    }, 100);
+    }, 600);
 
-    // Complete after 10 seconds
+    // Hard cap at 60 seconds
     const timeout = setTimeout(() => {
       clearInterval(interval);
       setProgress(100);
+
       setTimeout(() => {
         onComplete();
-      }, 500); // Small delay after reaching 100%
-    }, 10000);
+      }, 500);
+    }, 60000);
 
     return () => {
       clearInterval(interval);
