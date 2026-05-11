@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Box, IconButton } from "@mui/material";
 import { ChevronLeft, ChevronRight } from "@mui/icons-material";
 import { API_CONFIG, getApiUrl } from "../config/api";
@@ -94,6 +94,7 @@ export function BannerAd() {
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [debugMode, setDebugMode] = useState(true);
+  const impressionQueue = useRef<object[]>([]);
 
   // Helper functions for conditional debug logging
   const debugLog = (...args: any[]) => {
@@ -157,44 +158,82 @@ export function BannerAd() {
     return () => clearInterval(interval);
   }, [isHovered, commercials]);
 
-  // Track ad impressions
-  useEffect(() => {
-    if (commercials.length === 0) return;
-
-    const trackImpression = async () => {
-      const currentAd = commercials[currentAdIndex];
-      const uid = localStorage.getItem("uid") || "guest";
-      const ipAddress = localStorage.getItem("ipAddress") || "N/A";
-      const latitude = localStorage.getItem("latitude") || "0";
-      const longitude = localStorage.getItem("longitude") || "0";
-
+  // Flush queued impressions once uid is available
+  const flushImpressionQueue = async (uid: string) => {
+    if (impressionQueue.current.length === 0) return;
+    const addbaseUrl = getApiUrl(API_CONFIG.ENDPOINTS.ADDBASE);
+    const queued = [...impressionQueue.current];
+    impressionQueue.current = [];
+    for (const impression of queued) {
       try {
-        const addbaseUrl = getApiUrl(API_CONFIG.ENDPOINTS.ADDBASE);
-        const impressionData = {
-          addid: currentAd.id,
-          sourceip: ipAddress,
-          destinationip: "login-banner",
-          clientid: uid,
-          mktgurl: currentAd.linkUrl,
-          origplatform: "web-login",
-          targetplatform: "banner-ad",
-          uid: uid,
-          ulat: parseFloat(latitude),
-          ulong: parseFloat(longitude),
-          cost: 0,
-          price: 0,
-          discount: 0,
-        };
-
         await fetch(addbaseUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${uid}`,
           },
-          body: JSON.stringify(impressionData),
+          body: JSON.stringify({ ...impression, uid, clientid: uid }),
         });
+        debugLog("✅ Queued ad impression flushed");
+      } catch (error) {
+        debugWarn("⚠️ Failed to flush queued impression:", error);
+      }
+    }
+  };
 
+  // Listen for uid becoming available after login, then flush queue
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "uid" && e.newValue) {
+        flushImpressionQueue(e.newValue);
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
+  // Track ad impressions — queue if not yet logged in, post immediately if logged in
+  useEffect(() => {
+    if (commercials.length === 0) return;
+
+    const trackImpression = async () => {
+      const currentAd = commercials[currentAdIndex];
+      const ipAddress = localStorage.getItem("ipAddress") || "N/A";
+      const latitude = localStorage.getItem("latitude") || "0";
+      const longitude = localStorage.getItem("longitude") || "0";
+
+      const impressionData = {
+        addid: currentAd.id,
+        sourceip: ipAddress,
+        destinationip: "login-banner",
+        mktgurl: currentAd.linkUrl,
+        origplatform: "web-login",
+        targetplatform: "banner-ad",
+        ulat: parseFloat(latitude),
+        ulong: parseFloat(longitude),
+        cost: 0,
+        price: 0,
+        discount: 0,
+      };
+
+      const uid = localStorage.getItem("uid");
+      if (!uid) {
+        // Queue it — will be flushed after login completes
+        impressionQueue.current.push(impressionData);
+        debugLog(`📋 Ad impression queued (not yet logged in): ${currentAd.title}`);
+        return;
+      }
+
+      try {
+        const addbaseUrl = getApiUrl(API_CONFIG.ENDPOINTS.ADDBASE);
+        await fetch(addbaseUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${uid}`,
+          },
+          body: JSON.stringify({ ...impressionData, uid, clientid: uid }),
+        });
         debugLog(`✅ Ad impression tracked: ${currentAd.title}`);
       } catch (error) {
         debugWarn("⚠️ Failed to track ad impression:", error);

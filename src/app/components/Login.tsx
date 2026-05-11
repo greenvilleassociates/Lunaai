@@ -558,8 +558,8 @@ export function Login() {
                 </svg>
                 <h4 className="font-semibold text-green-400">Current Build</h4>
               </div>
-              <p className="font-bold text-white mb-0.5" style={{ fontSize: '14pt' }}>Version 25</p>
-              <p className="text-slate-400 mb-0.5">Released: May 9, 2026</p>
+              <p className="font-bold text-white mb-0.5" style={{ fontSize: '14pt' }}>Version 27</p>
+              <p className="text-slate-400 mb-0.5">Released: May 11, 2026</p>
               <a
                 href="/versionhistory.html"
                 target="_blank"

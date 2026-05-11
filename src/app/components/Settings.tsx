@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Box, Typography, Tabs, Tab, Paper, Alert, Chip, Button, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Switch, FormControlLabel, RadioGroup, Radio, FormLabel } from "@mui/material";
-import { Settings as SettingsIcon, Psychology, Security, Tune, Api, Memory, Build, OpenInNew, RecordVoiceOver, CheckCircle, Cancel, ManageSearch } from "@mui/icons-material";
+import { Box, Typography, Tabs, Tab, Paper, Alert, Chip, Button, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Switch, FormControlLabel, RadioGroup, Radio, FormLabel, IconButton, Divider } from "@mui/material";
+import { Settings as SettingsIcon, Psychology, Security, Tune, Api, Memory, Build, OpenInNew, RecordVoiceOver, CheckCircle, Cancel, ManageSearch, Hub, Add, Delete } from "@mui/icons-material";
 import { LLMAgentConfig } from "./LLMAgentConfig";
 import { CustomSLM } from "./CustomSLM";
 
@@ -40,6 +40,19 @@ export function Settings() {
   const [chainSearch, setChainSearch] = useState<string>("0");
   const [debugMode, setDebugMode] = useState<boolean>(true);
 
+  const DEFAULT_CONTEXT_ROUTES = [
+    { domain: "Sports",     llm: "grok" },
+    { domain: "Medicine",   llm: "claude" },
+    { domain: "Food",       llm: "gemini" },
+    { domain: "Weather",    llm: "gemini" },
+    { domain: "Legal",      llm: "claude" },
+    { domain: "Finance",    llm: "chatgpt" },
+    { domain: "Technology", llm: "empowr" },
+    { domain: "General",    llm: "superluna" },
+  ];
+  const [contextRoutes, setContextRoutes] = useState<{ domain: string; llm: string }[]>(DEFAULT_CONTEXT_ROUTES);
+  const [contextSaved, setContextSaved] = useState(false);
+
   // Check if user is superuser
   const currentUserRole = localStorage.getItem("role");
   const isSuperUser = currentUserRole === "superuser";
@@ -72,6 +85,15 @@ export function Settings() {
       // Default to true if not set
       localStorage.setItem("debugMode", "true");
       setDebugMode(true);
+    }
+
+    const savedContextRoutes = localStorage.getItem("contextRouterConfig");
+    if (savedContextRoutes) {
+      try {
+        setContextRoutes(JSON.parse(savedContextRoutes));
+      } catch {
+        // Ignore malformed JSON, keep defaults
+      }
     }
 
     setLoading(false);
@@ -269,6 +291,7 @@ export function Settings() {
           <Tab icon={<Memory />} label="Custom SLM" iconPosition="start" />
           <Tab icon={<Build />} label="Utilities" iconPosition="start" />
           <Tab icon={<ManageSearch />} label="Search Engine" iconPosition="start" />
+          <Tab icon={<Hub />} label="Context Router" iconPosition="start" />
         </Tabs>
       </Paper>
 
@@ -882,6 +905,134 @@ export function Settings() {
               />
               <Typography variant="caption" color="text.secondary" className="mt-2 block">
                 This preference is saved locally and applied when using the AI Search feature.
+              </Typography>
+            </Box>
+          </Paper>
+        </Box>
+      </TabPanel>
+
+      <TabPanel value={activeTab} index={7}>
+        <Box>
+          <Typography variant="h5" className="mb-4">Context Router Configuration</Typography>
+          <Paper className="p-6">
+            <Box className="flex items-center gap-2 mb-2">
+              <Hub className="text-slate-700" />
+              <Typography variant="h6">Domain → LLM Mappings</Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary" className="mb-4">
+              Define context domains and assign a specific LLM or SLM to handle queries in that domain.
+              The Luna Context Router detects the topic of each query and routes it to the assigned model.
+              Saved as JSON to localStorage and sent with each context-routed query.
+            </Typography>
+
+            <Alert severity="info" className="mb-4">
+              Example: route <strong>Medicine</strong> queries to Claude for advanced reasoning, <strong>Sports</strong> to Grok for real-time knowledge, and sensitive domains to a <strong>Custom SLM</strong> for on-premises privacy.
+            </Alert>
+
+            {/* Domain rows */}
+            <Box className="space-y-2 mb-4">
+              {contextRoutes.map((row, idx) => (
+                <Box key={idx} className="flex items-center gap-3 p-3 border border-slate-200 rounded bg-slate-50">
+                  <TextField
+                    label="Domain"
+                    size="small"
+                    value={row.domain}
+                    onChange={(e) => {
+                      const updated = [...contextRoutes];
+                      updated[idx] = { ...updated[idx], domain: e.target.value };
+                      setContextRoutes(updated);
+                      setContextSaved(false);
+                    }}
+                    sx={{ width: 180 }}
+                  />
+                  <FormControl size="small" sx={{ minWidth: 200 }}>
+                    <InputLabel>LLM / SLM</InputLabel>
+                    <Select
+                      value={row.llm}
+                      label="LLM / SLM"
+                      onChange={(e) => {
+                        const updated = [...contextRoutes];
+                        updated[idx] = { ...updated[idx], llm: e.target.value };
+                        setContextRoutes(updated);
+                        setContextSaved(false);
+                      }}
+                    >
+                      <MenuItem value="superluna">SuperLuna (Multi-Chain)</MenuItem>
+                      <MenuItem value="chatgpt">ChatGPT (Azure)</MenuItem>
+                      <MenuItem value="claude">Claude AI (Azure)</MenuItem>
+                      <MenuItem value="empowr">USC Empowr</MenuItem>
+                      <MenuItem value="grok">Grok AI</MenuItem>
+                      <MenuItem value="gemini">Google Gemini</MenuItem>
+                      <MenuItem value="custom-slm">Custom SLM (On-Premises)</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => {
+                      setContextRoutes(contextRoutes.filter((_, i) => i !== idx));
+                      setContextSaved(false);
+                    }}
+                    aria-label="Remove domain"
+                  >
+                    <Delete fontSize="small" />
+                  </IconButton>
+                </Box>
+              ))}
+            </Box>
+
+            <Divider className="my-4" />
+
+            <Box className="flex items-center gap-3 flex-wrap">
+              <Button
+                variant="outlined"
+                startIcon={<Add />}
+                size="small"
+                onClick={() => {
+                  setContextRoutes([...contextRoutes, { domain: "", llm: "superluna" }]);
+                  setContextSaved(false);
+                }}
+                sx={{ borderColor: "#8B0000", color: "#8B0000", "&:hover": { borderColor: "#6B0000", backgroundColor: "rgba(139,0,0,0.04)" } }}
+              >
+                Add Domain
+              </Button>
+              <Button
+                variant="contained"
+                size="small"
+                onClick={() => {
+                  localStorage.setItem("contextRouterConfig", JSON.stringify(contextRoutes));
+                  setContextSaved(true);
+                }}
+                sx={{ backgroundColor: "#8B0000", "&:hover": { backgroundColor: "#6B0000" } }}
+              >
+                Save Mappings
+              </Button>
+              <Button
+                variant="text"
+                size="small"
+                onClick={() => {
+                  setContextRoutes(DEFAULT_CONTEXT_ROUTES);
+                  setContextSaved(false);
+                }}
+                sx={{ color: "#64748b" }}
+              >
+                Reset to Defaults
+              </Button>
+              {contextSaved && (
+                <Box className="flex items-center gap-1 text-green-600">
+                  <CheckCircle fontSize="small" />
+                  <Typography variant="caption">Saved to localStorage</Typography>
+                </Box>
+              )}
+            </Box>
+
+            {/* Preview */}
+            <Box className="mt-6 p-4 bg-slate-900 rounded">
+              <Typography variant="caption" className="text-slate-400 block mb-2 font-mono">
+                contextRouterConfig (localStorage preview)
+              </Typography>
+              <Typography variant="caption" className="text-green-400 font-mono whitespace-pre-wrap break-all" component="pre">
+                {JSON.stringify(contextRoutes, null, 2)}
               </Typography>
             </Box>
           </Paper>

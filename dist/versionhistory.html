@@ -186,12 +186,61 @@
         </header>
         
         <main>
+            <!-- Version 27 -->
+            <div class="version-card">
+                <div class="version-header">
+                    <div>
+                        <span class="version-number">Version 27</span>
+                        <span class="version-badge">Latest</span>
+                    </div>
+                    <div class="version-date">Released: May 11, 2026</div>
+                </div>
+                <div class="changes-section">
+                    <h3 class="changes-title">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                        </svg>
+                        What's New
+                    </h3>
+                    <ul class="changes-list">
+                        <li><strong>Login Fix</strong> — Authentication now uses GET /api/Users with client-side username/password filter; POST /api/Auth/login retired temporarily pending backend update</li>
+                        <li><strong>API Warmup Timeout</strong> — Warmup loader capped at 60 seconds maximum to prevent indefinite hangs on slow API cold starts</li>
+                        <li><strong>AdbaseHelper</strong> — New postAdbase and postAdbaseMany helpers for posting ad events individually via loop (nested JSON not yet supported server-side)</li>
+                        <li><strong>Banner Ad Impression Queue</strong> — Impressions seen during login are queued and flushed to /api/Addbase only after uid is set post-login</li>
+                        <li><strong>companyId</strong> — Now correctly read from API user record and stored in localStorage on login</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Version 26 -->
+            <div class="version-card">
+                <div class="version-header">
+                    <div>
+                        <span class="version-number">Version 26</span>
+                    </div>
+                    <div class="version-date">Released: May 10, 2026</div>
+                </div>
+                <div class="changes-section">
+                    <h3 class="changes-title">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                        </svg>
+                        What's New
+                    </h3>
+                    <ul class="changes-list">
+                        <li><strong>Adbase Integration</strong> — Banner ad impression tracking wired to /api/Addbase with uid, IP, and geolocation</li>
+                        <li><strong>Login Enhancements</strong> — Improved session handling, geolocation capture, and localStorage field population</li>
+                        <li><strong>API Warmup Loader</strong> — Pre-login API warmup screen with animated status indicators before authentication</li>
+                        <li><strong>Stability Improvements</strong> — General bug fixes and error handling across components</li>
+                    </ul>
+                </div>
+            </div>
+
             <!-- Version 25 -->
             <div class="version-card">
                 <div class="version-header">
                     <div>
                         <span class="version-number">Version 25</span>
-                        <span class="version-badge">Latest</span>
                     </div>
                     <div class="version-date">Released: May 9, 2026</div>
                 </div>

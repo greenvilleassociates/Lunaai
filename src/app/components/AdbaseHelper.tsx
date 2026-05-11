@@ -64,3 +64,16 @@ export async function postAdbase(partial: Partial<AdbasePayload>) {
     console.warn("Adbase post failed:", err);
   }
 }
+
+/**
+ * postAdbaseMany
+ * --------------
+ * Posts an array of Adbase records one at a time.
+ * Use this when you have nested/grouped ad data — the API
+ * does not yet support bulk/nested payloads so we loop individually.
+ */
+export async function postAdbaseMany(items: Partial<AdbasePayload>[]) {
+  for (const item of items) {
+    await postAdbase(item);
+  }
+}
