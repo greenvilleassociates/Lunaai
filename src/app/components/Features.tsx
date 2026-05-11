@@ -8,6 +8,7 @@ import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import GoogleIcon from "@mui/icons-material/Google";
 import AbcIcon from "@mui/icons-material/Abc";
 import PsychologyIcon from "@mui/icons-material/Psychology";
+import PlaceIcon from "@mui/icons-material/Place";
 import { Box } from "@mui/material";
 import ctsLogo from "figma:asset/399d93660a307619ab55b61f935095fec4286492.png";
 import superLunaIcon from "figma:asset/cfadca739638cf837cbfaf51361c717172db777b.png";
@@ -166,6 +167,43 @@ export function Features() {
       ),
       action: "Ask Grok",
       route: "/grok",
+      external: false,
+    },
+    {
+      id: 13,
+      title: "Empowr Enterprise Search",
+      description: "Submit queries through the Empowr enterprise search engine via the LunaAI orchestration layer using /api/ZEmpwr.",
+      icon: (
+        <Box
+          sx={{
+            width: 48,
+            height: 48,
+            background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+            color: "#fff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontWeight: 700,
+            fontSize: 13,
+            borderRadius: "6px",
+            letterSpacing: "0.04em",
+            userSelect: "none",
+          }}
+        >
+          EMP
+        </Box>
+      ),
+      action: "Search Empowr",
+      route: "/empowr",
+      external: false,
+    },
+    {
+      id: 14,
+      title: "IBM Geocoder",
+      description: "Reverse geocode coordinates via the IBM Geocoder API using /api/Geocoder. Returns detailed location data displayed on an interactive Google Map.",
+      icon: <PlaceIcon sx={{ fontSize: 48, color: "#DB4437" }} />,
+      action: "Open Geocoder",
+      route: "/geocoder",
       external: false,
     },
   ];

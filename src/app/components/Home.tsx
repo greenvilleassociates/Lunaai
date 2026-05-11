@@ -12,7 +12,7 @@ import {
   Card,
   CardContent,
 } from "@mui/material";
-import { Rocket, Cloud, CheckCircle, ArrowForward, AutoAwesome, Send } from "@mui/icons-material";
+import { Rocket, Cloud, CheckCircle, ArrowForward, AutoAwesome, Send, Receipt } from "@mui/icons-material";
 import { API_CONFIG, getApiUrl } from "../config/api";
 import { getAuthHeaders } from "../utils/auth";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
@@ -228,7 +228,7 @@ export function Home() {
           </Paper>
 
           {/* Features Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
             <Paper
               elevation={4}
               className="p-6 bg-white/90 backdrop-blur-sm hover:bg-white/95 transition-all"
@@ -260,6 +260,34 @@ export function Home() {
               <p className="text-slate-600 text-sm">
                 Deliver AI-powered insights directly to your desktop with seamless workflows.
               </p>
+            </Paper>
+
+            <Paper
+              elevation={4}
+              className="p-6 bg-white/90 backdrop-blur-sm hover:bg-white/95 transition-all cursor-pointer"
+              sx={{ borderRadius: 2, borderTop: "3px solid #8B0000" }}
+              onClick={() => isLoggedIn && navigate("/searchbilling")}
+            >
+              <Box className="flex items-center gap-2 mb-2">
+                <Receipt sx={{ color: "#8B0000", fontSize: 24 }} />
+                <h3 className="text-xl font-semibold text-slate-900">Search Billing</h3>
+              </Box>
+              <p className="text-slate-600 text-sm mb-3">
+                View all AI search activity and generate rebill invoices at your configured per-search rate.
+              </p>
+              {isLoggedIn ? (
+                <Button
+                  size="small"
+                  variant="contained"
+                  endIcon={<ArrowForward />}
+                  onClick={(e) => { e.stopPropagation(); navigate("/searchbilling"); }}
+                  sx={{ backgroundColor: "#8B0000", "&:hover": { backgroundColor: "#6B0000" }, fontSize: "0.75rem" }}
+                >
+                  View Billing
+                </Button>
+              ) : (
+                <p className="text-xs text-slate-400 italic">Login required</p>
+              )}
             </Paper>
           </div>
 

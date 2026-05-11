@@ -194,6 +194,9 @@ export const API_CONFIG = {
     // Grid Apps (uses /api/Gapp)
     GAPP: '/Gapp',
     GAPP_BY_ID: (id: number) => `/Gapp/${id}`,
+
+    // Geocoder (uses /api/Geocoder)
+    GEOCODER: '/Geocoder',
   },
 };
 

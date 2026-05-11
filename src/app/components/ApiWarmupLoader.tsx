@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import lunaLogo from "figma:asset/97a2e4984c2367786c9db0dc16a816860615bd7e.png";
 import { getApiUrl, API_CONFIG } from "../config/api";
+import { BannerAd } from "./BannerAd";
 
 interface ApiWarmupLoaderProps {
   onComplete: () => void;
@@ -9,6 +10,7 @@ interface ApiWarmupLoaderProps {
 export function ApiWarmupLoader({ onComplete }: ApiWarmupLoaderProps) {
   const [progress, setProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState("Getting ready.... please wait...");
+  const [countdown, setCountdown] = useState(60);
 
   useEffect(() => {
     // Warm up the API by calling the users endpoint
@@ -44,10 +46,23 @@ export function ApiWarmupLoader({ onComplete }: ApiWarmupLoaderProps) {
       });
     }, 600);
 
+    // Countdown from 60 to 0
+    const countdownInterval = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(countdownInterval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
     // Hard cap at 60 seconds
     const timeout = setTimeout(() => {
       clearInterval(interval);
+      clearInterval(countdownInterval);
       setProgress(100);
+      setCountdown(0);
 
       setTimeout(() => {
         onComplete();
@@ -56,6 +71,7 @@ export function ApiWarmupLoader({ onComplete }: ApiWarmupLoaderProps) {
 
     return () => {
       clearInterval(interval);
+      clearInterval(countdownInterval);
       clearTimeout(timeout);
     };
   }, [onComplete]);
@@ -73,7 +89,8 @@ export function ApiWarmupLoader({ onComplete }: ApiWarmupLoaderProps) {
       </div>
 
       {/* Loading Text */}
-      <h1 className="text-4xl font-bold text-white mb-4">LunaAI</h1>
+      <h1 className="text-4xl font-bold text-white mb-2">LunaAI</h1>
+      <p className="text-amber-400 text-2xl font-semibold mb-2">{countdown}s</p>
       <p className="text-slate-300 mb-8 text-center px-4">{statusMessage}</p>
 
       {/* Progress Bar */}
@@ -88,13 +105,18 @@ export function ApiWarmupLoader({ onComplete }: ApiWarmupLoaderProps) {
       </div>
 
       {/* Info Text */}
-      <div className="mt-12 text-center px-4">
+      <div className="mt-8 text-center px-4">
         <p className="text-slate-500 text-sm">
           Powered by Capitol Technology Solutions
         </p>
         <p className="text-slate-600 text-xs mt-2">
           Version 11.0 • Multi-Provider AI Management Platform
         </p>
+      </div>
+
+      {/* Banner Ads */}
+      <div className="w-full max-w-4xl px-4 mt-8">
+        <BannerAd />
       </div>
     </div>
   );

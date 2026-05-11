@@ -65,6 +65,11 @@ export function Login() {
     }
   };
 
+  // Fire a warmup GET on page load to wake the API before any user input
+  useEffect(() => {
+    fetch(getApiUrl(API_CONFIG.ENDPOINTS.BUSINESS_UNITS)).catch(() => {});
+  }, []);
+
   // Load debug mode setting
   useEffect(() => {
     const savedDebugMode = localStorage.getItem("debugMode");

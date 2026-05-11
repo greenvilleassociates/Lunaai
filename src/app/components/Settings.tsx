@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Box, Typography, Tabs, Tab, Paper, Alert, Chip, Button, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Switch, FormControlLabel, RadioGroup, Radio, FormLabel, IconButton, Divider } from "@mui/material";
-import { Settings as SettingsIcon, Psychology, Security, Tune, Api, Memory, Build, OpenInNew, RecordVoiceOver, CheckCircle, Cancel, ManageSearch, Hub, Add, Delete } from "@mui/icons-material";
+import { Box, Typography, Tabs, Tab, Paper, Alert, Chip, Button, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Switch, FormControlLabel, RadioGroup, Radio, FormLabel, IconButton, Divider, InputAdornment } from "@mui/material";
+import { Settings as SettingsIcon, Psychology, Security, Tune, Api, Memory, Build, OpenInNew, RecordVoiceOver, CheckCircle, Cancel, ManageSearch, Hub, Add, Delete, AttachMoney } from "@mui/icons-material";
 import { LLMAgentConfig } from "./LLMAgentConfig";
 import { CustomSLM } from "./CustomSLM";
 
@@ -39,6 +39,9 @@ export function Settings() {
   const [maxSearchEngines, setMaxSearchEngines] = useState<string>("1");
   const [chainSearch, setChainSearch] = useState<string>("0");
   const [debugMode, setDebugMode] = useState<boolean>(true);
+
+  const [searchPricingRate, setSearchPricingRate] = useState<string>("0.05");
+  const [searchPricingSaved, setSearchPricingSaved] = useState(false);
 
   const DEFAULT_CONTEXT_ROUTES = [
     { domain: "Sports",     llm: "grok" },
@@ -86,6 +89,9 @@ export function Settings() {
       localStorage.setItem("debugMode", "true");
       setDebugMode(true);
     }
+
+    const savedRate = localStorage.getItem("searchPricingRate");
+    if (savedRate) setSearchPricingRate(savedRate);
 
     const savedContextRoutes = localStorage.getItem("contextRouterConfig");
     if (savedContextRoutes) {
@@ -292,6 +298,7 @@ export function Settings() {
           <Tab icon={<Build />} label="Utilities" iconPosition="start" />
           <Tab icon={<ManageSearch />} label="Search Engine" iconPosition="start" />
           <Tab icon={<Hub />} label="Context Router" iconPosition="start" />
+          <Tab icon={<AttachMoney />} label="Search Pricing" iconPosition="start" />
         </Tabs>
       </Paper>
 
@@ -1036,6 +1043,95 @@ export function Settings() {
               </Typography>
             </Box>
           </Paper>
+        </Box>
+      </TabPanel>
+
+      <TabPanel value={activeTab} index={8}>
+        <Box>
+          <Typography variant="h5" className="mb-4">Search Pricing</Typography>
+          <Box className="space-y-4">
+            <Paper className="p-6">
+              <Box className="flex items-center gap-2 mb-4">
+                <AttachMoney className="text-slate-700" />
+                <Typography variant="h6">Rebill Rate Configuration</Typography>
+              </Box>
+              <Typography variant="body2" color="text.secondary" className="mb-4">
+                Set the per-search rebill rate applied in Search Billing. This rate is used when generating invoices for user AI search activity.
+              </Typography>
+
+              <Alert severity="info" className="mb-4">
+                The default rate is <strong>$0.05 (5¢) per AI search</strong>. Adjust to match your billing model.
+              </Alert>
+
+              <Box sx={{ display: "flex", alignItems: "flex-end", gap: 2, flexWrap: "wrap", mb: 4 }}>
+                <TextField
+                  label="Rate per AI Search"
+                  type="number"
+                  value={searchPricingRate}
+                  onChange={(e) => {
+                    setSearchPricingRate(e.target.value);
+                    setSearchPricingSaved(false);
+                  }}
+                  size="small"
+                  sx={{ width: 200 }}
+                  inputProps={{ min: 0, step: 0.01 }}
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                  }}
+                  helperText="Per-search charge (e.g. 0.05 = 5¢)"
+                />
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    const val = parseFloat(searchPricingRate);
+                    const safe = (!isNaN(val) && val >= 0 ? val : 0.05).toFixed(4);
+                    setSearchPricingRate(safe);
+                    localStorage.setItem("searchPricingRate", safe);
+                    window.dispatchEvent(new StorageEvent("storage", { key: "searchPricingRate", newValue: safe }));
+                    setSearchPricingSaved(true);
+                  }}
+                  sx={{ backgroundColor: "#8B0000", "&:hover": { backgroundColor: "#6B0000" }, height: 40 }}
+                >
+                  Save Rate
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => {
+                    setSearchPricingRate("0.05");
+                    setSearchPricingSaved(false);
+                  }}
+                  sx={{ borderColor: "#64748b", color: "#64748b", height: 40 }}
+                >
+                  Reset to Default
+                </Button>
+                {searchPricingSaved && (
+                  <Box className="flex items-center gap-1 text-green-600">
+                    <CheckCircle fontSize="small" />
+                    <Typography variant="caption">Saved</Typography>
+                  </Box>
+                )}
+              </Box>
+
+              {/* Pricing Examples */}
+              <Box sx={{ p: 3, backgroundColor: "#f8fafc", borderRadius: 1, border: "1px solid #e2e8f0" }}>
+                <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 2 }}>Billing Examples at Current Rate</Typography>
+                <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 2 }}>
+                  {[10, 50, 100, 500, 1000].map((count) => {
+                    const rate = parseFloat(searchPricingRate) || 0.05;
+                    return (
+                      <Box key={count} sx={{ p: 2, backgroundColor: "white", borderRadius: 1, border: "1px solid #e2e8f0", textAlign: "center" }}>
+                        <Typography variant="h6" fontWeight={700} color="#8B0000">
+                          ${(count * rate).toFixed(2)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">{count} searches</Typography>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </Box>
+            </Paper>
+          </Box>
         </Box>
       </TabPanel>
 
