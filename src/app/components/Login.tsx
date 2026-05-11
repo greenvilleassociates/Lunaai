@@ -91,6 +91,7 @@ export function Login() {
   }, []);
 
   const handleWarmupComplete = async () => {
+    console.log("🔥 Warmup complete — calling performAuthentication()");
     // After warmup completes, proceed with authentication
     setShowWarmupLoader(false);
     await performAuthentication();
