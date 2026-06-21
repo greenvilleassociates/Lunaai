@@ -28,9 +28,7 @@ export function Claude() {
 
   const uid = localStorage.getItem("uid") || "";
 
-  useEffect(() => {
-    loadHistory();
-  }, []);
+  useEffect(() => { loadHistory(); }, []);
 
   const loadHistory = async () => {
     try {
@@ -42,11 +40,7 @@ export function Claude() {
         const data: ClaudeResult[] = await response.json();
         setHistory(data.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
       }
-    } catch {
-      // API not yet available
-    } finally {
-      setHistoryLoading(false);
-    }
+    } catch { } finally { setHistoryLoading(false); }
   };
 
   const handleSearch = async () => {
@@ -58,40 +52,24 @@ export function Claude() {
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${uid}` },
-        body: JSON.stringify({
-          uid,
-          question: query.trim(),
-          requestType: 10,
-          model: "claude",
-        }),
+        body: JSON.stringify({ uid, question: query.trim(), requestType: 4, model: "claude" }),
       });
       if (response.ok) {
         const data: ClaudeResult = await response.json();
         setHistory((prev) => [data, ...prev]);
         setQuery("");
-      } else {
-        throw new Error(`API returned ${response.status}`);
-      }
+      } else throw new Error(`API returned ${response.status}`);
     } catch (err) {
       setError("Unable to reach the Claude API (/api/Zclaude). The endpoint may not be configured yet.");
-      console.error("Claude search error:", err);
-    } finally {
-      setSearching(false);
-    }
+    } finally { setSearching(false); }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleSearch();
-  };
-
-  const formatDate = (ts: string) =>
-    new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
-
+  const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === "Enter") handleSearch(); };
+  const formatDate = (ts: string) => new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
   const formatCost = (cost: number) => `$${cost.toFixed(4)}`;
 
   return (
     <div className="max-w-5xl mx-auto">
-      {/* Header */}
       <Box className="mb-6">
         <Box className="flex items-center gap-3 mb-2">
           <PsychologyIcon sx={{ fontSize: 40, color: CLAUDE_COLOR }} />
@@ -105,103 +83,49 @@ export function Claude() {
         </Alert>
       </Box>
 
-      {/* Search Box */}
       <Paper className="p-6 mb-6" elevation={2}>
         <Box className="flex items-center gap-3 mb-4">
           <SearchIcon className="text-slate-600" fontSize="large" />
           <Typography variant="h6">Ask Claude</Typography>
         </Box>
-
-        {error && (
-          <Alert severity="error" className="mb-3">
-            {error}
-          </Alert>
-        )}
-
+        {error && <Alert severity="error" className="mb-3">{error}</Alert>}
         <Box className="flex gap-3">
-          <TextField
-            fullWidth
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask Claude anything..."
-            variant="outlined"
-            size="small"
-            disabled={searching}
-          />
-          <Button
-            variant="contained"
-            onClick={handleSearch}
-            disabled={searching || !query.trim()}
+          <TextField fullWidth value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={handleKeyDown}
+            placeholder="Ask Claude anything..." variant="outlined" size="small" disabled={searching} />
+          <Button variant="contained" onClick={handleSearch} disabled={searching || !query.trim()}
             startIcon={searching ? <CircularProgress size={16} color="inherit" /> : <PsychologyIcon />}
-            sx={{
-              backgroundColor: CLAUDE_COLOR,
-              "&:hover": { backgroundColor: "#b83e2a" },
-              whiteSpace: "nowrap",
-              minWidth: 140,
-              textTransform: "none",
-            }}
-          >
+            sx={{ backgroundColor: CLAUDE_COLOR, "&:hover": { backgroundColor: "#b83e2a" }, whiteSpace: "nowrap", minWidth: 140, textTransform: "none" }}>
             {searching ? "Asking..." : "Ask Claude"}
           </Button>
         </Box>
       </Paper>
 
-      {/* History */}
       <Box>
-        <Typography variant="h6" className="mb-3">
-          Search History
-        </Typography>
-
+        <Typography variant="h6" className="mb-3">Search History</Typography>
         {historyLoading ? (
-          <Box className="flex justify-center py-8">
-            <CircularProgress size={32} />
-          </Box>
+          <Box className="flex justify-center py-8"><CircularProgress size={32} /></Box>
         ) : history.length === 0 ? (
           <Paper className="p-8 text-center" elevation={0} sx={{ border: "1px solid #e2e8f0" }}>
             <PsychologyIcon sx={{ fontSize: 48, color: "#cbd5e1" }} />
-            <Typography variant="body1" color="text.secondary" className="mt-3">
-              No Claude queries yet. Ask something above to get started.
-            </Typography>
+            <Typography variant="body1" color="text.secondary" className="mt-3">No Claude queries yet.</Typography>
           </Paper>
         ) : (
           <div className="space-y-4">
             {history.map((item) => (
               <Paper key={item.id} className="p-5" elevation={1}>
                 <Box className="flex items-start justify-between gap-3 mb-3">
-                  <Typography variant="subtitle1" className="font-semibold text-slate-900">
-                    {item.question}
-                  </Typography>
-                  <Chip
-                    label="Claude"
-                    size="small"
-                    icon={<PsychologyIcon sx={{ fontSize: 14 }} />}
-                    sx={{ backgroundColor: "#fdf0ed", color: CLAUDE_COLOR, flexShrink: 0 }}
-                  />
+                  <Typography variant="subtitle1" className="font-semibold text-slate-900">{item.question}</Typography>
+                  <Chip label="Claude" size="small" icon={<PsychologyIcon sx={{ fontSize: 14 }} />}
+                    sx={{ backgroundColor: "#fdf0ed", color: CLAUDE_COLOR, flexShrink: 0 }} />
                 </Box>
-                <Typography variant="body2" color="text.secondary" className="mb-3 leading-relaxed whitespace-pre-wrap">
-                  {item.response}
-                </Typography>
+                <Typography variant="body2" color="text.secondary" className="mb-3 leading-relaxed whitespace-pre-wrap">{item.response}</Typography>
                 <Box className="flex items-center gap-3 flex-wrap">
-                  <Typography variant="caption" color="text.secondary">
-                    {formatDate(item.timestamp)}
-                  </Typography>
+                  <Typography variant="caption" color="text.secondary">{formatDate(item.timestamp)}</Typography>
                   <span className="text-slate-300">•</span>
-                  <Typography variant="caption" color="text.secondary">
-                    {item.expectedtokens} tokens
-                  </Typography>
+                  <Typography variant="caption" color="text.secondary">{item.expectedtokens} tokens</Typography>
                   <span className="text-slate-300">•</span>
-                  <Typography variant="caption" color="text.secondary">
-                    {formatCost(item.expectedcost)}
-                  </Typography>
-                  {item.model && (
-                    <>
-                      <span className="text-slate-300">•</span>
-                      <Typography variant="caption" color="text.secondary">
-                        {item.model}
-                      </Typography>
-                    </>
-                  )}
+                  <Typography variant="caption" color="text.secondary">{formatCost(item.expectedcost)}</Typography>
+                  {item.model && (<><span className="text-slate-300">•</span><Typography variant="caption" color="text.secondary">{item.model}</Typography></>)}
                 </Box>
               </Paper>
             ))}

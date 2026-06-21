@@ -16,162 +16,8 @@ const seasideImages = [
   "https://images.unsplash.com/photo-1653580650559-9998f8a2e062?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb2FzdGFsJTIwc3Vuc2V0JTIwb2NlYW58ZW58MXx8fHwxNzczMDcyMDMyfDA&ixlib=rb-4.1.0&q=80&w=1080",
 ];
 
-/**
- * Login Component
- * 
- * Authentication Flow:
- * ┌─────────────────────────────────────────────────────────────┐
- * │ 1. Check local JSON first (superusers & development)       │
- * │    ├─ Fetch from luna.capitoltechnology.net/data/users.json│
- * │    │   (falls back to bundled JSON if external unavailable)│
- * │    ├─ Found → Authenticate locally                         │
- * │    │   ├─ Store credentials in localStorage                │
- * │    │   ├─ POST /api/User to sync to database (optional)    │
- * │    │   └─ POST /api/Usersession to create session ✓        │
- * │    └─ Not found → Try API authentication                   │
- * │                                                             │
- * │ 2. POST /api/Auth/login {username}                         │
- * │    ├─ Success → Get {user, token}                          │
- * │    │   ├─ Store authToken                                  │
- * │    │   └─ Session auto-created by Azure ✓                  │
- * │    └─ Fail → Invalid credentials                           │
- * │                                                             │
- * │ 3. Capture geolocation & IP address                        │
- * │ 4. POST /api/Userlog (both methods)                        │
- * │ 5. Redirect to home                                        │
- * └─────────────────────────────────────────────────────────────┘
- */
-
-// Helper function to generate a session token
 function generateSessionToken(): string {
   return `sess_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-}
-
-/**
- * Post login events to the appropriate role-based log APIs.
- * All calls are fire-and-forget via Promise.allSettled — none block login.
- *
- * All roles  → /api/Authlog, /api/Usernotices, /api/Userlog
- * admin      → also /api/Adminlogs
- * superuser  → also /api/Superuserlog
- */
-async function postLoginEvents(
-  uid: string,
-  username: string,
-  role: string,
-  ipAddress: string,
-  latitude: string,
-  longitude: string,
-  loginTime: string
-): Promise<void> {
-  const headers = {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${uid}`,
-  };
-  const now = new Date().toISOString();
-  const numericUid = parseInt(uid.replace(/\D/g, ""), 10) || 0;
-  const secPriority = role === "superuser" ? 3 : role === "admin" ? 2 : 1;
-  const baseDescr = `${role} login from ${ipAddress} at ${latitude}, ${longitude}`;
-
-  const tasks: Promise<unknown>[] = [
-    // Auth Log — every login
-    fetch(getApiUrl(API_CONFIG.ENDPOINTS.AUTH_LOG), {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        userid: numericUid,
-        username,
-        action: "login",
-        authdate: now,
-        ipaddress: ipAddress,
-        latitude,
-        longitude,
-        success: 1,
-        role,
-        descr: baseDescr,
-      }),
-    }),
-
-    // User Notices — every login
-    fetch(getApiUrl(API_CONFIG.ENDPOINTS.USER_NOTICES), {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        userid: numericUid,
-        username,
-        noticetext: `${role.charAt(0).toUpperCase() + role.slice(1)} login from ${ipAddress} at ${loginTime}`,
-        noticetype: "login",
-        noticedate: now,
-        acknowledged: 0,
-        role,
-        ipaddress: ipAddress,
-        latitude,
-        longitude,
-      }),
-    }),
-
-    // User Log — every login
-    fetch(getApiUrl(API_CONFIG.ENDPOINTS.USER_LOG), {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        descr: baseDescr,
-        emplid: 0,
-        fullname: username,
-        logdate: now,
-        secpriority: secPriority,
-        noccomments: `Successful login at ${loginTime}`,
-        nocOpId: 0,
-        escalationId: 0,
-        triagecasenumber: "",
-        userid: numericUid,
-        role,
-        ipaddress: ipAddress,
-      }),
-    }),
-  ];
-
-  // Superuser — also post to Superuserlog
-  if (role === "superuser") {
-    tasks.push(
-      fetch(getApiUrl(API_CONFIG.ENDPOINTS.SUPERUSER_LOG), {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          userid: numericUid,
-          username,
-          action: "login",
-          descr: `Superuser login from ${ipAddress} at ${latitude}, ${longitude}`,
-          logdate: now,
-          secpriority: secPriority,
-          ipaddress: ipAddress,
-          role,
-        }),
-      })
-    );
-  }
-
-  // Admin — also post to Adminlogs
-  if (role === "admin") {
-    tasks.push(
-      fetch(getApiUrl(API_CONFIG.ENDPOINTS.ADMIN_LOGS), {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          userid: numericUid,
-          username,
-          action: "login",
-          descr: `Admin login from ${ipAddress} at ${latitude}, ${longitude}`,
-          logdate: now,
-          secpriority: secPriority,
-          ipaddress: ipAddress,
-          role,
-        }),
-      })
-    );
-  }
-
-  await Promise.allSettled(tasks);
 }
 
 export function Login() {
@@ -183,34 +29,24 @@ export function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [debugMode, setDebugMode] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
 
-  // Helper function for conditional debug logging
-  const debugLog = (...args: any[]) => {
-    if (debugMode) {
-      console.log(...args);
-    }
-  };
-
-  // Fire a warmup GET on page load to wake the API before any user input
   useEffect(() => {
-    fetch(getApiUrl(API_CONFIG.ENDPOINTS.BUSINESS_UNITS)).catch(() => {});
+    const uid = localStorage.getItem("uid");
+    setIsLoggedIn(!!uid && uid !== "901");
   }, []);
 
-  // Load debug mode setting
+  const debugLog = (...args: any[]) => {
+    if (debugMode) console.log(...args);
+  };
+
   useEffect(() => {
     const savedDebugMode = localStorage.getItem("debugMode");
-    if (savedDebugMode !== null) {
-      setDebugMode(savedDebugMode === "true");
-    }
-
-    // Listen for changes to debug mode from Settings
+    if (savedDebugMode !== null) setDebugMode(savedDebugMode === "true");
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "debugMode") {
-        setDebugMode(e.newValue === "true");
-      }
+      if (e.key === "debugMode") setDebugMode(e.newValue === "true");
     };
-
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
@@ -223,52 +59,26 @@ export function Login() {
   }, []);
 
   const handleWarmupComplete = async () => {
-    console.log("🔥 Warmup complete — calling performAuthentication()");
-    // After warmup completes, proceed with authentication
     setShowWarmupLoader(false);
     await performAuthentication();
   };
 
   const performAuthentication = async () => {
     try {
-      // Check local JSON first for superusers and development
+      // Check local JSON first (username + password)
       const users = await fetchExternalData(DATA_URLS.USERS);
       const localUser = users.find(
-        (u: { username: string }) => u.username === username
+        (u: { username: string; password: string }) =>
+          u.username === username && u.password === password
       );
-      
+
       if (localUser) {
-        // Local JSON authentication successful
         debugLog("Local JSON authentication successful for user:", localUser.username);
-        
-        // Get current time
         const loginTime = new Date().toLocaleString();
-        
-        // Get user's location
-        let latitude = "N/A";
-        let longitude = "N/A";
-        try {
-          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject);
-          });
-          latitude = position.coords.latitude.toFixed(6);
-          longitude = position.coords.longitude.toFixed(6);
-        } catch (error) {
-          debugLog("Location access denied or unavailable");
-        }
+        const sessionToken = generateSessionToken();
+        const sessionStart = new Date();
 
-        // Get IP address
-        let ipAddress = "N/A";
-        try {
-          const response = await fetch("https://api.ipify.org?format=json");
-          const data = await response.json();
-          ipAddress = data.ip;
-          debugLog("🌐 Client IP Address detected:", ipAddress);
-        } catch (error) {
-          debugLog("IP address fetch failed:", error);
-        }
-
-        // Store uid and session information in localStorage
+        // Set localStorage immediately then navigate — nothing blocks
         localStorage.setItem("uid", localUser.uid || localUser.id || localUser.userid?.toString() || "");
         localStorage.setItem("userid", localUser.userid?.toString() || localUser.id?.toString() || "");
         localStorage.setItem("username", localUser.username || username);
@@ -276,84 +86,75 @@ export function Login() {
         localStorage.setItem("companyId", localUser.companyId || "comp-001");
         localStorage.setItem("email", localUser.email || `${localUser.username}@capitoltechnology.net`);
         localStorage.setItem("loginTime", loginTime);
-        localStorage.setItem("latitude", latitude);
-        localStorage.setItem("longitude", longitude);
-        localStorage.setItem("ipAddress", ipAddress);
+        localStorage.setItem("latitude", "N/A");
+        localStorage.setItem("longitude", "N/A");
+        localStorage.setItem("ipAddress", "N/A");
+        localStorage.setItem("sessionToken", sessionToken);
+        localStorage.setItem("sessionStart", sessionStart.toISOString());
         localStorage.setItem("defaultSearchEngine", (localUser.dse ?? 1).toString());
         localStorage.setItem("maxsearchengines", (localUser.maxsearchengines ?? 1).toString());
         localStorage.setItem("chainsearch", (localUser.chainsearch ?? 0).toString());
-        
-        debugLog("LocalStorage updated with uid:", localStorage.getItem("uid"));
-        debugLog("LocalStorage updated with userid:", localStorage.getItem("userid"));
-        debugLog("LocalStorage updated with email:", localStorage.getItem("email"));
-        debugLog("LocalStorage updated with companyId:", localStorage.getItem("companyId"));
-        
-        // Post login events to all role-appropriate log APIs
-        postLoginEvents(
-          localUser.uid || "",
-          localUser.username,
-          localUser.role || "user",
-          ipAddress,
-          latitude,
-          longitude,
-          loginTime
-        ).catch((e) => console.error("postLoginEvents failed:", e));
 
-        debugLog("Login events dispatched for role:", localUser.role);
+        setLoading(false);
+        navigate("/", { replace: true });
 
-        // Create user session
-        try {
-          const sessionUrl = getApiUrl(API_CONFIG.ENDPOINTS.USER_SESSION);
-          const sessionToken = generateSessionToken();
-          const sessionStart = new Date();
-          
-          // Store session token in localStorage
-          localStorage.setItem("sessionToken", sessionToken);
-          localStorage.setItem("sessionStart", sessionStart.toISOString());
-          
-          const sessionEntry = {
-            userid: parseInt(localUser.uid.replace('user-', '')) || 0,
+        // Fire-and-forget: geolocation, IP, log, session
+        const uid = localUser.uid;
+
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            localStorage.setItem("latitude", pos.coords.latitude.toFixed(6));
+            localStorage.setItem("longitude", pos.coords.longitude.toFixed(6));
+          },
+          () => {},
+          { timeout: 3000 }
+        );
+
+        fetch("https://api.ipify.org?format=json")
+          .then((r) => r.json())
+          .then((d) => localStorage.setItem("ipAddress", d.ip))
+          .catch(() => {});
+
+        fetch(getApiUrl(API_CONFIG.ENDPOINTS.USER_LOG), {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${uid}` },
+          body: JSON.stringify({
+            descr: "User login",
+            emplid: 0,
+            fullname: localUser.username,
+            logdate: new Date().toISOString(),
+            secpriority: 1,
+            noccomments: `Successful login at ${loginTime}`,
+            nocOpId: 0,
+            escalationId: 0,
+            triagecasenumber: "",
+            userid: parseInt(uid) || 0,
+            role: localUser.role,
+          }),
+        }).catch(() => {});
+
+        fetch(getApiUrl(API_CONFIG.ENDPOINTS.USER_SESSION), {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${uid}` },
+          body: JSON.stringify({
+            userid: parseInt(localUser.uid.replace("user-", "")) || 0,
             token: sessionToken,
             acknowledged: 0,
             actionpriority: 0,
             sessionstart: sessionStart.toISOString(),
-            sessionend: new Date(sessionStart.getTime() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
+            sessionend: new Date(sessionStart.getTime() + 24 * 60 * 60 * 1000).toISOString(),
             sessionrecorded: 0,
             sessionrecordurl: "",
-            sessiondescription: `Login session from ${ipAddress} at ${latitude}, ${longitude}`,
+            sessiondescription: "Login session",
             sessionusername: localUser.username,
-            sessionemail: `${localUser.username}@capitoltechnology.net`, // Construct email from username
+            sessionemail: localUser.email || `${localUser.username}@capitoltechnology.net`,
             sessionfirstname: localUser.username.charAt(0).toUpperCase() + localUser.username.slice(1),
-            sessionlastname: "", // Not available in user data
+            sessionlastname: "",
             sessionfullname: localUser.username.charAt(0).toUpperCase() + localUser.username.slice(1),
             sessioncomplete: 0,
-          };
+          }),
+        }).catch(() => {});
 
-          await fetch(sessionUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${localUser.uid}`,
-            },
-            body: JSON.stringify(sessionEntry),
-          });
-          
-          debugLog("User session created successfully (local JSON auth)");
-        } catch (error) {
-          // Don't block login if session creation fails
-          console.error("Failed to create user session:", error);
-        }
-        
-        // Redirect to home page
-        debugLog("About to navigate to / ...");
-        setLoading(false);
-        
-        // Use setTimeout to ensure state updates complete before navigation
-        setTimeout(() => {
-          debugLog("Navigating now with uid:", localStorage.getItem("uid"));
-          navigate("/", { replace: true });
-        }, 100);
-        
         return;
       }
 
@@ -367,44 +168,15 @@ export function Login() {
 
       const allUsers = await usersResponse.json();
       const user = allUsers.find(
-        (u: any) => u.username === username && u.plainpassword === password
+        (u: any) => u.username === username && (u.password === password || u.plainpassword === password)
       );
 
       if (!user) {
         throw new Error("Invalid username or password");
       }
 
-      const authToken = "";
-      debugLog("API login successful for user:", user.username);
-
-      // Get current time
       const loginTime = new Date().toLocaleString();
-      
-      // Get user's location
-      let latitude = "N/A";
-      let longitude = "N/A";
-      try {
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject);
-        });
-        latitude = position.coords.latitude.toFixed(6);
-        longitude = position.coords.longitude.toFixed(6);
-      } catch (error) {
-        debugLog("Location access denied or unavailable");
-      }
 
-      // Get IP address
-      let ipAddress = "N/A";
-      try {
-        const response = await fetch("https://api.ipify.org?format=json");
-        const data = await response.json();
-        ipAddress = data.ip;
-        debugLog("🌐 Client IP Address detected:", ipAddress);
-      } catch (error) {
-        debugLog("IP address fetch failed:", error);
-      }
-
-      // Store uid and session information in localStorage
       localStorage.setItem("uid", user.uid || user.id || user.userid?.toString() || "");
       localStorage.setItem("userid", user.userid?.toString() || user.id?.toString() || "");
       localStorage.setItem("username", user.username || username);
@@ -412,48 +184,51 @@ export function Login() {
       localStorage.setItem("companyId", user.companyid || user.companyId || "");
       localStorage.setItem("email", user.email || "");
       localStorage.setItem("loginTime", loginTime);
-      localStorage.setItem("latitude", latitude);
-      localStorage.setItem("longitude", longitude);
-      localStorage.setItem("ipAddress", ipAddress);
+      localStorage.setItem("latitude", "N/A");
+      localStorage.setItem("longitude", "N/A");
+      localStorage.setItem("ipAddress", "N/A");
       localStorage.setItem("defaultSearchEngine", (user.dse ?? 1).toString());
       localStorage.setItem("maxsearchengines", (user.maxsearchengines ?? 1).toString());
       localStorage.setItem("chainsearch", (user.chainsearch ?? 0).toString());
-      
-      // Store auth token if using API authentication
-      if (authToken) {
-        localStorage.setItem("authToken", authToken);
-        debugLog("Auth token stored");
-      }
-      
-      // Post login events to all role-appropriate log APIs
-      postLoginEvents(
-        user.uid || user.id?.toString() || "",
-        user.username,
-        user.role || "user",
-        ipAddress,
-        latitude,
-        longitude,
-        loginTime
-      ).catch((e) => console.error("postLoginEvents failed:", e));
 
-      debugLog("Login events dispatched for role:", user.role);
-
-      // Azure API already created the session
-      debugLog("Session already created by Azure API");
-      
-      // Redirect to home page
-      debugLog("About to navigate to / ...");
       setLoading(false);
-      
-      // Use setTimeout to ensure state updates complete before navigation
-      setTimeout(() => {
-        debugLog("Navigating now with uid:", localStorage.getItem("uid"));
-        navigate("/", { replace: true });
-      }, 100);
+      navigate("/", { replace: true });
+
+      // Fire-and-forget post-login tasks
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          localStorage.setItem("latitude", pos.coords.latitude.toFixed(6));
+          localStorage.setItem("longitude", pos.coords.longitude.toFixed(6));
+        },
+        () => {},
+        { timeout: 3000 }
+      );
+
+      fetch("https://api.ipify.org?format=json")
+        .then((r) => r.json())
+        .then((d) => localStorage.setItem("ipAddress", d.ip))
+        .catch(() => {});
+
+      fetch(getApiUrl(API_CONFIG.ENDPOINTS.USER_LOG), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${user.uid}` },
+        body: JSON.stringify({
+          descr: "User login via API",
+          emplid: 0,
+          fullname: user.username,
+          logdate: new Date().toISOString(),
+          secpriority: 1,
+          noccomments: `Successful login at ${loginTime}`,
+          nocOpId: 0,
+          escalationId: 0,
+          triagecasenumber: "",
+          userid: parseInt(user.uid) || 0,
+          role: user.role,
+        }),
+      }).catch(() => {});
+
     } catch (error) {
       setError(error instanceof Error ? error.message : "An error occurred during login");
-      setLoading(false);
-    } finally {
       setLoading(false);
     }
   };
@@ -465,14 +240,12 @@ export function Login() {
     setShowWarmupLoader(true);
   };
 
-  // Show the warmup loader when user submits login
   if (showWarmupLoader) {
     return <ApiWarmupLoader onComplete={handleWarmupComplete} />;
   }
 
   return (
     <div className="relative min-h-screen overflow-hidden flex flex-col">
-      {/* Top Navigation Bar */}
       <header className="w-full bg-slate-900 text-white px-6 py-3 shadow-md z-50 relative">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -480,35 +253,17 @@ export function Login() {
             <h1 className="text-xl">LunaAI</h1>
           </div>
           <nav className="flex gap-6 items-center">
-            <Link
-              to="/"
-              className="hover:text-slate-300 transition-colors text-slate-400"
-            >
-              Home
-            </Link>
-            <Link
-              to="/about"
-              className="hover:text-slate-300 transition-colors text-slate-400"
-            >
-              About
-            </Link>
-            <Link
-              to="/contact"
-              className="hover:text-slate-300 transition-colors text-slate-400"
-            >
-              Contact
-            </Link>
-            <Link
-              to="/register"
-              className="text-sm bg-slate-800 hover:bg-slate-700 px-4 py-1 rounded transition-colors"
-            >
-              Register
-            </Link>
+            <Link to="/" className="hover:text-slate-300 transition-colors text-slate-400">Home</Link>
+            <Link to="/about" className="hover:text-slate-300 transition-colors text-slate-400">About</Link>
+            <Link to="/contact" className="hover:text-slate-300 transition-colors text-slate-400">Contact</Link>
+            <Link to="/register" className="text-sm bg-slate-800 hover:bg-slate-700 px-4 py-1 rounded transition-colors">Register</Link>
+            {!isLoggedIn && (
+              <Link to="/login" className="text-sm bg-amber-600 hover:bg-amber-700 px-4 py-1 rounded transition-colors">Login</Link>
+            )}
           </nav>
         </div>
       </header>
 
-      {/* Background Image Slideshow */}
       {seasideImages.map((image, index) => (
         <div
           key={index}
@@ -516,18 +271,12 @@ export function Login() {
             index === currentImageIndex ? "opacity-100" : "opacity-0"
           }`}
         >
-          <ImageWithFallback
-            src={image}
-            alt={`Background ${index + 1}`}
-            className="w-full h-full object-cover"
-          />
+          <ImageWithFallback src={image} alt={`Background ${index + 1}`} className="w-full h-full object-cover" />
         </div>
       ))}
 
-      {/* Overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-slate-900/70 via-slate-900/60 to-slate-900/80" />
 
-      {/* Image Indicators */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
         {seasideImages.map((_, index) => (
           <button
@@ -541,12 +290,9 @@ export function Login() {
         ))}
       </div>
 
-      {/* Content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center p-2 md:p-4">
       <div className="w-full flex flex-col items-center gap-4 md:gap-0">
-        {/* Login Form */}
         <div className="bg-white p-6 md:p-8 rounded-lg shadow-lg w-full max-w-[600px]">
-          {/* Luna Logo inside form */}
           <div className="flex justify-center mb-6">
             <img src={lunaLogo} alt="LunaAI Logo" className="w-[60px] h-[60px] rounded-lg object-cover" />
           </div>
@@ -555,9 +301,7 @@ export function Login() {
           
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label htmlFor="username" className="block text-sm mb-2 text-slate-700">
-                Username
-              </label>
+              <label htmlFor="username" className="block text-sm mb-2 text-slate-700">Username</label>
               <input
                 id="username"
                 type="text"
@@ -569,9 +313,7 @@ export function Login() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm mb-2 text-slate-700">
-                Password
-              </label>
+              <label htmlFor="password" className="block text-sm mb-2 text-slate-700">Password</label>
               <div className="flex items-center gap-2">
                 <input
                   id="password"
@@ -592,11 +334,7 @@ export function Login() {
               </div>
             </div>
 
-            {error && (
-              <div className="text-red-600 text-sm text-center">
-                {error}
-              </div>
-            )}
+            {error && <div className="text-red-600 text-sm text-center">{error}</div>}
 
             <button
               type="submit"
@@ -607,16 +345,10 @@ export function Login() {
             </button>
           </form>
 
-          {/* Registration Link */}
           <div className="mt-4 text-center">
             <p className="text-sm text-slate-600">
               Don't have an account?{" "}
-              <Link
-                to="/register"
-                className="text-slate-900 hover:text-slate-700 font-semibold underline"
-              >
-                Register here
-              </Link>
+              <Link to="/register" className="text-slate-900 hover:text-slate-700 font-semibold underline">Register here</Link>
             </p>
           </div>
 
@@ -627,12 +359,10 @@ export function Login() {
           </div>
         </div>
 
-        {/* Banner Ads */}
         <div className="w-full lg:max-w-[1600px] mt-4 md:mt-8 mb-[2px]">
           <BannerAd />
         </div>
 
-        {/* System Messages Panel - Row Layout */}
         <div className="w-full lg:max-w-[1600px] mt-[2px] h-[200px] bg-gradient-to-br from-slate-800 to-slate-900 p-3 lg:p-4 rounded-lg shadow-lg text-white overflow-auto" style={{ fontSize: '8pt' }}>
           <div className="border-b border-slate-600 pb-1.5 mb-2">
             <h3 className="font-bold text-center flex items-center justify-center gap-1.5" style={{ fontSize: '10pt' }}>
@@ -644,7 +374,6 @@ export function Login() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            {/* Current Build Version */}
             <div className="bg-slate-700 bg-opacity-50 p-2 rounded-lg border border-slate-600">
               <div className="flex items-center gap-1 mb-0.5">
                 <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -652,14 +381,10 @@ export function Login() {
                 </svg>
                 <h4 className="font-semibold text-green-400">Current Build</h4>
               </div>
-              <p className="font-bold text-white mb-0.5" style={{ fontSize: '14pt' }}>Version 28</p>
-              <p className="text-slate-400 mb-0.5">Released: May 11, 2026</p>
-              <a
-                href="/versionhistory.html"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-0.5 text-blue-400 hover:text-blue-300 underline transition-colors"
-              >
+              <p className="font-bold text-white mb-0.5" style={{ fontSize: '14pt' }}>Version 30</p>
+              <p className="text-slate-400 mb-0.5">Released: June 21, 2026</p>
+              <a href="/versionhistory.html" target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-0.5 text-blue-400 hover:text-blue-300 underline transition-colors">
                 <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
@@ -667,7 +392,6 @@ export function Login() {
               </a>
             </div>
 
-            {/* System Status */}
             <div className="bg-slate-700 bg-opacity-50 p-2 rounded-lg border border-slate-600">
               <div className="flex items-center gap-1 mb-1">
                 <svg className="w-3 h-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -697,7 +421,6 @@ export function Login() {
               </div>
             </div>
 
-            {/* Latest Updates */}
             <div className="bg-slate-700 bg-opacity-50 p-2 rounded-lg border border-slate-600">
               <div className="flex items-center gap-1 mb-1">
                 <svg className="w-3 h-3 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -706,22 +429,10 @@ export function Login() {
                 <h4 className="font-semibold text-purple-400">What's New</h4>
               </div>
               <ul className="text-slate-300 space-y-0.5">
-                <li className="flex items-start gap-1">
-                  <span className="text-purple-400 mt-0.5">•</span>
-                  <span>HR Manager Stability — Full CRUD operations</span>
-                </li>
-                <li className="flex items-start gap-1">
-                  <span className="text-purple-400 mt-0.5">•</span>
-                  <span>Administrator Stability — Edit/Update for all entities</span>
-                </li>
-                <li className="flex items-start gap-1">
-                  <span className="text-purple-400 mt-0.5">•</span>
-                  <span>Search Parameters — Enhanced filtering</span>
-                </li>
-                <li className="flex items-start gap-1">
-                  <span className="text-purple-400 mt-0.5">•</span>
-                  <span>Adbase Improvements — Activity tracking</span>
-                </li>
+                <li className="flex items-start gap-1"><span className="text-purple-400 mt-0.5">•</span><span>ChatQueryType alignment for all AI providers</span></li>
+                <li className="flex items-start gap-1"><span className="text-purple-400 mt-0.5">•</span><span>MyDesktop source badges — Gemini, Grok, Wikipedia</span></li>
+                <li className="flex items-start gap-1"><span className="text-purple-400 mt-0.5">•</span><span>Login performance — instant navigation</span></li>
+                <li className="flex items-start gap-1"><span className="text-purple-400 mt-0.5">•</span><span>Password validation on all login paths</span></li>
               </ul>
             </div>
           </div>
