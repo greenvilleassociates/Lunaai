@@ -7,7 +7,7 @@ export function About() {
       <Box className="flex items-center justify-between mb-6">
         <h2 className="text-3xl">About LunaAI</h2>
         <Chip
-          label="Version 30"
+          label="Version 31"
           color="success"
           icon={<NewReleases />}
           sx={{ fontSize: '1rem', padding: '20px 10px' }}
@@ -71,13 +71,30 @@ export function About() {
             </AccordionSummary>
             <AccordionDetails>
               <Box className="space-y-4">
-                {/* Version 30 */}
+                {/* Version 31 */}
                 <Paper className="p-4 border-l-4 border-green-600 bg-green-50">
                   <Box className="flex items-center justify-between mb-2">
-                    <Typography variant="h6" className="font-bold text-green-800">Version 30 - Current Build</Typography>
-                    <Chip label="June 21, 2026" color="success" size="small" />
+                    <Typography variant="h6" className="font-bold text-green-800">Version 31 - Current Build</Typography>
+                    <Chip label="July 19, 2026" color="success" size="small" />
                   </Box>
-                  <Typography variant="subtitle2" className="mb-3 text-green-700">Desktop API Upgrades, Login Performance &amp; ChatQueryType Alignment</Typography>
+                  <Typography variant="subtitle2" className="mb-3 text-green-700">Video Shorts, AccuWeather, Visual Prompts &amp; LunaMobile Support</Typography>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">
+                    <li><strong>Video Shorts (VideoQuestions)</strong> - Record video clips directly in the browser; audio track is extracted server-side and processed through the LunaAI voice-to-text pipeline</li>
+                    <li><strong>Visual Prompts (VideoOCR)</strong> - Capture photos via device camera or upload images; processed through the LunaAI vision AI pipeline for analysis, classification, and OCR</li>
+                    <li><strong>LunaMobile Support</strong> - ChatQueryType 100–199 range identifies mobile client requests; MyDesktop activity feed displays a LunaMobile badge for all mobile-originated queries</li>
+                    <li><strong>AccuWeather Integration</strong> - Dedicated AccuWeather page plus inline widget on MyDesktop; queries <code>/api/accuweather/&#123;query&#125;</code> with live condition highlights</li>
+                    <li><strong>MyDesktop Detail Modal</strong> - Full response viewer with file attachments, token/cost breakdown, and source badge</li>
+                    <li><strong>BannerAd Stability</strong> - Removed broken JSON fetch; component initializes directly from built-in fallback commercials</li>
+                  </ul>
+                </Paper>
+
+                {/* Version 30 */}
+                <Paper className="p-4 border-l-4 border-teal-600 bg-teal-50">
+                  <Box className="flex items-center justify-between mb-2">
+                    <Typography variant="h6" className="font-bold text-teal-800">Version 30</Typography>
+                    <Chip label="June 21, 2026" size="small" />
+                  </Box>
+                  <Typography variant="subtitle2" className="mb-3 text-teal-700">Desktop API Upgrades, Login Performance &amp; ChatQueryType Alignment</Typography>
                   <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">
                     <li><strong>ChatQueryType Mapping</strong> - Standardized provider codes: WebSearch(1), VoiceSearch(2), Empwr(3), Claude(4), Gemini(5), Grok(6), Wikipedia(7)</li>
                     <li><strong>MyDesktop Source Badges</strong> - Activity feed now displays correct AI provider badges for all sources</li>
