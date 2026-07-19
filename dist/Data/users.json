@@ -149,6 +149,24 @@
     "chainsearch": 0
   },
   {
+    "uid": "user-010",
+    "username": "song",
+    "password": "song",
+    "role": "user",
+    "companyId": "comp-001",
+    "address1": "",
+    "address2": "",
+    "city": "",
+    "state": "",
+    "zip": "",
+    "phone": "",
+    "cell": "",
+    "profilePicture": "",
+    "dse": 1,
+    "maxsearchengines": 1,
+    "chainsearch": 0
+  },
+  {
     "uid": "user-009",
     "username": "lucystritzinger",
     "password": "cts12345",
