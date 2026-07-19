@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Box, Typography, Tabs, Tab, Paper, Alert, Chip, Button, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Switch, FormControlLabel, RadioGroup, Radio, FormLabel, IconButton, Divider, InputAdornment } from "@mui/material";
-import { Settings as SettingsIcon, Psychology, Security, Tune, Api, Memory, Build, OpenInNew, RecordVoiceOver, CheckCircle, Cancel, ManageSearch, Hub, Add, Delete, AttachMoney, Storage } from "@mui/icons-material";
+import { Settings as SettingsIcon, Psychology, Security, Tune, Api, Memory, Build, OpenInNew, RecordVoiceOver, CheckCircle, Cancel, ManageSearch, Hub, Add, Delete, AttachMoney, Storage, Videocam, Mic, PermDeviceInformation } from "@mui/icons-material";
 import { ALL_LOG_APIS, ALL_LOG_API_KEYS, type LogApiKey } from "./Enterprise9Security";
 import { LLMAgentConfig } from "./LLMAgentConfig";
 import { CustomSLM } from "./CustomSLM";
@@ -57,6 +57,15 @@ export function Settings() {
     return [...ALL_LOG_API_KEYS];
   });
   const [logApisSaved, setLogApisSaved] = useState(false);
+
+  // Hardware configuration
+  const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
+  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
+  const [defaultVideoDeviceId, setDefaultVideoDeviceId] = useState<string>("");
+  const [defaultAudioDeviceId, setDefaultAudioDeviceId] = useState<string>("");
+  const [devicesLoading, setDevicesLoading] = useState(false);
+  const [devicesSaved, setDevicesSaved] = useState(false);
+  const [devicesPermissionError, setDevicesPermissionError] = useState<string | null>(null);
 
   const DEFAULT_CONTEXT_ROUTES = [
     { domain: "Sports",     llm: "grok" },
@@ -121,6 +130,11 @@ export function Settings() {
         // Ignore malformed JSON, keep defaults
       }
     }
+
+    const savedVideoDeviceId = localStorage.getItem("defaultVideoDeviceId");
+    if (savedVideoDeviceId) setDefaultVideoDeviceId(savedVideoDeviceId);
+    const savedAudioDeviceId = localStorage.getItem("defaultAudioDeviceId");
+    if (savedAudioDeviceId) setDefaultAudioDeviceId(savedAudioDeviceId);
 
     setLoading(false);
   }, []);
@@ -260,6 +274,34 @@ export function Settings() {
     }
   };
 
+  const handleDetectDevices = async () => {
+    setDevicesLoading(true);
+    setDevicesPermissionError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      stream.getTracks().forEach(t => t.stop());
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const vids = devices.filter(d => d.kind === "videoinput");
+      const auds = devices.filter(d => d.kind === "audioinput");
+      setVideoDevices(vids);
+      setAudioDevices(auds);
+      if (!defaultVideoDeviceId && vids.length) setDefaultVideoDeviceId(vids[0].deviceId);
+      if (!defaultAudioDeviceId && auds.length) setDefaultAudioDeviceId(auds[0].deviceId);
+    } catch (err: any) {
+      setDevicesPermissionError(err.message || "Permission denied for camera/microphone.");
+    } finally {
+      setDevicesLoading(false);
+    }
+  };
+
+  const handleSaveHardwareDefaults = () => {
+    localStorage.setItem("defaultVideoDeviceId", defaultVideoDeviceId);
+    localStorage.setItem("defaultAudioDeviceId", defaultAudioDeviceId);
+    window.dispatchEvent(new StorageEvent("storage", { key: "defaultVideoDeviceId", newValue: defaultVideoDeviceId }));
+    window.dispatchEvent(new StorageEvent("storage", { key: "defaultAudioDeviceId", newValue: defaultAudioDeviceId }));
+    setDevicesSaved(true);
+  };
+
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
@@ -320,6 +362,7 @@ export function Settings() {
           <Tab icon={<Hub />} label="Context Router" iconPosition="start" />
           <Tab icon={<AttachMoney />} label="Search Pricing" iconPosition="start" />
           <Tab icon={<Storage />} label="Log Manager" iconPosition="start" />
+          <Tab icon={<Videocam />} label="Hardware" iconPosition="start" />
         </Tabs>
       </Paper>
 
@@ -1322,6 +1365,157 @@ export function Settings() {
                 <Typography variant="caption" color="text.secondary">
                   Currently enabled: <strong>{enabledLogApis.length} / 9</strong> APIs &nbsp;—&nbsp;
                   {enabledLogApis.map((k) => ALL_LOG_APIS.find((a) => a.key === k)?.label).filter(Boolean).join(", ")}
+                </Typography>
+              </Box>
+            </Paper>
+          </Box>
+        </Box>
+      </TabPanel>
+
+      <TabPanel value={activeTab} index={10}>
+        <Box>
+          <Typography variant="h5" className="mb-4">Hardware Configuration</Typography>
+          <Box className="space-y-4">
+            <Paper className="p-6">
+              <Box className="flex items-center gap-2 mb-2">
+                <PermDeviceInformation className="text-slate-700" />
+                <Typography variant="h6">Default Input Devices</Typography>
+              </Box>
+              <Typography variant="body2" color="text.secondary" className="mb-4">
+                Set the default camera and microphone used by Video Shorts, Visual Prompts, and Voice Recording. Selections are saved to localStorage and applied automatically when those features open.
+              </Typography>
+
+              <Alert severity="info" className="mb-4">
+                Click <strong>Detect Devices</strong> to scan available hardware. Your browser will request camera and microphone permission to retrieve device labels.
+              </Alert>
+
+              {devicesPermissionError && (
+                <Alert severity="error" className="mb-4">{devicesPermissionError}</Alert>
+              )}
+
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleDetectDevices}
+                disabled={devicesLoading}
+                startIcon={<PermDeviceInformation />}
+                sx={{ mb: 4, borderColor: "#8B0000", color: "#8B0000", "&:hover": { borderColor: "#6B0000", backgroundColor: "rgba(139,0,0,0.04)" } }}
+              >
+                {devicesLoading ? "Detecting..." : "Detect Devices"}
+              </Button>
+
+              {/* Camera */}
+              <Box className="mb-5">
+                <Box className="flex items-center gap-2 mb-2">
+                  <Videocam sx={{ fontSize: 20 }} className="text-slate-600" />
+                  <Typography variant="subtitle1" fontWeight={600}>Default Camera</Typography>
+                </Box>
+                {videoDevices.length === 0 ? (
+                  <Typography variant="body2" color="text.secondary" className="pl-7">
+                    No cameras detected yet. Click Detect Devices above.
+                  </Typography>
+                ) : (
+                  <Box className="space-y-2 pl-7">
+                    {videoDevices.map((d, i) => (
+                      <Box
+                        key={d.deviceId}
+                        onClick={() => { setDefaultVideoDeviceId(d.deviceId); setDevicesSaved(false); }}
+                        className={`p-3 border rounded cursor-pointer transition-colors flex items-center gap-3 ${defaultVideoDeviceId === d.deviceId ? "border-red-800 bg-red-50" : "border-slate-200 hover:bg-slate-50"}`}
+                      >
+                        <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${defaultVideoDeviceId === d.deviceId ? "border-red-800 bg-red-800" : "border-slate-400"}`} />
+                        <Box>
+                          <Typography variant="body2" fontWeight={defaultVideoDeviceId === d.deviceId ? 700 : 400}>
+                            {d.label || `Camera ${i + 1}`}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" fontFamily="monospace">
+                            {d.deviceId.slice(0, 24)}...
+                          </Typography>
+                        </Box>
+                        {defaultVideoDeviceId === d.deviceId && (
+                          <CheckCircle sx={{ fontSize: 18, color: "#8B0000", ml: "auto" }} />
+                        )}
+                      </Box>
+                    ))}
+                  </Box>
+                )}
+              </Box>
+
+              <Divider className="my-4" />
+
+              {/* Microphone */}
+              <Box className="mb-6">
+                <Box className="flex items-center gap-2 mb-2">
+                  <Mic sx={{ fontSize: 20 }} className="text-slate-600" />
+                  <Typography variant="subtitle1" fontWeight={600}>Default Microphone</Typography>
+                </Box>
+                {audioDevices.length === 0 ? (
+                  <Typography variant="body2" color="text.secondary" className="pl-7">
+                    No microphones detected yet. Click Detect Devices above.
+                  </Typography>
+                ) : (
+                  <Box className="space-y-2 pl-7">
+                    {audioDevices.map((d, i) => (
+                      <Box
+                        key={d.deviceId}
+                        onClick={() => { setDefaultAudioDeviceId(d.deviceId); setDevicesSaved(false); }}
+                        className={`p-3 border rounded cursor-pointer transition-colors flex items-center gap-3 ${defaultAudioDeviceId === d.deviceId ? "border-red-800 bg-red-50" : "border-slate-200 hover:bg-slate-50"}`}
+                      >
+                        <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${defaultAudioDeviceId === d.deviceId ? "border-red-800 bg-red-800" : "border-slate-400"}`} />
+                        <Box>
+                          <Typography variant="body2" fontWeight={defaultAudioDeviceId === d.deviceId ? 700 : 400}>
+                            {d.label || `Microphone ${i + 1}`}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" fontFamily="monospace">
+                            {d.deviceId.slice(0, 24)}...
+                          </Typography>
+                        </Box>
+                        {defaultAudioDeviceId === d.deviceId && (
+                          <CheckCircle sx={{ fontSize: 18, color: "#8B0000", ml: "auto" }} />
+                        )}
+                      </Box>
+                    ))}
+                  </Box>
+                )}
+              </Box>
+
+              <Divider className="my-4" />
+
+              <Box className="flex items-center gap-3">
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={handleSaveHardwareDefaults}
+                  disabled={!defaultVideoDeviceId && !defaultAudioDeviceId}
+                  sx={{ backgroundColor: "#8B0000", "&:hover": { backgroundColor: "#6B0000" } }}
+                >
+                  Save Hardware Defaults
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => {
+                    setDefaultVideoDeviceId("");
+                    setDefaultAudioDeviceId("");
+                    localStorage.removeItem("defaultVideoDeviceId");
+                    localStorage.removeItem("defaultAudioDeviceId");
+                    setDevicesSaved(false);
+                  }}
+                  sx={{ borderColor: "#64748b", color: "#64748b" }}
+                >
+                  Clear Defaults
+                </Button>
+                {devicesSaved && (
+                  <Box className="flex items-center gap-1 text-green-600">
+                    <CheckCircle fontSize="small" />
+                    <Typography variant="caption">Saved — applied on next feature open</Typography>
+                  </Box>
+                )}
+              </Box>
+
+              <Box className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded">
+                <Typography variant="caption" color="text.secondary">
+                  <strong>Used by:</strong> Video Shorts, Visual Prompts (camera), Start Recording &amp; Voice Prompts (microphone).
+                  The per-session device selector in each feature will initialize to these defaults but can be overridden inline.
                 </Typography>
               </Box>
             </Paper>
