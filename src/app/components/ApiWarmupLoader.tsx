@@ -13,21 +13,23 @@ export function ApiWarmupLoader({ onComplete }: ApiWarmupLoaderProps) {
   useEffect(() => {
     const warmupApi = async () => {
       try {
+        setStatusMessage("Getting ready.... please wait...");
         const usersUrl = getApiUrl(API_CONFIG.ENDPOINTS.USERS);
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 9000);
         fetch(usersUrl, { method: "GET", headers: { "Content-Type": "application/json" }, signal: controller.signal })
           .then(() => console.log("API warmup successful"))
-          .catch(() => console.log("API warmup completed (timeout or error)"))
+          .catch(() => console.log("API warmup completed (timeout or error - will use local JSON)"))
           .finally(() => clearTimeout(timeoutId));
-      } catch {
-        // silent
+        setStatusMessage("Getting ready.... please wait...");
+      } catch (error) {
+        console.log("API warmup call completed (may be in development mode)");
+        setStatusMessage("Getting ready.... please wait...");
       }
     };
 
     warmupApi();
 
-    // Progress over 10 seconds, capped at 99
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 99) { clearInterval(interval); return 99; }
@@ -41,11 +43,8 @@ export function ApiWarmupLoader({ onComplete }: ApiWarmupLoaderProps) {
       onComplete();
     }, 10000);
 
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timeout);
-    };
-  }, [onComplete]);
+    return () => { clearInterval(interval); clearTimeout(timeout); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -53,23 +52,17 @@ export function ApiWarmupLoader({ onComplete }: ApiWarmupLoaderProps) {
         <div className="absolute inset-0 bg-amber-400 opacity-20 blur-3xl rounded-full animate-pulse"></div>
         <img src={lunaLogo} alt="LunaAI Logo" className="w-32 h-32 rounded-2xl object-cover relative z-10 shadow-2xl animate-[flash_2s_ease-in-out_infinite]" />
       </div>
-
       <h1 className="text-4xl font-bold text-white mb-4">LunaAI</h1>
       <p className="text-slate-300 mb-8 text-center px-4">{statusMessage}</p>
-
       <div className="w-full max-w-md px-4">
         <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
-          <div
-            className="bg-gradient-to-r from-amber-400 to-amber-500 h-full transition-all duration-300 ease-out"
-            style={{ width: `${progress}%` }}
-          ></div>
+          <div className="bg-gradient-to-r from-amber-400 to-amber-500 h-full transition-all duration-300 ease-out" style={{ width: `${progress}%` }}></div>
         </div>
         <p className="text-slate-400 text-sm text-center mt-3">{Math.min(99, Math.floor(progress))}%</p>
       </div>
-
       <div className="mt-12 text-center px-4">
         <p className="text-slate-500 text-sm">Powered by Capitol Technology Solutions</p>
-        <p className="text-slate-600 text-xs mt-2">Version 30 • Multi-Provider AI Management Platform</p>
+        <p className="text-slate-600 text-xs mt-2">Version 31 • Multi-Provider AI Management Platform</p>
       </div>
     </div>
   );

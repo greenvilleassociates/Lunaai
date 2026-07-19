@@ -34,9 +34,9 @@ import { SuperLunaSearch } from "./components/SuperLunaSearch";
 import { LunaContextRouter } from "./components/LunaContextRouter";
 import { Claude } from "./components/Claude";
 import { Grok } from "./components/Grok";
-import { Geocoder } from "./components/Geocoder";
-import { SearchBilling } from "./components/SearchBilling";
-import { MyLocation } from "./components/MyLocation";
+import { VideoPrompt } from "./components/VideoPrompt";
+import { AccuWeather } from "./components/AccuWeather";
+import { VisualPrompt } from "./components/VisualPrompt";
 
 export const router = createBrowserRouter([
   {
@@ -77,9 +77,9 @@ export const router = createBrowserRouter([
       { path: "lunacontextrouter", element: <ProtectedRoute><LunaContextRouter /></ProtectedRoute> },
       { path: "claude", element: <ProtectedRoute><Claude /></ProtectedRoute> },
       { path: "grok", element: <ProtectedRoute><Grok /></ProtectedRoute> },
-      { path: "geocoder", element: <ProtectedRoute><Geocoder /></ProtectedRoute> },
-      { path: "searchbilling", element: <ProtectedRoute><SearchBilling /></ProtectedRoute> },
-      { path: "mylocation", element: <ProtectedRoute><MyLocation /></ProtectedRoute> },
+      { path: "videoprompt", element: <ProtectedRoute><VideoPrompt /></ProtectedRoute> },
+      { path: "accuweather", element: <ProtectedRoute><AccuWeather /></ProtectedRoute> },
+      { path: "visualprompt", element: <ProtectedRoute><VisualPrompt /></ProtectedRoute> },
     ],
   },
 ]);
