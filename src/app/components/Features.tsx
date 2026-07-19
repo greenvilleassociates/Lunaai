@@ -1,5 +1,8 @@
 import { useNavigate } from "react-router";
 import MicIcon from "@mui/icons-material/Mic";
+import VideocamIcon from "@mui/icons-material/Videocam";
+import WbSunnyIcon from "@mui/icons-material/WbSunny";
+import ImageIcon from "@mui/icons-material/Image";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import SearchIcon from "@mui/icons-material/Search";
 import HistoryIcon from "@mui/icons-material/History";
@@ -8,8 +11,6 @@ import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import GoogleIcon from "@mui/icons-material/Google";
 import AbcIcon from "@mui/icons-material/Abc";
 import PsychologyIcon from "@mui/icons-material/Psychology";
-import PlaceIcon from "@mui/icons-material/Place";
-import MyLocationIcon from "@mui/icons-material/MyLocation";
 import { Box } from "@mui/material";
 import ctsLogo from "figma:asset/399d93660a307619ab55b61f935095fec4286492.png";
 import superLunaIcon from "figma:asset/cfadca739638cf837cbfaf51361c717172db777b.png";
@@ -172,48 +173,29 @@ export function Features() {
     },
     {
       id: 13,
-      title: "Empowr Enterprise Search",
-      description: "Submit queries through the Empowr enterprise search engine via the LunaAI orchestration layer using /api/ZEmpwr.",
-      icon: (
-        <Box
-          sx={{
-            width: 48,
-            height: 48,
-            background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
-            color: "#fff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontWeight: 700,
-            fontSize: 13,
-            borderRadius: "6px",
-            letterSpacing: "0.04em",
-            userSelect: "none",
-          }}
-        >
-          EMP
-        </Box>
-      ),
-      action: "Search Empowr",
-      route: "/empowr",
+      title: "Video Shorts",
+      description: "Record short video clips using your camera. Audio is extracted server-side and processed through LunaAI's transcription pipeline — same as voice prompts.",
+      icon: <VideocamIcon sx={{ fontSize: 48, color: "#1e293b" }} />,
+      action: "Record Video",
+      route: "/videoprompt",
       external: false,
     },
     {
       id: 14,
-      title: "IBM Geocoder",
-      description: "Reverse geocode coordinates via the IBM Geocoder API using /api/Geocoder. Returns detailed location data displayed on an interactive Google Map.",
-      icon: <PlaceIcon sx={{ fontSize: 48, color: "#DB4437" }} />,
-      action: "Open Geocoder",
-      route: "/geocoder",
+      title: "AccuWeather Forecast",
+      description: "Get live current conditions and forecasts for any city, zip code, or location via AccuWeather.",
+      icon: <WbSunnyIcon sx={{ fontSize: 48, color: "#EF6C00" }} />,
+      action: "Get Weather",
+      route: "/accuweather",
       external: false,
     },
     {
       id: 15,
-      title: "My Location",
-      description: "View your current GPS coordinates on an interactive Google Map and get turn-by-turn driving directions to any destination.",
-      icon: <MyLocationIcon sx={{ fontSize: 48, color: "#8B0000" }} />,
-      action: "Open My Location",
-      route: "/mylocation",
+      title: "Visual Prompts",
+      description: "Capture photos with your camera or upload images for AI visual analysis. Images are processed through the LunaAI vision pipeline for classification and description.",
+      icon: <ImageIcon sx={{ fontSize: 48, color: "#7C3AED" }} />,
+      action: "Open Camera",
+      route: "/visualprompt",
       external: false,
     },
   ];
@@ -232,7 +214,6 @@ export function Features() {
       <p className="text-slate-600 mb-8">
         Access LunaAI's powerful tools to interact with multiple LLM providers and manage your AI workflows.
       </p>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {features.map((feature) => (
           <div
@@ -240,15 +221,11 @@ export function Features() {
             className="p-6 border border-slate-200 rounded-lg hover:shadow-lg transition-shadow bg-white"
           >
             <div className="flex items-start gap-4">
-              <div className="text-slate-700 flex-shrink-0">
-                {feature.icon}
-              </div>
+              <div className="text-slate-700 flex-shrink-0">{feature.icon}</div>
               <div className="flex-1">
                 <h3 className="text-xl mb-2">{feature.title}</h3>
-                <p className="text-slate-600 text-sm mb-4">
-                  {feature.description}
-                </p>
-                <button 
+                <p className="text-slate-600 text-sm mb-4">{feature.description}</p>
+                <button
                   onClick={() => handleFeatureClick(feature)}
                   disabled={!feature.route}
                   className={`px-4 py-2 rounded text-sm transition-colors inline-flex items-center gap-2 ${
