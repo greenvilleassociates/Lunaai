@@ -36,11 +36,11 @@ export function VideoPrompt() {
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
 
-  // Device selection
+  // Device selection — initialized from Settings hardware defaults
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
-  const [selectedVideoDeviceId, setSelectedVideoDeviceId] = useState<string>("");
-  const [selectedAudioDeviceId, setSelectedAudioDeviceId] = useState<string>("");
+  const [selectedVideoDeviceId, setSelectedVideoDeviceId] = useState<string>(() => localStorage.getItem("defaultVideoDeviceId") || "");
+  const [selectedAudioDeviceId, setSelectedAudioDeviceId] = useState<string>(() => localStorage.getItem("defaultAudioDeviceId") || "");
 
   const streamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -50,7 +50,9 @@ export function VideoPrompt() {
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement }>({});
 
   useEffect(() => {
-    startCamera();
+    const storedVideo = localStorage.getItem("defaultVideoDeviceId") || undefined;
+    const storedAudio = localStorage.getItem("defaultAudioDeviceId") || undefined;
+    startCamera(storedVideo, storedAudio);
     return () => stopCamera();
   }, []);
 

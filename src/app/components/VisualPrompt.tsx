@@ -30,9 +30,9 @@ export function VisualPrompt() {
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
   const [tab, setTab] = useState<"camera" | "upload">("camera");
 
-  // Device selection
+  // Device selection — initialized from Settings hardware defaults
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
-  const [selectedVideoDeviceId, setSelectedVideoDeviceId] = useState<string>("");
+  const [selectedVideoDeviceId, setSelectedVideoDeviceId] = useState<string>(() => localStorage.getItem("defaultVideoDeviceId") || "");
 
   const streamRef = useRef<MediaStream | null>(null);
   const previewRef = useRef<HTMLVideoElement | null>(null);
@@ -40,7 +40,7 @@ export function VisualPrompt() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    if (tab === "camera") startCamera();
+    if (tab === "camera") startCamera(selectedVideoDeviceId || undefined);
     else stopCamera();
     return () => stopCamera();
   }, [tab, facingMode]);
