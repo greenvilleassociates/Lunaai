@@ -69,9 +69,9 @@ export function StartRecording() {
   const [settingsFormat, setSettingsFormat] = useState<AudioFormatConfig | null>(null);
   const [platformInfo, setPlatformInfo] = useState<ReturnType<typeof detectPlatform> | null>(null);
 
-  // Device selection
+  // Device selection — initialized from Settings hardware defaults
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
-  const [selectedAudioDeviceId, setSelectedAudioDeviceId] = useState<string>("");
+  const [selectedAudioDeviceId, setSelectedAudioDeviceId] = useState<string>(() => localStorage.getItem("defaultAudioDeviceId") || "");
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
