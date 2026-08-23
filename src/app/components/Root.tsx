@@ -17,6 +17,7 @@ import MicIcon from "@mui/icons-material/Mic";
 import VideocamIcon from "@mui/icons-material/Videocam";
 import WbSunnyIcon from "@mui/icons-material/WbSunny";
 import ImageIcon from "@mui/icons-material/Image";
+import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import PersonIcon from "@mui/icons-material/Person";
 import InfoIcon from "@mui/icons-material/Info";
 import ContactMailIcon from "@mui/icons-material/ContactMail";
@@ -43,22 +44,33 @@ export function Root() {
   const [isMobile, setIsMobile] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  // Check if user is manager (superuser or admin)
   const currentUserRole = localStorage.getItem("role");
   const isSuperUser = currentUserRole === "superuser";
   const isAdmin = currentUserRole === "admin";
   const isGuest = currentUserRole === "guest";
   const isSiteAdmin = currentUserRole === "Luna Site Administrator";
-  const isManager = isSuperUser || isAdmin || isSiteAdmin;
+  const isManager = isSuperUser || isAdmin || isSiteAdmin; // Managers can see all features
 
+  // Check if viewport is mobile-sized (1000px or less)
   useEffect(() => {
     const checkMobile = () => {
       const width = window.innerWidth;
       const mobile = width <= 1000;
       setIsMobile(mobile);
-      if (!mobile && sidebarOpen) setSidebarOpen(false);
+
+      // Close sidebar when resizing to desktop
+      if (!mobile && sidebarOpen) {
+        setSidebarOpen(false);
+      }
     };
+
+    // Initial check
     checkMobile();
+
+    // Listen for resize events
     window.addEventListener("resize", checkMobile);
+
     return () => window.removeEventListener("resize", checkMobile);
   }, [sidebarOpen]);
 
@@ -71,23 +83,41 @@ export function Root() {
     setLatitude(localStorage.getItem("latitude") || "");
     setLongitude(localStorage.getItem("longitude") || "");
     setIpAddress(localStorage.getItem("ipAddress") || "");
-  }, [location]);
+  }, [location]); // Re-run when location changes (after login navigation)
 
   const handleLogout = async () => {
+    // Get session token from localStorage
     const sessionToken = localStorage.getItem("sessionToken");
     const uid = localStorage.getItem("uid");
+    
+    // Mark session as complete (not deleted, just inactive) in Azure API
     if (sessionToken && uid) {
       try {
         const sessionUrl = getApiUrl(API_CONFIG.ENDPOINTS.USER_SESSION);
+        const sessionEnd = new Date();
+        
+        // Update the session to mark it as complete with end time
+        // Session remains in database for audit/reporting purposes
         await fetch(sessionUrl, {
           method: "PUT",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${uid}` },
-          body: JSON.stringify({ token: sessionToken, sessionend: new Date().toISOString(), sessioncomplete: 1 }),
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${uid}`,
+          },
+          body: JSON.stringify({
+            token: sessionToken,
+            sessionend: sessionEnd.toISOString(),
+            sessioncomplete: 1, // Mark session as complete/inactive
+          }),
         });
+        
+        console.log("Session marked as complete (inactive)");
       } catch (error) {
         console.error("Failed to update session:", error);
       }
     }
+    
+    // Clear localStorage
     localStorage.removeItem("uid");
     localStorage.removeItem("username");
     localStorage.removeItem("role");
@@ -98,271 +128,1098 @@ export function Root() {
     localStorage.removeItem("longitude");
     localStorage.removeItem("ipAddress");
     localStorage.removeItem("authToken");
+    
+    // Redirect to login
     navigate("/login");
   };
 
   const isActive = (path: string) => {
-    if (path === "/") return location.pathname === "/";
+    if (path === "/") {
+      return location.pathname === "/";
+    }
     return location.pathname.startsWith(path);
   };
 
+  // Check if we're on login or register page - show minimal layout
   const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
-  if (isAuthPage) return <Outlet />;
+
+  // If on auth page, just render the outlet without layout
+  if (isAuthPage) {
+    return <Outlet />;
+  }
 
   return (
     <div className="size-full flex flex-col min-h-[1000px]">
+      {/* Mobile Warning Banner */}
       {isMobile && (
         <div className="w-full bg-blue-600 text-white px-4 py-3 text-sm">
           <div className="flex items-center justify-center gap-2">
             <PhoneAndroidIcon fontSize="small" />
-            <span className="font-medium">Mobile View: Tap the LunaAI logo to access all features</span>
+            <span className="font-medium">
+              Mobile View: Tap the LunaAI logo to access all features
+            </span>
           </div>
         </div>
       )}
-
+      
+      {/* Top Bar */}
       <header className="w-full bg-slate-900 text-white px-6 py-4 shadow-md">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`flex items-center gap-3 ${isMobile ? 'cursor-pointer hover:opacity-80' : ''}`}
-              onClick={() => isMobile && setSidebarOpen(true)}>
+            <div 
+              className={`flex items-center gap-3 ${isMobile ? 'cursor-pointer hover:opacity-80' : ''}`}
+              onClick={() => isMobile && setSidebarOpen(true)}
+            >
               <img src={lunaLogo} alt="LunaAI Logo" className="h-10 w-10 rounded-lg object-cover" />
               <h1 className="text-xl">LunaAI</h1>
             </div>
+            {/* Hamburger Menu Button (visible on small screens, hidden on mobile <1000px) */}
             {!isMobile && (
-              <button onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden ml-4 p-2 hover:bg-slate-800 rounded transition-colors">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="lg:hidden ml-4 p-2 hover:bg-slate-800 rounded transition-colors"
+              >
                 {sidebarOpen ? <CloseIcon /> : <MenuIcon />}
               </button>
             )}
           </div>
           <nav className="flex gap-6 items-center">
-            <Link to="/" className={`hover:text-slate-300 transition-colors ${isActive("/") ? "text-white font-semibold" : "text-slate-400"}`}>Home</Link>
+            <Link 
+              to="/" 
+              className={`hover:text-slate-300 transition-colors ${
+                isActive("/") ? "text-white font-semibold" : "text-slate-400"
+              }`}
+            >
+              Home
+            </Link>
             {!isMobile && (
               <>
-                <Link to="/about" className={`hover:text-slate-300 transition-colors ${isActive("/about") ? "text-white font-semibold" : "text-slate-400"}`}>About</Link>
-                <Link to="/contact" className={`hover:text-slate-300 transition-colors ${isActive("/contact") ? "text-white font-semibold" : "text-slate-400"}`}>Contact</Link>
-                <Link to="/profile" className={`hover:text-slate-300 transition-colors ${isActive("/profile") ? "text-white font-semibold" : "text-slate-400"}`}>Profile</Link>
-                <Link to="/usernotifications" className={`hover:text-slate-300 transition-colors ${isActive("/usernotifications") ? "text-white font-semibold" : "text-slate-400"}`} title="Notifications"><NotificationsIcon /></Link>
-                <Link to="/userhelp" className={`hover:text-slate-300 transition-colors ${isActive("/userhelp") ? "text-white font-semibold" : "text-slate-400"}`} title="Help & Support"><HelpIcon /></Link>
+                <Link 
+                  to="/about" 
+                  className={`hover:text-slate-300 transition-colors ${
+                    isActive("/about") ? "text-white font-semibold" : "text-slate-400"
+                  }`}
+                >
+                  About
+                </Link>
+                <Link 
+                  to="/contact" 
+                  className={`hover:text-slate-300 transition-colors ${
+                    isActive("/contact") ? "text-white font-semibold" : "text-slate-400"
+                  }`}
+                >
+                  Contact
+                </Link>
+                <Link 
+                  to="/profile" 
+                  className={`hover:text-slate-300 transition-colors ${
+                    isActive("/profile") ? "text-white font-semibold" : "text-slate-400"
+                  }`}
+                >
+                  Profile
+                </Link>
+                <Link 
+                  to="/usernotifications" 
+                  className={`hover:text-slate-300 transition-colors ${
+                    isActive("/usernotifications") ? "text-white font-semibold" : "text-slate-400"
+                  }`}
+                  title="Notifications"
+                >
+                  <NotificationsIcon />
+                </Link>
+                <Link 
+                  to="/userhelp" 
+                  className={`hover:text-slate-300 transition-colors ${
+                    isActive("/userhelp") ? "text-white font-semibold" : "text-slate-400"
+                  }`}
+                  title="Help & Support"
+                >
+                  <HelpIcon />
+                </Link>
               </>
             )}
             <div className="flex items-center gap-4 ml-4 pl-4 border-l border-slate-700">
               {isLoggedIn ? (
                 <>
                   <span className="text-sm text-slate-400">Welcome, {username}</span>
-                  <button onClick={handleLogout} className="text-sm bg-slate-800 hover:bg-slate-700 px-4 py-1 rounded transition-colors">Logout</button>
+                  <button
+                    onClick={handleLogout}
+                    className="text-sm bg-slate-800 hover:bg-slate-700 px-4 py-1 rounded transition-colors"
+                  >
+                    Logout
+                  </button>
                 </>
               ) : (
-                <Link to="/login" className="text-sm bg-amber-600 hover:bg-amber-700 px-4 py-1 rounded transition-colors">Login</Link>
+                <Link
+                  to="/login"
+                  className="text-sm bg-amber-600 hover:bg-amber-700 px-4 py-1 rounded transition-colors"
+                >
+                  Login
+                </Link>
               )}
             </div>
           </nav>
         </div>
       </header>
 
+      {/* Main Content Area with Sidebar */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Desktop Sidebar */}
+        {/* Sidebar Navigation - Desktop (10% width on large screens) */}
         <aside className="hidden lg:flex lg:w-[10%] bg-slate-800 text-white flex-col shadow-lg">
           <nav className="flex flex-col p-4 gap-1">
-            <Link to="/mydesktop" className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${isActive("/mydesktop") ? "bg-slate-700 text-white" : "text-slate-300"}`}>
-              <DesktopWindowsIcon sx={{ fontSize: 25 }} /><span className="text-xs text-center">My Desktop</span>
+            <Link
+              to="/mydesktop"
+              className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                isActive("/mydesktop") ? "bg-slate-700 text-white" : "text-slate-300"
+              }`}
+            >
+              <DesktopWindowsIcon sx={{ fontSize: 25 }} />
+              <span className="text-xs text-center">My Desktop</span>
             </Link>
-            <Link to="/features" className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${isActive("/features") ? "bg-slate-700 text-white" : "text-slate-300"}`}>
-              <AutoAwesomeIcon sx={{ fontSize: 25 }} /><span className="text-xs text-center">Features</span>
+            <Link
+              to="/features"
+              className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                isActive("/features") ? "bg-slate-700 text-white" : "text-slate-300"
+              }`}
+            >
+              <AutoAwesomeIcon sx={{ fontSize: 25 }} />
+              <span className="text-xs text-center">Features</span>
             </Link>
-            <Link to="/visualizations" className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${isActive("/visualizations") ? "bg-slate-700 text-white" : "text-slate-300"}`}>
-              <BarChartIcon sx={{ fontSize: 25 }} /><span className="text-xs text-center">Visualizations</span>
+            <Link
+              to="/visualizations"
+              className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                isActive("/visualizations") ? "bg-slate-700 text-white" : "text-slate-300"
+              }`}
+            >
+              <BarChartIcon sx={{ fontSize: 25 }} />
+              <span className="text-xs text-center">Visualizations</span>
             </Link>
             {!isGuest && (
-              <Link to="/empowr" className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${isActive("/empowr") ? "bg-slate-700 text-white" : "text-slate-300"}`} title="Empwr for Enterprise Queries">
-                <SearchIcon sx={{ fontSize: 25 }} /><span className="text-xs text-center">Empwr</span>
+              <Link
+                to="/empowr"
+                className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/empowr") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+                title="Empwr for Enterprise Queries"
+              >
+                <SearchIcon sx={{ fontSize: 25 }} />
+                <span className="text-xs text-center">Empwr</span>
               </Link>
             )}
             {!isGuest && (
-              <Link to="/settings" className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${isActive("/settings") ? "bg-slate-700 text-white" : "text-slate-300"}`}>
-                <SettingsIcon sx={{ fontSize: 25 }} /><span className="text-xs text-center">Settings</span>
+              <Link
+                to="/multipart"
+                className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/multipart") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+                title="Multipart Sessions"
+              >
+                <AccountTreeIcon sx={{ fontSize: 25 }} />
+                <span className="text-xs text-center">Multipart</span>
+              </Link>
+            )}
+            {!isGuest && (
+              <Link
+                to="/settings"
+                className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/settings") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+              >
+                <SettingsIcon sx={{ fontSize: 25 }} />
+                <span className="text-xs text-center">Settings</span>
               </Link>
             )}
             {isManager && (
-              <Link to="/administrator" className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${isActive("/administrator") ? "bg-slate-700 text-white" : "text-slate-300"}`}>
-                <AdminPanelSettingsIcon sx={{ fontSize: 25 }} /><span className="text-xs text-center">Administrator</span>
+              <Link
+                to="/administrator"
+                className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/administrator") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+              >
+                <AdminPanelSettingsIcon sx={{ fontSize: 25 }} />
+                <span className="text-xs text-center">Administrator</span>
               </Link>
             )}
             {isManager && (
-              <Link to="/hrmanager" className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${isActive("/hrmanager") ? "bg-slate-700 text-white" : "text-slate-300"}`}>
-                <BadgeIcon sx={{ fontSize: 25 }} /><span className="text-xs text-center">HR Manager</span>
+              <Link
+                to="/hrmanager"
+                className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/hrmanager") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+              >
+                <BadgeIcon sx={{ fontSize: 25 }} />
+                <span className="text-xs text-center">HR Manager</span>
               </Link>
             )}
             {isManager && (
-              <Link to="/lunamodules" className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${isActive("/lunamodules") ? "bg-slate-700 text-white" : "text-slate-300"}`}>
-                <ExtensionIcon sx={{ fontSize: 25 }} /><span className="text-xs text-center">Luna Modules</span>
+              <Link
+                to="/lunamodules"
+                className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/lunamodules") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+              >
+                <ExtensionIcon sx={{ fontSize: 25 }} />
+                <span className="text-xs text-center">Luna Modules</span>
               </Link>
             )}
             {isManager && (
-              <Link to="/lunaadbasepro" className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${isActive("/lunaadbasepro") ? "bg-slate-700 text-white" : "text-slate-300"}`} title="Luna AdBase Pro">
-                <CampaignIcon sx={{ fontSize: 25 }} /><span className="text-xs text-center">AdBase Pro</span>
+              <Link
+                to="/lunaadbasepro"
+                className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/lunaadbasepro") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+                title="Luna AdBase Pro"
+              >
+                <CampaignIcon sx={{ fontSize: 25 }} />
+                <span className="text-xs text-center">AdBase Pro</span>
               </Link>
             )}
             {isManager && (
-              <Link to="/security" className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${isActive("/security") ? "bg-slate-700 text-white" : "text-slate-300"}`} title="CTS Luna Enterprise(9) Security">
+              <Link
+                to="/security"
+                className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/security") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+                title="CTS Luna Enterprise(9) Security"
+              >
                 <Box sx={{ position: "relative" }}>
                   <ShieldIcon sx={{ fontSize: 25 }} />
-                  <Box sx={{ position: "absolute", top: -4, right: -8, backgroundColor: "#8B0000", borderRadius: "50%", width: 14, height: 14, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "8px", fontWeight: "bold", color: "white", border: "1px solid white" }}>9</Box>
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: -4,
+                      right: -8,
+                      backgroundColor: "#8B0000",
+                      borderRadius: "50%",
+                      width: 14,
+                      height: 14,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "8px",
+                      fontWeight: "bold",
+                      color: "white",
+                      border: "1px solid white",
+                    }}
+                  >
+                    9
+                  </Box>
                 </Box>
                 <span className="text-xs text-center">Security(9)</span>
               </Link>
             )}
             {isManager && (
-              <Link to="/gridlicensemanager" className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${isActive("/gridlicensemanager") ? "bg-slate-700 text-white" : "text-slate-300"}`} title="CTS Grid App License Manager">
-                <PublicIcon sx={{ fontSize: 25 }} /><span className="text-xs text-center">GridApps</span>
+              <Link
+                to="/gridlicensemanager"
+                className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/gridlicensemanager") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+                title="CTS Grid App License Manager"
+              >
+                <PublicIcon sx={{ fontSize: 25 }} />
+                <span className="text-xs text-center">GridApps</span>
               </Link>
             )}
             {isManager && (
-              <Link to="/superluna" className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${isActive("/superluna") ? "bg-slate-700 text-white" : "text-slate-300"}`}>
-                <img src={superLunaIcon} alt="SuperLuna" className="h-12 w-12 rounded-full object-cover border-2 border-yellow-400" />
+              <Link
+                to="/superluna"
+                className={`flex flex-col items-center gap-1 p-2 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/superluna") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+              >
+                <img 
+                  src={superLunaIcon} 
+                  alt="SuperLuna" 
+                  className="h-12 w-12 rounded-full object-cover border-2 border-yellow-400"
+                />
                 <span className="text-xs text-center">SuperLuna</span>
               </Link>
             )}
           </nav>
         </aside>
 
-        {/* Hamburger dropdown (tablet) */}
+        {/* Sidebar Navigation - Mobile (hamburger dropdown) */}
         {sidebarOpen && !isMobile && (
           <aside className="lg:hidden absolute top-[72px] left-0 w-64 bg-slate-800 text-white shadow-lg z-50">
             <nav className="flex flex-col p-4 gap-2">
-              {[{ to: "/mydesktop", icon: <DesktopWindowsIcon fontSize="small" />, label: "My Desktop" },
-                { to: "/features", icon: <AutoAwesomeIcon fontSize="small" />, label: "Features" },
-                { to: "/visualizations", icon: <BarChartIcon fontSize="small" />, label: "Visualizations" },
-              ].map(({ to, icon, label }) => (
-                <Link key={to} to={to} onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${isActive(to) ? "bg-slate-700 text-white" : "text-slate-300"}`}>
-                  {icon}<span className="text-sm">{label}</span>
+              <Link
+                to="/mydesktop"
+                onClick={() => setSidebarOpen(false)}
+                className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/mydesktop") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+              >
+                <DesktopWindowsIcon fontSize="small" />
+                <span className="text-sm">My Desktop</span>
+              </Link>
+              <Link
+                to="/features"
+                onClick={() => setSidebarOpen(false)}
+                className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/features") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+              >
+                <AutoAwesomeIcon fontSize="small" />
+                <span className="text-sm">Features</span>
+              </Link>
+              <Link
+                to="/visualizations"
+                onClick={() => setSidebarOpen(false)}
+                className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                  isActive("/visualizations") ? "bg-slate-700 text-white" : "text-slate-300"
+                }`}
+              >
+                <BarChartIcon fontSize="small" />
+                <span className="text-sm">Visualizations</span>
+              </Link>
+              {!isGuest && (
+                <Link
+                  to="/empowr"
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                    isActive("/empowr") ? "bg-slate-700 text-white" : "text-slate-300"
+                  }`}
+                  title="Empwr for Enterprise Queries"
+                >
+                  <SearchIcon fontSize="small" />
+                  <span className="text-sm">Empwr</span>
                 </Link>
-              ))}
+              )}
+              {!isGuest && (
+                <Link
+                  to="/settings"
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                    isActive("/settings") ? "bg-slate-700 text-white" : "text-slate-300"
+                  }`}
+                >
+                  <SettingsIcon fontSize="small" />
+                  <span className="text-sm">Settings</span>
+                </Link>
+              )}
+              {isManager && (
+                <Link
+                  to="/administrator"
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                    isActive("/administrator") ? "bg-slate-700 text-white" : "text-slate-300"
+                  }`}
+                >
+                  <AdminPanelSettingsIcon fontSize="small" />
+                  <span className="text-sm">Administrator</span>
+                </Link>
+              )}
+              {isManager && (
+                <Link
+                  to="/hrmanager"
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                    isActive("/hrmanager") ? "bg-slate-700 text-white" : "text-slate-300"
+                  }`}
+                >
+                  <BadgeIcon fontSize="small" />
+                  <span className="text-sm">HR Manager</span>
+                </Link>
+              )}
+              {isManager && (
+                <Link
+                  to="/lunamodules"
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                    isActive("/lunamodules") ? "bg-slate-700 text-white" : "text-slate-300"
+                  }`}
+                >
+                  <ExtensionIcon fontSize="small" />
+                  <span className="text-sm">Luna Modules</span>
+                </Link>
+              )}
+              {isManager && (
+                <Link
+                  to="/lunaadbasepro"
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                    isActive("/lunaadbasepro") ? "bg-slate-700 text-white" : "text-slate-300"
+                  }`}
+                  title="Luna AdBase Pro - Marketing Campaign Management"
+                >
+                  <CampaignIcon fontSize="small" />
+                  <span className="text-sm">Luna AdBase Pro</span>
+                </Link>
+              )}
+              {isManager && (
+                <Link
+                  to="/security"
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                    isActive("/security") ? "bg-slate-700 text-white" : "text-slate-300"
+                  }`}
+                  title="CTS Luna Enterprise(9) Security"
+                >
+                  <Box sx={{ position: "relative" }}>
+                    <ShieldIcon fontSize="small" />
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: -4,
+                        right: -8,
+                        backgroundColor: "#8B0000",
+                        borderRadius: "50%",
+                        width: 16,
+                        height: 16,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "9px",
+                        fontWeight: "bold",
+                        color: "white",
+                        border: "1px solid white",
+                      }}
+                    >
+                      9
+                    </Box>
+                  </Box>
+                  <span className="text-sm">Security(9)</span>
+                </Link>
+              )}
+              {isManager && (
+                <Link
+                  to="/gridlicensemanager"
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                    isActive("/gridlicensemanager") ? "bg-slate-700 text-white" : "text-slate-300"
+                  }`}
+                  title="CTS Grid App License Manager"
+                >
+                  <PublicIcon fontSize="small" />
+                  <span className="text-sm">GridApps</span>
+                </Link>
+              )}
+              {isManager && (
+                <Link
+                  to="/superluna"
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 p-4 rounded hover:bg-slate-700 transition-colors ${
+                    isActive("/superluna") ? "bg-slate-700 text-white" : "text-slate-300"
+                  }`}
+                >
+                  <img 
+                    src={superLunaIcon} 
+                    alt="SuperLuna" 
+                    className="h-6 w-6 rounded-full object-cover border-2 border-yellow-400"
+                  />
+                  <span className="text-sm">SuperLuna</span>
+                </Link>
+              )}
             </nav>
           </aside>
         )}
 
-        {/* Mobile Drawer */}
-        <Drawer anchor="left" open={isMobile && sidebarOpen} onClose={() => setSidebarOpen(false)}
-          PaperProps={{ sx: { width: '80%', maxWidth: '350px', backgroundColor: '#1e293b', color: 'white' } }}>
+        {/* Mobile Drawer - Full Navigation (for screens ≤1000px) */}
+        <Drawer
+          anchor="left"
+          open={isMobile && sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          PaperProps={{
+            sx: {
+              width: '80%',
+              maxWidth: '350px',
+              backgroundColor: '#1e293b',
+              color: 'white',
+            }
+          }}
+        >
           <div className="p-4 bg-slate-900 flex items-center gap-3 border-b border-slate-700">
             <img src={lunaLogo} alt="LunaAI Logo" className="h-12 w-12 rounded-lg object-cover" />
-            <div><h2 className="text-lg font-bold">LunaAI</h2><p className="text-xs text-slate-400">AI Manager Platform</p></div>
+            <div>
+              <h2 className="text-lg font-bold">LunaAI</h2>
+              <p className="text-xs text-slate-400">AI Manager Platform</p>
+            </div>
           </div>
+
           <List>
-            {[{ to: "/mydesktop", icon: <DesktopWindowsIcon />, label: "My Desktop" },
-              { to: "/features", icon: <AutoAwesomeIcon />, label: "Features" },
-              { to: "/visualizations", icon: <BarChartIcon />, label: "Visualizations" },
-            ].map(({ to, icon, label }) => (
-              <ListItem key={to} disablePadding>
-                <ListItemButton onClick={() => { navigate(to); setSidebarOpen(false); }} selected={isActive(to)}
-                  sx={{ "&.Mui-selected": { backgroundColor: "#8B0000", "&:hover": { backgroundColor: "#a00" } } }}>
-                  <ListItemIcon sx={{ color: "white" }}>{icon}</ListItemIcon>
-                  <ListItemText primary={label} />
+            {/* Main Navigation */}
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  navigate("/mydesktop");
+                  setSidebarOpen(false);
+                }}
+                selected={isActive("/mydesktop")}
+                sx={{
+                  "&.Mui-selected": {
+                    backgroundColor: "#8B0000",
+                    "&:hover": { backgroundColor: "#a00" },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: "white" }}>
+                  <DesktopWindowsIcon />
+                </ListItemIcon>
+                <ListItemText primary="My Desktop" />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  navigate("/features");
+                  setSidebarOpen(false);
+                }}
+                selected={isActive("/features")}
+                sx={{
+                  "&.Mui-selected": {
+                    backgroundColor: "#8B0000",
+                    "&:hover": { backgroundColor: "#a00" },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: "white" }}>
+                  <AutoAwesomeIcon />
+                </ListItemIcon>
+                <ListItemText primary="Features" />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  navigate("/visualizations");
+                  setSidebarOpen(false);
+                }}
+                selected={isActive("/visualizations")}
+                sx={{
+                  "&.Mui-selected": {
+                    backgroundColor: "#8B0000",
+                    "&:hover": { backgroundColor: "#a00" },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: "white" }}>
+                  <BarChartIcon />
+                </ListItemIcon>
+                <ListItemText primary="Visualizations" />
+              </ListItemButton>
+            </ListItem>
+
+            {!isGuest && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    navigate("/empowr");
+                    setSidebarOpen(false);
+                  }}
+                  selected={isActive("/empowr")}
+                  sx={{
+                    "&.Mui-selected": {
+                      backgroundColor: "#8B0000",
+                      "&:hover": { backgroundColor: "#a00" },
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: "white" }}>
+                    <SearchIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Empwr for Enterprise Queries" />
                 </ListItemButton>
               </ListItem>
-            ))}
-            {!isGuest && [
-              { to: "/empowr", icon: <SearchIcon />, label: "Empwr for Enterprise Queries" },
-              { to: "/settings", icon: <SettingsIcon />, label: "Settings" },
-            ].map(({ to, icon, label }) => (
-              <ListItem key={to} disablePadding>
-                <ListItemButton onClick={() => { navigate(to); setSidebarOpen(false); }} selected={isActive(to)}
-                  sx={{ "&.Mui-selected": { backgroundColor: "#8B0000", "&:hover": { backgroundColor: "#a00" } } }}>
-                  <ListItemIcon sx={{ color: "white" }}>{icon}</ListItemIcon>
-                  <ListItemText primary={label} />
+            )}
+
+            {!isGuest && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    navigate("/multipart");
+                    setSidebarOpen(false);
+                  }}
+                  selected={isActive("/multipart")}
+                  sx={{
+                    "&.Mui-selected": {
+                      backgroundColor: "#8B0000",
+                      "&:hover": { backgroundColor: "#a00" },
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: "white" }}>
+                    <AccountTreeIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Multipart Sessions" />
                 </ListItemButton>
               </ListItem>
-            ))}
-            {isManager && [
-              { to: "/administrator", icon: <AdminPanelSettingsIcon />, label: "Administrator" },
-              { to: "/hrmanager", icon: <BadgeIcon />, label: "HR Manager" },
-              { to: "/lunamodules", icon: <ExtensionIcon />, label: "Luna Modules" },
-              { to: "/lunaadbasepro", icon: <CampaignIcon />, label: "AdBase Pro" },
-              { to: "/gridlicensemanager", icon: <PublicIcon />, label: "GridApps" },
-              { to: "/superluna", icon: <img src={superLunaIcon} alt="SuperLuna" className="h-6 w-6 rounded-full object-cover border-2 border-yellow-400" />, label: "SuperLuna" },
-            ].map(({ to, icon, label }) => (
-              <ListItem key={to} disablePadding>
-                <ListItemButton onClick={() => { navigate(to); setSidebarOpen(false); }} selected={isActive(to)}
-                  sx={{ "&.Mui-selected": { backgroundColor: "#8B0000", "&:hover": { backgroundColor: "#a00" } } }}>
-                  <ListItemIcon sx={{ color: "white" }}>{icon}</ListItemIcon>
-                  <ListItemText primary={label} />
+            )}
+
+            {!isGuest && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    navigate("/settings");
+                    setSidebarOpen(false);
+                  }}
+                  selected={isActive("/settings")}
+                  sx={{
+                    "&.Mui-selected": {
+                      backgroundColor: "#8B0000",
+                      "&:hover": { backgroundColor: "#a00" },
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: "white" }}>
+                    <SettingsIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Settings" />
                 </ListItemButton>
               </ListItem>
-            ))}
+            )}
+
+            {isManager && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    navigate("/administrator");
+                    setSidebarOpen(false);
+                  }}
+                  selected={isActive("/administrator")}
+                  sx={{
+                    "&.Mui-selected": {
+                      backgroundColor: "#8B0000",
+                      "&:hover": { backgroundColor: "#a00" },
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: "white" }}>
+                    <AdminPanelSettingsIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Administrator" />
+                </ListItemButton>
+              </ListItem>
+            )}
+
+            {isManager && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    navigate("/hrmanager");
+                    setSidebarOpen(false);
+                  }}
+                  selected={isActive("/hrmanager")}
+                  sx={{
+                    "&.Mui-selected": {
+                      backgroundColor: "#8B0000",
+                      "&:hover": { backgroundColor: "#a00" },
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: "white" }}>
+                    <BadgeIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="HR Manager" />
+                </ListItemButton>
+              </ListItem>
+            )}
+
+            {isManager && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    navigate("/lunamodules");
+                    setSidebarOpen(false);
+                  }}
+                  selected={isActive("/lunamodules")}
+                  sx={{
+                    "&.Mui-selected": {
+                      backgroundColor: "#8B0000",
+                      "&:hover": { backgroundColor: "#a00" },
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: "white" }}>
+                    <ExtensionIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Luna Modules" />
+                </ListItemButton>
+              </ListItem>
+            )}
+
+            {isManager && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    navigate("/lunaadbasepro");
+                    setSidebarOpen(false);
+                  }}
+                  selected={isActive("/lunaadbasepro")}
+                  sx={{
+                    "&.Mui-selected": {
+                      backgroundColor: "#8B0000",
+                      "&:hover": { backgroundColor: "#a00" },
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: "white" }}>
+                    <CampaignIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="AdBase Pro" />
+                </ListItemButton>
+              </ListItem>
+            )}
+
+            {isManager && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    navigate("/security");
+                    setSidebarOpen(false);
+                  }}
+                  selected={isActive("/security")}
+                  sx={{
+                    "&.Mui-selected": {
+                      backgroundColor: "#8B0000",
+                      "&:hover": { backgroundColor: "#a00" },
+                    },
+                  }}
+                >
+                  <Box sx={{ position: "relative" }}>
+                    <ListItemIcon sx={{ color: "white" }}>
+                      <ShieldIcon />
+                    </ListItemIcon>
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: -4,
+                        right: -8,
+                        backgroundColor: "#8B0000",
+                        borderRadius: "50%",
+                        width: 16,
+                        height: 16,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "9px",
+                        fontWeight: "bold",
+                        color: "white",
+                        border: "1px solid white",
+                      }}
+                    >
+                      9
+                    </Box>
+                  </Box>
+                  <ListItemText primary="Security(9)" />
+                </ListItemButton>
+              </ListItem>
+            )}
+
+            {isManager && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    navigate("/gridlicensemanager");
+                    setSidebarOpen(false);
+                  }}
+                  selected={isActive("/gridlicensemanager")}
+                  sx={{
+                    "&.Mui-selected": {
+                      backgroundColor: "#8B0000",
+                      "&:hover": { backgroundColor: "#a00" },
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: "white" }}>
+                    <PublicIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="GridApps" />
+                </ListItemButton>
+              </ListItem>
+            )}
+
+            {isManager && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    navigate("/superluna");
+                    setSidebarOpen(false);
+                  }}
+                  selected={isActive("/superluna")}
+                  sx={{
+                    "&.Mui-selected": {
+                      backgroundColor: "#8B0000",
+                      "&:hover": { backgroundColor: "#a00" },
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: "white" }}>
+                    <img 
+                      src={superLunaIcon} 
+                      alt="SuperLuna" 
+                      className="h-6 w-6 rounded-full object-cover border-2 border-yellow-400"
+                    />
+                  </ListItemIcon>
+                  <ListItemText primary="SuperLuna" />
+                </ListItemButton>
+              </ListItem>
+            )}
+
             <Divider sx={{ backgroundColor: "#475569", my: 1 }} />
-            {[
-              { to: "/uploadprompt", icon: <UploadFileIcon />, label: "Upload Prompt" },
-              { to: "/startrecording", icon: <MicIcon />, label: "Start Recording" },
-              { to: "/videoprompt", icon: <VideocamIcon />, label: "Video Shorts" },
-              { to: "/accuweather", icon: <WbSunnyIcon />, label: "AccuWeather" },
-              { to: "/visualprompt", icon: <ImageIcon />, label: "Visual Prompts" },
-            ].map(({ to, icon, label }) => (
-              <ListItem key={to} disablePadding>
-                <ListItemButton onClick={() => { navigate(to); setSidebarOpen(false); }} selected={isActive(to)}
-                  sx={{ "&.Mui-selected": { backgroundColor: "#8B0000", "&:hover": { backgroundColor: "#a00" } } }}>
-                  <ListItemIcon sx={{ color: "white" }}>{icon}</ListItemIcon>
-                  <ListItemText primary={label} />
-                </ListItemButton>
-              </ListItem>
-            ))}
+
+            {/* Additional Pages */}
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  navigate("/uploadprompt");
+                  setSidebarOpen(false);
+                }}
+                selected={isActive("/uploadprompt")}
+                sx={{
+                  "&.Mui-selected": {
+                    backgroundColor: "#8B0000",
+                    "&:hover": { backgroundColor: "#a00" },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: "white" }}>
+                  <UploadFileIcon />
+                </ListItemIcon>
+                <ListItemText primary="Upload Prompt" />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  navigate("/startrecording");
+                  setSidebarOpen(false);
+                }}
+                selected={isActive("/startrecording")}
+                sx={{
+                  "&.Mui-selected": {
+                    backgroundColor: "#8B0000",
+                    "&:hover": { backgroundColor: "#a00" },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: "white" }}>
+                  <MicIcon />
+                </ListItemIcon>
+                <ListItemText primary="Start Recording" />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  navigate("/videoprompt");
+                  setSidebarOpen(false);
+                }}
+                selected={isActive("/videoprompt")}
+                sx={{
+                  "&.Mui-selected": {
+                    backgroundColor: "#8B0000",
+                    "&:hover": { backgroundColor: "#a00" },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: "white" }}>
+                  <VideocamIcon />
+                </ListItemIcon>
+                <ListItemText primary="Video Shorts" />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  navigate("/accuweather");
+                  setSidebarOpen(false);
+                }}
+                selected={isActive("/accuweather")}
+                sx={{
+                  "&.Mui-selected": {
+                    backgroundColor: "#8B0000",
+                    "&:hover": { backgroundColor: "#a00" },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: "white" }}>
+                  <WbSunnyIcon />
+                </ListItemIcon>
+                <ListItemText primary="AccuWeather" />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => { navigate("/visualprompt"); setSidebarOpen(false); }}
+                selected={isActive("/visualprompt")}
+                sx={{ "&.Mui-selected": { backgroundColor: "#8B0000", "&:hover": { backgroundColor: "#a00" } } }}
+              >
+                <ListItemIcon sx={{ color: "white" }}><ImageIcon /></ListItemIcon>
+                <ListItemText primary="Visual Prompts" />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => { navigate("/multipart"); setSidebarOpen(false); }}
+                selected={isActive("/multipart")}
+                sx={{ "&.Mui-selected": { backgroundColor: "#8B0000", "&:hover": { backgroundColor: "#a00" } } }}
+              >
+                <ListItemIcon sx={{ color: "white" }}><AccountTreeIcon /></ListItemIcon>
+                <ListItemText primary="Multipart Sessions" />
+              </ListItemButton>
+            </ListItem>
+
             <Divider sx={{ backgroundColor: "#475569", my: 1 }} />
-            {[
-              { to: "/profile", icon: <PersonIcon />, label: "Profile" },
-              { to: "/usernotifications", icon: <NotificationsIcon />, label: "Notifications" },
-              { to: "/userhelp", icon: <HelpIcon />, label: "Help & Support" },
-            ].map(({ to, icon, label }) => (
-              <ListItem key={to} disablePadding>
-                <ListItemButton onClick={() => { navigate(to); setSidebarOpen(false); }} selected={isActive(to)}
-                  sx={{ "&.Mui-selected": { backgroundColor: "#8B0000", "&:hover": { backgroundColor: "#a00" } } }}>
-                  <ListItemIcon sx={{ color: "white" }}>{icon}</ListItemIcon>
-                  <ListItemText primary={label} />
-                </ListItemButton>
-              </ListItem>
-            ))}
+
+            {/* User Pages */}
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  navigate("/profile");
+                  setSidebarOpen(false);
+                }}
+                selected={isActive("/profile")}
+                sx={{
+                  "&.Mui-selected": {
+                    backgroundColor: "#8B0000",
+                    "&:hover": { backgroundColor: "#a00" },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: "white" }}>
+                  <PersonIcon />
+                </ListItemIcon>
+                <ListItemText primary="Profile" />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  navigate("/usernotifications");
+                  setSidebarOpen(false);
+                }}
+                selected={isActive("/usernotifications")}
+                sx={{
+                  "&.Mui-selected": {
+                    backgroundColor: "#8B0000",
+                    "&:hover": { backgroundColor: "#a00" },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: "white" }}>
+                  <NotificationsIcon />
+                </ListItemIcon>
+                <ListItemText primary="Notifications" />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  navigate("/userhelp");
+                  setSidebarOpen(false);
+                }}
+                selected={isActive("/userhelp")}
+                sx={{
+                  "&.Mui-selected": {
+                    backgroundColor: "#8B0000",
+                    "&:hover": { backgroundColor: "#a00" },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: "white" }}>
+                  <HelpIcon />
+                </ListItemIcon>
+                <ListItemText primary="Help & Support" />
+              </ListItemButton>
+            </ListItem>
+
             <Divider sx={{ backgroundColor: "#475569", my: 1 }} />
-            {[
-              { to: "/about", icon: <InfoIcon />, label: "About" },
-              { to: "/contact", icon: <ContactMailIcon />, label: "Contact" },
-            ].map(({ to, icon, label }) => (
-              <ListItem key={to} disablePadding>
-                <ListItemButton onClick={() => { navigate(to); setSidebarOpen(false); }} selected={isActive(to)}
-                  sx={{ "&.Mui-selected": { backgroundColor: "#8B0000", "&:hover": { backgroundColor: "#a00" } } }}>
-                  <ListItemIcon sx={{ color: "white" }}>{icon}</ListItemIcon>
-                  <ListItemText primary={label} />
-                </ListItemButton>
-              </ListItem>
-            ))}
+
+            {/* Info Pages */}
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  navigate("/about");
+                  setSidebarOpen(false);
+                }}
+                selected={isActive("/about")}
+                sx={{
+                  "&.Mui-selected": {
+                    backgroundColor: "#8B0000",
+                    "&:hover": { backgroundColor: "#a00" },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: "white" }}>
+                  <InfoIcon />
+                </ListItemIcon>
+                <ListItemText primary="About" />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  navigate("/contact");
+                  setSidebarOpen(false);
+                }}
+                selected={isActive("/contact")}
+                sx={{
+                  "&.Mui-selected": {
+                    backgroundColor: "#8B0000",
+                    "&:hover": { backgroundColor: "#a00" },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: "white" }}>
+                  <ContactMailIcon />
+                </ListItemIcon>
+                <ListItemText primary="Contact" />
+              </ListItemButton>
+            </ListItem>
           </List>
+
           <div className="mt-auto p-4 border-t border-slate-700">
             {isLoggedIn ? (
               <>
                 <p className="text-xs text-slate-400 mb-2">Welcome, {username}</p>
-                <button onClick={() => { setSidebarOpen(false); handleLogout(); }}
-                  className="w-full bg-red-700 hover:bg-red-800 text-white py-2 px-4 rounded transition-colors">Logout</button>
+                <button
+                  onClick={() => { setSidebarOpen(false); handleLogout(); }}
+                  className="w-full bg-red-700 hover:bg-red-800 text-white py-2 px-4 rounded transition-colors"
+                >
+                  Logout
+                </button>
               </>
             ) : (
-              <Link to="/login" onClick={() => setSidebarOpen(false)}
-                className="block w-full bg-amber-600 hover:bg-amber-700 text-white text-center py-2 px-4 rounded transition-colors">Login</Link>
+              <Link
+                to="/login"
+                onClick={() => setSidebarOpen(false)}
+                className="block w-full bg-amber-600 hover:bg-amber-700 text-white text-center py-2 px-4 rounded transition-colors"
+              >
+                Login
+              </Link>
             )}
           </div>
         </Drawer>
 
+        {/* Main Content */}
         <main className="flex-1 overflow-auto p-8 lg:w-[90%]">
           <Outlet />
         </main>
       </div>
 
+      {/* Bottom Footer */}
       <footer className="w-full bg-slate-900 text-white shadow-md">
         <div className="text-center py-2 text-xs text-slate-400 border-t border-slate-800">
-          <div className="mb-2">© 2026 Capitol Technology Solutions, Inc - Research Triangle Park - North Carolina</div>
+          <div className="mb-2">
+            © 2026 Capitol Technology Solutions, Inc - Research Triangle Park - North Carolina
+          </div>
           <div className="flex justify-center">
             <img src={ctsLogo} alt="CTS Logo" className="h-[25px] w-[25px] object-contain" />
           </div>
         </div>
       </footer>
 
+      {/* Location Bar */}
       {loginTime && (
         <div className="w-full bg-slate-950 text-slate-300 px-4 py-2 text-xs">
           <div className="flex justify-center gap-6 flex-wrap">

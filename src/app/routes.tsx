@@ -37,6 +37,7 @@ import { Grok } from "./components/Grok";
 import { VideoPrompt } from "./components/VideoPrompt";
 import { AccuWeather } from "./components/AccuWeather";
 import { VisualPrompt } from "./components/VisualPrompt";
+import { Multipart } from "./components/Multipart";
 
 export const router = createBrowserRouter([
   {
@@ -80,6 +81,7 @@ export const router = createBrowserRouter([
       { path: "videoprompt", element: <ProtectedRoute><VideoPrompt /></ProtectedRoute> },
       { path: "accuweather", element: <ProtectedRoute><AccuWeather /></ProtectedRoute> },
       { path: "visualprompt", element: <ProtectedRoute><VisualPrompt /></ProtectedRoute> },
+      { path: "multipart", element: <ProtectedRoute><Multipart /></ProtectedRoute> },
     ],
   },
 ]);
