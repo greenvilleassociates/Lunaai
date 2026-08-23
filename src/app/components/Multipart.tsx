@@ -1,20 +1,14 @@
 import { useState, useCallback, useRef } from "react";
 import {
   Box, Typography, Paper, Button, Chip, IconButton, Select, MenuItem,
-  FormControl, InputLabel, Tooltip, Divider, CircularProgress, Alert,
+  FormControl, Tooltip, Divider, CircularProgress, Alert,
   Collapse,
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import SendIcon from "@mui/icons-material/Send";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import ClearAllIcon from "@mui/icons-material/ClearAll";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import ExpandLessIcon from "@mui/icons-material/ExpandLess";
-import AccountTreeIcon from "@mui/icons-material/AccountTree";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
-import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
-import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import {
+  Plus, Trash2, Send, Copy, RotateCcw,
+  ChevronDown, ChevronUp, GitFork,
+  CheckCircle2, AlertCircle, Clock,
+} from "lucide-react";
 import { getApiUrl } from "../config/api";
 
 // ─── Provider registry ──────────────────────────────────────────────────────
@@ -234,10 +228,10 @@ function SessionCard({
           <CircularProgress size={16} sx={{ color: prov.color, flexShrink: 0 }} />
         )}
         {session.status === "success" && (
-          <CheckCircleOutlineIcon sx={{ fontSize: 18, color: prov.color, flexShrink: 0 }} />
+          <CheckCircle2 size={18} style={{ color: prov.color, flexShrink: 0 }} />
         )}
         {session.status === "error" && (
-          <ErrorOutlineIcon sx={{ fontSize: 18, color: "#ef4444", flexShrink: 0 }} />
+          <AlertCircle size={18} style={{ color: "#ef4444", flexShrink: 0 }} />
         )}
 
         {/* Remove button */}
@@ -249,7 +243,7 @@ function SessionCard({
               disabled={totalSessions <= 1}
               sx={{ color: "#94a3b8", "&:hover": { color: "#ef4444" } }}
             >
-              <DeleteOutlineIcon fontSize="small" />
+              <Trash2 size={16} />
             </IconButton>
           </span>
         </Tooltip>
@@ -315,9 +309,9 @@ function SessionCard({
             className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors"
           >
             {session.showRequest ? (
-              <ExpandLessIcon sx={{ fontSize: 14 }} />
+              <ChevronUp size={14} />
             ) : (
-              <ExpandMoreIcon sx={{ fontSize: 14 }} />
+              <ChevronDown size={14} />
             )}
             Request payload
           </button>
@@ -371,7 +365,7 @@ function SessionCard({
       >
         {elapsed && (
           <Box className="flex items-center gap-1 text-xs text-slate-400 mr-auto">
-            <AccessTimeIcon sx={{ fontSize: 13 }} />
+            <Clock size={13} />
             {elapsed}s
           </Box>
         )}
@@ -384,7 +378,7 @@ function SessionCard({
         {session.status === "success" && (
           <Tooltip title="Copy response">
             <IconButton size="small" onClick={handleCopy} sx={{ color: "#94a3b8" }}>
-              <ContentCopyIcon sx={{ fontSize: 15 }} />
+              <Copy size={15} />
             </IconButton>
           </Tooltip>
         )}
@@ -394,7 +388,7 @@ function SessionCard({
           size="small"
           disabled={session.status === "loading" || !activeQuestion.trim()}
           onClick={() => onSend(session.id)}
-          startIcon={<SendIcon sx={{ fontSize: 13 }} />}
+          startIcon={<Send size={13} />}
           sx={{
             fontSize: "0.72rem",
             py: 0.5,
@@ -593,7 +587,7 @@ export function Multipart() {
     <div className="max-w-[1600px] mx-auto px-2 pb-8">
       {/* Page header */}
       <Box className="flex items-center gap-3 mb-6">
-        <AccountTreeIcon sx={{ fontSize: 42 }} className="text-slate-700" />
+        <GitFork size={42} className="text-slate-700" />
         <div>
           <h1 className="text-3xl font-bold">Multipart Sessions</h1>
           <p className="text-slate-600 text-sm">
@@ -641,7 +635,7 @@ export function Multipart() {
               anyLoading ? (
                 <CircularProgress size={14} sx={{ color: "white" }} />
               ) : (
-                <SendIcon />
+                <Send size={16} />
               )
             }
             sx={{
@@ -658,7 +652,7 @@ export function Multipart() {
               variant="outlined"
               size="small"
               onClick={clearAll}
-              startIcon={<ClearAllIcon />}
+              startIcon={<RotateCcw size={14} />}
               sx={{ borderColor: "#64748b", color: "#64748b" }}
             >
               Clear Responses
@@ -740,7 +734,7 @@ export function Multipart() {
               },
             }}
           >
-            <AddIcon sx={{ fontSize: 32, color: "#94a3b8" }} />
+            <Plus size={32} className="text-slate-400" />
             <Typography variant="body2" color="text.secondary" fontWeight={600}>
               Add Session
             </Typography>
