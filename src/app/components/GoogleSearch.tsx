@@ -3,6 +3,7 @@ import { Box, Typography, TextField, Button, Paper, Alert, CircularProgress, Chi
 import SearchIcon from "@mui/icons-material/Search";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import { API_CONFIG, getApiUrl } from "../config/api";
+import { VoicePlayButton } from "./ui/VoicePlayButton";
 
 interface GoogleSearchResult {
   id: number;
@@ -268,6 +269,14 @@ export function GoogleSearch() {
                       </Typography>
                     </>
                   )}
+                  <Box sx={{ ml: "auto" }}>
+                    <VoicePlayButton
+                      chatQueryId={item.id}
+                      text={item.response}
+                      uid={uid}
+                      color="#4285F4"
+                    />
+                  </Box>
                 </Box>
               </Paper>
             ))}

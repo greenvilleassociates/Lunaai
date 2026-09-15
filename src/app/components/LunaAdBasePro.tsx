@@ -25,8 +25,10 @@ import {
   FormControl,
   InputLabel,
   Tooltip,
+  Switch,
+  FormControlLabel,
 } from "@mui/material";
-import { Grid2 } from "@mui/material";
+import { Grid } from "@mui/material";
 import {
   Add,
   Edit,
@@ -38,6 +40,7 @@ import {
   Refresh,
   Download,
   FilterList,
+  PowerSettingsNew,
 } from "@mui/icons-material";
 import { addbaseApi } from "../services/apiService";
 import type { Addbase } from "../types/api";
@@ -50,13 +53,14 @@ export function LunaAdBasePro() {
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [filterPlatform, setFilterPlatform] = useState("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
 
-  // Form state
   const [formData, setFormData] = useState<Partial<Addbase>>({
     addid: "",
     sourceip: "",
     destinationip: "",
     clientid: "",
+    customername: "",
     mktgurl: "",
     origplatform: "",
     targetplatform: "",
@@ -66,6 +70,7 @@ export function LunaAdBasePro() {
     cost: 0,
     price: 0,
     discount: 0,
+    isactive: true,
   });
 
   useEffect(() => {
@@ -81,12 +86,12 @@ export function LunaAdBasePro() {
     } catch (err) {
       console.error("Failed to load adbase entries:", err);
       setError("Failed to load advertising campaigns. Using demo data.");
-      // Load demo data
       setAdbaseEntries([
         {
           id: 1,
           addid: "AD-2026-001",
           clientid: "CL-001",
+          customername: "Coca-Cola Enterprises",
           mktgurl: "https://luna.capitoltechnology.net/campaign/spring2026",
           origplatform: "Google Ads",
           targetplatform: "Mobile Web",
@@ -98,11 +103,13 @@ export function LunaAdBasePro() {
           cost: 250.50,
           price: 500.00,
           discount: 50.00,
+          isactive: true,
         },
         {
           id: 2,
           addid: "AD-2026-002",
           clientid: "CL-002",
+          customername: "Adobe Systems Inc.",
           mktgurl: "https://luna.capitoltechnology.net/campaign/ai-summit",
           origplatform: "Meta Ads",
           targetplatform: "Facebook",
@@ -114,11 +121,13 @@ export function LunaAdBasePro() {
           cost: 420.00,
           price: 850.00,
           discount: 85.00,
+          isactive: false,
         },
         {
           id: 3,
           addid: "AD-2026-003",
           clientid: "CL-003",
+          customername: "Capitol Technology Solutions",
           mktgurl: "https://luna.capitoltechnology.net/campaign/luna-launch",
           origplatform: "LinkedIn",
           targetplatform: "Desktop Web",
@@ -130,6 +139,7 @@ export function LunaAdBasePro() {
           cost: 680.00,
           price: 1200.00,
           discount: 120.00,
+          isactive: true,
         },
       ]);
     } finally {
@@ -148,6 +158,7 @@ export function LunaAdBasePro() {
         sourceip: "",
         destinationip: "",
         clientid: "",
+        customername: "",
         mktgurl: "",
         origplatform: "",
         targetplatform: "",
@@ -157,6 +168,7 @@ export function LunaAdBasePro() {
         cost: 0,
         price: 0,
         discount: 0,
+        isactive: true,
       });
     }
     setOpenDialog(true);
@@ -191,7 +203,6 @@ export function LunaAdBasePro() {
 
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this campaign?")) return;
-
     try {
       await addbaseApi.delete(id);
       setSuccessMessage("Campaign deleted successfully!");
@@ -200,6 +211,27 @@ export function LunaAdBasePro() {
     } catch (err) {
       console.error("Failed to delete campaign:", err);
       setError("Failed to delete campaign. Please try again.");
+      setTimeout(() => setError(""), 3000);
+    }
+  };
+
+  const handleToggleActive = async (entry: Addbase) => {
+    if (!entry.id) return;
+    const nowActive = !entry.isactive;
+    // Optimistic UI update
+    setAdbaseEntries(prev =>
+      prev.map(e => e.id === entry.id ? { ...e, isactive: nowActive } : e)
+    );
+    try {
+      await addbaseApi.update(entry.id, { isactive: nowActive });
+      setSuccessMessage(`Campaign ${nowActive ? "enabled" : "disabled"} successfully!`);
+      setTimeout(() => setSuccessMessage(""), 3000);
+    } catch (err) {
+      // Revert on failure
+      setAdbaseEntries(prev =>
+        prev.map(e => e.id === entry.id ? { ...e, isactive: !nowActive } : e)
+      );
+      setError("Failed to update campaign status.");
       setTimeout(() => setError(""), 3000);
     }
   };
@@ -218,9 +250,13 @@ export function LunaAdBasePro() {
     return (price - cost - discount).toFixed(2);
   };
 
-  const filteredEntries = filterPlatform === "all"
-    ? adbaseEntries
-    : adbaseEntries.filter(e => e.origplatform === filterPlatform);
+  const filteredEntries = adbaseEntries
+    .filter(e => filterPlatform === "all" || e.origplatform === filterPlatform)
+    .filter(e => {
+      if (filterStatus === "active") return e.isactive !== false;
+      if (filterStatus === "inactive") return e.isactive === false;
+      return true;
+    });
 
   const totalCost = filteredEntries.reduce((sum, entry) => sum + (entry.cost || 0), 0);
   const totalRevenue = filteredEntries.reduce((sum, entry) => sum + (entry.price || 0), 0);
@@ -229,6 +265,9 @@ export function LunaAdBasePro() {
   const avgROI = totalCost > 0 ? (((totalRevenue - totalCost) / totalCost) * 100).toFixed(1) : "0";
 
   const platforms = ["all", ...new Set(adbaseEntries.map(e => e.origplatform).filter(Boolean))];
+
+  const activeCount = adbaseEntries.filter(e => e.isactive !== false).length;
+  const inactiveCount = adbaseEntries.filter(e => e.isactive === false).length;
 
   const bannerAdImpressions = adbaseEntries.filter(
     e => e.origplatform === "web-login" && e.targetplatform === "banner-ad"
@@ -314,8 +353,8 @@ export function LunaAdBasePro() {
         <Typography variant="h5" sx={{ fontWeight: 600, color: "#000", mb: 2 }}>
           Banner Ad Impressions
         </Typography>
-        <Grid2 container spacing={2} sx={{ mb: 2 }}>
-          <Grid2 xs={12} sm={6} md={3}>
+        <Grid container spacing={2} sx={{ mb: 2 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Card sx={{ bgcolor: "#f0f4ff" }}>
               <CardContent>
                 <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -329,8 +368,8 @@ export function LunaAdBasePro() {
                 </Box>
               </CardContent>
             </Card>
-          </Grid2>
-          <Grid2 xs={12} sm={6} md={3}>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Card sx={{ bgcolor: "#fff3e0" }}>
               <CardContent>
                 <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -344,8 +383,8 @@ export function LunaAdBasePro() {
                 </Box>
               </CardContent>
             </Card>
-          </Grid2>
-        </Grid2>
+          </Grid>
+        </Grid>
 
         <TableContainer component={Paper} sx={{ mb: 3 }}>
           <Table size="small">
@@ -389,8 +428,8 @@ export function LunaAdBasePro() {
       </Box>
 
       {/* Summary Cards */}
-      <Grid2 container spacing={2} sx={{ mb: 3 }}>
-        <Grid2 xs={12} sm={6} md={3}>
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -404,8 +443,8 @@ export function LunaAdBasePro() {
               </Box>
             </CardContent>
           </Card>
-        </Grid2>
-        <Grid2 xs={12} sm={6} md={3}>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -419,8 +458,8 @@ export function LunaAdBasePro() {
               </Box>
             </CardContent>
           </Card>
-        </Grid2>
-        <Grid2 xs={12} sm={6} md={3}>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -434,8 +473,8 @@ export function LunaAdBasePro() {
               </Box>
             </CardContent>
           </Card>
-        </Grid2>
-        <Grid2 xs={12} sm={6} md={3}>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -449,13 +488,13 @@ export function LunaAdBasePro() {
               </Box>
             </CardContent>
           </Card>
-        </Grid2>
-      </Grid2>
+        </Grid>
+      </Grid>
 
-      {/* Filter */}
-      <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 2 }}>
+      {/* Filters */}
+      <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
         <FilterList />
-        <FormControl size="small" sx={{ minWidth: 200 }}>
+        <FormControl size="small" sx={{ minWidth: 180 }}>
           <InputLabel>Platform</InputLabel>
           <Select value={filterPlatform} label="Platform" onChange={(e) => setFilterPlatform(e.target.value)}>
             {platforms.map((platform) => (
@@ -463,6 +502,18 @@ export function LunaAdBasePro() {
                 {platform === "all" ? "All Platforms" : platform}
               </MenuItem>
             ))}
+          </Select>
+        </FormControl>
+        <FormControl size="small" sx={{ minWidth: 150 }}>
+          <InputLabel>Status</InputLabel>
+          <Select
+            value={filterStatus}
+            label="Status"
+            onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
+          >
+            <MenuItem value="all">All ({adbaseEntries.length})</MenuItem>
+            <MenuItem value="active">Active ({activeCount})</MenuItem>
+            <MenuItem value="inactive">Inactive ({inactiveCount})</MenuItem>
           </Select>
         </FormControl>
         <Typography variant="body2" color="text.secondary">
@@ -475,7 +526,9 @@ export function LunaAdBasePro() {
         <Table>
           <TableHead>
             <TableRow sx={{ bgcolor: "#f5f5f5" }}>
+              <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Campaign ID</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Customer</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Client ID</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Platform</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Target</TableCell>
@@ -489,57 +542,82 @@ export function LunaAdBasePro() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={9} align="center">Loading campaigns...</TableCell>
+                <TableCell colSpan={11} align="center">Loading campaigns...</TableCell>
               </TableRow>
             ) : filteredEntries.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} align="center">No campaigns found. Create your first campaign!</TableCell>
+                <TableCell colSpan={11} align="center">No campaigns found. Create your first campaign!</TableCell>
               </TableRow>
             ) : (
-              filteredEntries.map((entry) => (
-                <TableRow key={entry.id} hover>
-                  <TableCell>{entry.addid}</TableCell>
-                  <TableCell>{entry.clientid}</TableCell>
-                  <TableCell>
-                    <Chip label={entry.origplatform} size="small" sx={{ bgcolor: "#e3f2fd", color: "#1976d2" }} />
-                  </TableCell>
-                  <TableCell>{entry.targetplatform}</TableCell>
-                  <TableCell>${(entry.cost || 0).toFixed(2)}</TableCell>
-                  <TableCell>${(entry.price || 0).toFixed(2)}</TableCell>
-                  <TableCell sx={{ color: parseFloat(calculateProfit(entry)) >= 0 ? "#28a745" : "#dc3545", fontWeight: 600 }}>
-                    ${calculateProfit(entry)}
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={`${calculateROI(entry)}%`}
-                      size="small"
-                      sx={{
-                        bgcolor: parseFloat(calculateROI(entry)) > 0 ? "#d4edda" : "#f8d7da",
-                        color: parseFloat(calculateROI(entry)) > 0 ? "#155724" : "#721c24",
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: "flex", gap: 0.5 }}>
-                      <Tooltip title="View Details">
-                        <IconButton size="small" onClick={() => handleOpenDialog(entry)}>
-                          <Visibility fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Edit Campaign">
-                        <IconButton size="small" onClick={() => handleOpenDialog(entry)}>
-                          <Edit fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete Campaign">
-                        <IconButton size="small" onClick={() => entry.id && handleDelete(entry.id)}>
-                          <Delete fontSize="small" sx={{ color: "#8B0000" }} />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))
+              filteredEntries.map((entry) => {
+                const inactive = entry.isactive === false;
+                return (
+                  <TableRow
+                    key={entry.id}
+                    hover
+                    sx={{ opacity: inactive ? 0.55 : 1, bgcolor: inactive ? "#fafafa" : "inherit" }}
+                  >
+                    <TableCell>
+                      <Chip
+                        label={inactive ? "Inactive" : "Active"}
+                        size="small"
+                        sx={{
+                          bgcolor: inactive ? "#f0f0f0" : "#d4edda",
+                          color: inactive ? "#888" : "#155724",
+                          fontWeight: 600,
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ textDecoration: inactive ? "line-through" : "none", color: inactive ? "#999" : "inherit" }}>
+                      {entry.addid}
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 500 }}>{entry.customername || "—"}</TableCell>
+                    <TableCell>{entry.clientid}</TableCell>
+                    <TableCell>
+                      <Chip label={entry.origplatform} size="small" sx={{ bgcolor: "#e3f2fd", color: "#1976d2" }} />
+                    </TableCell>
+                    <TableCell>{entry.targetplatform}</TableCell>
+                    <TableCell>${(entry.cost || 0).toFixed(2)}</TableCell>
+                    <TableCell>${(entry.price || 0).toFixed(2)}</TableCell>
+                    <TableCell sx={{ color: parseFloat(calculateProfit(entry)) >= 0 ? "#28a745" : "#dc3545", fontWeight: 600 }}>
+                      ${calculateProfit(entry)}
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={`${calculateROI(entry)}%`}
+                        size="small"
+                        sx={{
+                          bgcolor: parseFloat(calculateROI(entry)) > 0 ? "#d4edda" : "#f8d7da",
+                          color: parseFloat(calculateROI(entry)) > 0 ? "#155724" : "#721c24",
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: "flex", gap: 0.5 }}>
+                        <Tooltip title={inactive ? "Enable Campaign" : "Disable Campaign"}>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleToggleActive(entry)}
+                            sx={{ color: inactive ? "#28a745" : "#f57c00" }}
+                          >
+                            <PowerSettingsNew fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Edit Campaign">
+                          <IconButton size="small" onClick={() => handleOpenDialog(entry)}>
+                            <Edit fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete Campaign">
+                          <IconButton size="small" onClick={() => entry.id && handleDelete(entry.id)}>
+                            <Delete fontSize="small" sx={{ color: "#8B0000" }} />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
@@ -550,61 +628,86 @@ export function LunaAdBasePro() {
         <DialogTitle>{editingEntry ? "Edit Campaign" : "Create New Campaign"}</DialogTitle>
         <DialogContent>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
-            <Grid2 container spacing={2}>
-              <Grid2 xs={12} sm={6}>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField fullWidth label="Campaign ID" value={formData.addid || ""}
                   onChange={(e) => setFormData({ ...formData, addid: e.target.value })} />
-              </Grid2>
-              <Grid2 xs={12} sm={6}>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField fullWidth label="Client ID" value={formData.clientid || ""}
                   onChange={(e) => setFormData({ ...formData, clientid: e.target.value })} />
-              </Grid2>
-              <Grid2 xs={12} sm={6}>
+              </Grid>
+              <Grid size={12}>
+                <TextField
+                  fullWidth
+                  label="Customer Name"
+                  value={formData.customername || ""}
+                  onChange={(e) => setFormData({ ...formData, customername: e.target.value })}
+                  placeholder="e.g., Acme Corporation"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField fullWidth label="Origin Platform" value={formData.origplatform || ""}
                   onChange={(e) => setFormData({ ...formData, origplatform: e.target.value })}
                   placeholder="e.g., Google Ads, Meta Ads, LinkedIn" />
-              </Grid2>
-              <Grid2 xs={12} sm={6}>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField fullWidth label="Target Platform" value={formData.targetplatform || ""}
                   onChange={(e) => setFormData({ ...formData, targetplatform: e.target.value })}
                   placeholder="e.g., Mobile Web, Facebook, Desktop Web" />
-              </Grid2>
-              <Grid2 xs={12}>
+              </Grid>
+              <Grid size={12}>
                 <TextField fullWidth label="Marketing URL" value={formData.mktgurl || ""}
                   onChange={(e) => setFormData({ ...formData, mktgurl: e.target.value })} />
-              </Grid2>
-              <Grid2 xs={12} sm={6}>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField fullWidth label="Source IP" value={formData.sourceip || ""}
                   onChange={(e) => setFormData({ ...formData, sourceip: e.target.value })} />
-              </Grid2>
-              <Grid2 xs={12} sm={6}>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField fullWidth label="Destination IP" value={formData.destinationip || ""}
                   onChange={(e) => setFormData({ ...formData, destinationip: e.target.value })} />
-              </Grid2>
-              <Grid2 xs={12} sm={6}>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField fullWidth label="Latitude" value={formData.ulat || ""}
                   onChange={(e) => setFormData({ ...formData, ulat: e.target.value })} />
-              </Grid2>
-              <Grid2 xs={12} sm={6}>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField fullWidth label="Longitude" value={formData.ulong || ""}
                   onChange={(e) => setFormData({ ...formData, ulong: e.target.value })} />
-              </Grid2>
-              <Grid2 xs={12} sm={4}>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField fullWidth label="Cost" type="number" value={formData.cost || 0}
                   onChange={(e) => setFormData({ ...formData, cost: parseFloat(e.target.value) || 0 })}
                   InputProps={{ startAdornment: "$" }} />
-              </Grid2>
-              <Grid2 xs={12} sm={4}>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField fullWidth label="Revenue" type="number" value={formData.price || 0}
                   onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
                   InputProps={{ startAdornment: "$" }} />
-              </Grid2>
-              <Grid2 xs={12} sm={4}>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField fullWidth label="Discount" type="number" value={formData.discount || 0}
                   onChange={(e) => setFormData({ ...formData, discount: parseFloat(e.target.value) || 0 })}
                   InputProps={{ startAdornment: "$" }} />
-              </Grid2>
-            </Grid2>
+              </Grid>
+              <Grid size={12}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.isactive !== false}
+                      onChange={(e) => setFormData({ ...formData, isactive: e.target.checked })}
+                      sx={{ "& .MuiSwitch-switchBase.Mui-checked": { color: "#28a745" }, "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { bgcolor: "#28a745" } }}
+                    />
+                  }
+                  label={
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                      {formData.isactive !== false ? "Active — campaign is running" : "Inactive — campaign is paused"}
+                    </Typography>
+                  }
+                />
+              </Grid>
+            </Grid>
           </Box>
         </DialogContent>
         <DialogActions>

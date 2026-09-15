@@ -298,6 +298,7 @@ export interface Addbase {
   sourceip?: string | null;
   destinationip?: string | null;
   clientid?: string | null;
+  customername?: string | null;
   mktgurl?: string | null;
   origplatform?: string | null;
   targetplatform?: string | null;
@@ -307,6 +308,7 @@ export interface Addbase {
   cost?: number | null;
   price?: number | null;
   discount?: number | null;
+  isactive?: boolean | null;
 }
 
 export interface Timesheet {

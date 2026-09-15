@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Box, Typography, TextField, Button, Paper, Alert, CircularProgress, Chip } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import { API_CONFIG, getApiUrl } from "../config/api";
+import { VoicePlayButton } from "./ui/VoicePlayButton";
 
 const GROK_COLOR = "#000000";
 
@@ -39,7 +40,7 @@ function GrokIcon({ size = 40, color = GROK_COLOR }: { size?: number; color?: st
         flexShrink: 0,
       }}
     >
-      𝗫
+      𝗢
     </Box>
   );
 }
@@ -288,6 +289,13 @@ export function Grok() {
                       </Typography>
                     </>
                   )}
+                  <Box sx={{ ml: "auto" }}>
+                    <VoicePlayButton
+                      chatQueryId={item.id}
+                      text={item.response}
+                      uid={uid}
+                    />
+                  </Box>
                 </Box>
               </Paper>
             ))}
