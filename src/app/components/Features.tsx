@@ -12,6 +12,7 @@ import GoogleIcon from "@mui/icons-material/Google";
 import AbcIcon from "@mui/icons-material/Abc";
 import PsychologyIcon from "@mui/icons-material/Psychology";
 import { Box } from "@mui/material";
+import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import ctsLogo from "figma:asset/399d93660a307619ab55b61f935095fec4286492.png";
 import superLunaIcon from "figma:asset/cfadca739638cf837cbfaf51361c717172db777b.png";
 
@@ -164,7 +165,7 @@ export function Features() {
             userSelect: "none",
           }}
         >
-          𝗫
+          {"𝗫"}
         </Box>
       ),
       action: "Ask Grok",
@@ -183,7 +184,7 @@ export function Features() {
     {
       id: 14,
       title: "AccuWeather Forecast",
-      description: "Get live current conditions and forecasts for any city, zip code, or location via AccuWeather.",
+      description: "Get live current conditions and forecasts for any city, zip code, or location via AccuWeather. Audio-decoded weather briefings via the LunaAI pipeline.",
       icon: <WbSunnyIcon sx={{ fontSize: 48, color: "#EF6C00" }} />,
       action: "Get Weather",
       route: "/accuweather",
@@ -196,6 +197,15 @@ export function Features() {
       icon: <ImageIcon sx={{ fontSize: 48, color: "#7C3AED" }} />,
       action: "Open Camera",
       route: "/visualprompt",
+      external: false,
+    },
+    {
+      id: 16,
+      title: "MultiLLM Compare",
+      description: "Run simultaneous conversations across multiple LLM providers — Claude, Grok, Empowr, SuperLuna, Context Router, and Medical Domain. Each session maintains full conversation history sent with every request.",
+      icon: <CompareArrowsIcon sx={{ fontSize: 48, color: "#8B0000" }} />,
+      action: "Open MultiLLM",
+      route: "/multipart",
       external: false,
     },
   ];
@@ -214,6 +224,7 @@ export function Features() {
       <p className="text-slate-600 mb-8">
         Access LunaAI's powerful tools to interact with multiple LLM providers and manage your AI workflows.
       </p>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {features.map((feature) => (
           <div
@@ -221,11 +232,15 @@ export function Features() {
             className="p-6 border border-slate-200 rounded-lg hover:shadow-lg transition-shadow bg-white"
           >
             <div className="flex items-start gap-4">
-              <div className="text-slate-700 flex-shrink-0">{feature.icon}</div>
+              <div className="text-slate-700 flex-shrink-0">
+                {feature.icon}
+              </div>
               <div className="flex-1">
                 <h3 className="text-xl mb-2">{feature.title}</h3>
-                <p className="text-slate-600 text-sm mb-4">{feature.description}</p>
-                <button
+                <p className="text-slate-600 text-sm mb-4">
+                  {feature.description}
+                </p>
+                <button 
                   onClick={() => handleFeatureClick(feature)}
                   disabled={!feature.route}
                   className={`px-4 py-2 rounded text-sm transition-colors inline-flex items-center gap-2 ${
