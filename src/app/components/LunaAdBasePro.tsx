@@ -40,7 +40,6 @@ import {
   Refresh,
   Download,
   FilterList,
-  PowerSettingsNew,
 } from "@mui/icons-material";
 import { addbaseApi } from "../services/apiService";
 import type { Addbase } from "../types/api";
@@ -526,10 +525,9 @@ export function LunaAdBasePro() {
         <Table>
           <TableHead>
             <TableRow sx={{ bgcolor: "#f5f5f5" }}>
-              <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Campaign ID</TableCell>
+              <TableCell sx={{ fontWeight: 600, whiteSpace: "nowrap" }}>Active</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Customer</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Client ID</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Campaign ID</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Platform</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Target</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Cost</TableCell>
@@ -542,11 +540,11 @@ export function LunaAdBasePro() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={11} align="center">Loading campaigns...</TableCell>
+                <TableCell colSpan={10} align="center">Loading campaigns...</TableCell>
               </TableRow>
             ) : filteredEntries.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={11} align="center">No campaigns found. Create your first campaign!</TableCell>
+                <TableCell colSpan={10} align="center">No campaigns found. Create your first campaign!</TableCell>
               </TableRow>
             ) : (
               filteredEntries.map((entry) => {
@@ -555,28 +553,41 @@ export function LunaAdBasePro() {
                   <TableRow
                     key={entry.id}
                     hover
-                    sx={{ opacity: inactive ? 0.55 : 1, bgcolor: inactive ? "#fafafa" : "inherit" }}
+                    sx={{ opacity: inactive ? 0.6 : 1, bgcolor: inactive ? "#fafafa" : "inherit" }}
                   >
                     <TableCell>
-                      <Chip
-                        label={inactive ? "Inactive" : "Active"}
-                        size="small"
-                        sx={{
-                          bgcolor: inactive ? "#f0f0f0" : "#d4edda",
-                          color: inactive ? "#888" : "#155724",
-                          fontWeight: 600,
-                        }}
-                      />
+                      <Tooltip title={inactive ? "Enable campaign" : "Disable campaign"}>
+                        <Switch
+                          size="small"
+                          checked={!inactive}
+                          onChange={() => handleToggleActive(entry)}
+                          sx={{
+                            "& .MuiSwitch-switchBase.Mui-checked": { color: "#28a745" },
+                            "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { bgcolor: "#28a745" },
+                          }}
+                        />
+                      </Tooltip>
                     </TableCell>
-                    <TableCell sx={{ textDecoration: inactive ? "line-through" : "none", color: inactive ? "#999" : "inherit" }}>
+                    <TableCell>
+                      <Box>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 600, color: inactive ? "#999" : "#111", lineHeight: 1.2 }}
+                        >
+                          {entry.customername || "—"}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {entry.clientid}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ textDecoration: inactive ? "line-through" : "none", color: inactive ? "#aaa" : "inherit", fontSize: "0.8rem" }}>
                       {entry.addid}
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 500 }}>{entry.customername || "—"}</TableCell>
-                    <TableCell>{entry.clientid}</TableCell>
                     <TableCell>
                       <Chip label={entry.origplatform} size="small" sx={{ bgcolor: "#e3f2fd", color: "#1976d2" }} />
                     </TableCell>
-                    <TableCell>{entry.targetplatform}</TableCell>
+                    <TableCell sx={{ fontSize: "0.8rem" }}>{entry.targetplatform}</TableCell>
                     <TableCell>${(entry.cost || 0).toFixed(2)}</TableCell>
                     <TableCell>${(entry.price || 0).toFixed(2)}</TableCell>
                     <TableCell sx={{ color: parseFloat(calculateProfit(entry)) >= 0 ? "#28a745" : "#dc3545", fontWeight: 600 }}>
@@ -594,15 +605,6 @@ export function LunaAdBasePro() {
                     </TableCell>
                     <TableCell>
                       <Box sx={{ display: "flex", gap: 0.5 }}>
-                        <Tooltip title={inactive ? "Enable Campaign" : "Disable Campaign"}>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleToggleActive(entry)}
-                            sx={{ color: inactive ? "#28a745" : "#f57c00" }}
-                          >
-                            <PowerSettingsNew fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
                         <Tooltip title="Edit Campaign">
                           <IconButton size="small" onClick={() => handleOpenDialog(entry)}>
                             <Edit fontSize="small" />

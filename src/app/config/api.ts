@@ -316,7 +316,9 @@ export async function apiRequestNoAuth<T>(
       throw new Error(`API Error: ${response.status} ${response.statusText}`);
     }
 
-    return response.json();
+    // Handle 204 No Content and other empty-body responses
+    const text = await response.text();
+    return (text ? JSON.parse(text) : null) as T;
   } catch (error) {
     if (error instanceof TypeError && error.message.includes('fetch')) {
       console.error('🌐 Network Error - Cannot reach API:', {
