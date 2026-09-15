@@ -1,5 +1,41 @@
 [
   {
+    "id": 6,
+    "uid": "user-001",
+    "question": "What are the latest AI model releases in 2026?",
+    "response": "Several major AI model releases have happened in 2026:\n\n- **Anthropic Claude 5 family** (Opus 5, Sonnet 5, Fable 5, Haiku 4.5): Released in mid-2026 with significant gains in reasoning and code generation.\n- **OpenAI GPT-5**: Released Q1 2026, featuring improved multimodal capabilities and longer context windows.\n- **Google Gemini 2.0 Ultra**: Google's flagship model for 2026, strong in scientific reasoning and code.\n- **Meta Llama 4**: Open-weights model with strong multilingual support.\n\nEach release has pushed benchmarks further, especially in coding, math, and long-context tasks.",
+    "timestamp": "2026-09-01T10:15:00.0000000",
+    "metadata": "{\"source\":\"LunaAI Web Interface\",\"userAgent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36\"}",
+    "expectedtokens": 148,
+    "expectedcost": 0.0014800000190734863,
+    "requestType": 1,
+    "model": "websearch"
+  },
+  {
+    "id": 7,
+    "uid": "user-001",
+    "question": "Summarize the LunaAI platform capabilities",
+    "response": "LunaAI is an enterprise AI orchestration platform that routes queries across multiple LLM providers including Claude (Anthropic), Grok (xAI), Google Gemini, Empowr, and SuperLuna. Key capabilities include:\n\n- **Multi-LLM routing**: Context-aware routing via the Luna Context Router selects the best model for each query type.\n- **Voice & media ingestion**: Record or upload audio/video for AI transcription and processing.\n- **Medical domain routing**: Specialized clinical context routing to Claude with evidence-based response guidance.\n- **Enterprise security**: Full audit logging, user session tracking, and role-based access control.\n- **Desktop history**: All AI interactions are stored with token usage and cost tracking.",
+    "timestamp": "2026-09-05T14:30:22.0000000",
+    "metadata": "{\"source\":\"LunaAI Web Interface\",\"userAgent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36\"}",
+    "expectedtokens": 162,
+    "expectedcost": 0.0016200000047683716,
+    "requestType": 4,
+    "model": "claude"
+  },
+  {
+    "id": 8,
+    "uid": "user-001",
+    "question": "How does context routing work in enterprise AI?",
+    "response": "Context routing in enterprise AI involves analyzing the semantic intent and domain of a query, then dispatching it to the most suitable LLM provider. Common routing strategies:\n\n1. **Domain classification**: Identify if the query is medical, legal, technical, creative, etc.\n2. **Cost optimization**: Route to smaller models for simple queries, larger for complex ones.\n3. **Latency requirements**: Real-time queries go to faster models; background tasks to more thorough ones.\n4. **Compliance routing**: Regulated domains (HIPAA, legal) route to models with appropriate data handling.\n\nLunaAI's Context Router uses a combination of keyword analysis and embedding similarity to classify and route queries automatically.",
+    "timestamp": "2026-09-10T09:45:11.0000000",
+    "metadata": "{\"source\":\"LunaAI Web Interface\",\"userAgent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36\"}",
+    "expectedtokens": 157,
+    "expectedcost": 0.0015699999779462814,
+    "requestType": 1,
+    "model": "websearch"
+  },
+  {
     "id": 1,
     "uid": "user-003",
     "question": "Who are the Atlanta Falcons",

@@ -18,15 +18,25 @@ interface GrokResult {
   model?: string | null;
 }
 
+// xAI / Grok logo — stylised X
 function GrokIcon({ size = 40, color = GROK_COLOR }: { size?: number; color?: string }) {
   return (
     <Box
       sx={{
-        width: size, height: size, backgroundColor: color, color: "#fff",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontWeight: 900, fontSize: size * 0.48, borderRadius: "6px",
-        fontFamily: "'Arial Black', sans-serif", letterSpacing: "-0.05em",
-        userSelect: "none", flexShrink: 0,
+        width: size,
+        height: size,
+        backgroundColor: color,
+        color: "#fff",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontWeight: 900,
+        fontSize: size * 0.48,
+        borderRadius: "6px",
+        fontFamily: "'Arial Black', sans-serif",
+        letterSpacing: "-0.05em",
+        userSelect: "none",
+        flexShrink: 0,
       }}
     >
       𝗫
@@ -43,7 +53,9 @@ export function Grok() {
 
   const uid = localStorage.getItem("uid") || "";
 
-  useEffect(() => { loadHistory(); }, []);
+  useEffect(() => {
+    loadHistory();
+  }, []);
 
   const loadHistory = async () => {
     try {
@@ -55,36 +67,113 @@ export function Grok() {
         const data: GrokResult[] = await response.json();
         setHistory(data.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
       }
-    } catch { } finally { setHistoryLoading(false); }
+    } catch {
+      // API not yet available
+    } finally {
+      setHistoryLoading(false);
+    }
   };
 
   const handleSearch = async () => {
     if (!query.trim()) return;
     setSearching(true);
     setError(null);
+    const questionText = query.trim();
     try {
       const url = getApiUrl(API_CONFIG.ENDPOINTS.ZGROK);
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${uid}` },
-        body: JSON.stringify({ uid, question: query.trim(), requestType: 6, model: "grok" }),
+        body: JSON.stringify({
+          uid,
+          question: questionText,
+          requestType: 6,
+          model: "grok",
+        }),
       });
-      if (response.ok) {
-        const data: GrokResult = await response.json();
-        setHistory((prev) => [data, ...prev]);
-        setQuery("");
-      } else throw new Error(`API returned ${response.status}`);
+      if (!response.ok) {
+        const errText = await response.text().catch(() => "");
+        throw new Error(`HTTP ${response.status}${errText ? `: ${errText.slice(0, 200)}` : ""}`);
+      }
+
+      const text = await response.text();
+      let raw: Record<string, any> = {};
+
+      // Detect SSE stream (lines starting with "event:" or "data:")
+      const trimmed = text.trimStart();
+      if (trimmed.startsWith("event:") || trimmed.startsWith("data:")) {
+        // Backend may send the full accumulated response on every SSE event.
+        // Strategy: track the longest response seen (last event is typically most complete).
+        const deltaChunks: string[] = [];
+        let lastFullResponse = "";
+        for (const line of text.split(/\r?\n/)) {
+          if (line.startsWith("data:")) {
+            const chunk = line.slice(5).trim();
+            if (!chunk || chunk === "[DONE]") continue;
+            try {
+              const parsed = JSON.parse(chunk);
+              const content = parsed.response ?? parsed.content ?? parsed.text ?? "";
+              const delta = parsed.delta ?? "";
+              if (parsed.id != null) raw = { ...raw, ...parsed };
+              if (content) lastFullResponse = content;
+              if (delta) deltaChunks.push(delta);
+            } catch {
+              // plain-text SSE chunk — treat as delta
+              deltaChunks.push(chunk);
+            }
+          }
+        }
+        // Prefer full response field if present; otherwise join unique deltas
+        if (lastFullResponse) {
+          raw.response = lastFullResponse;
+        } else if (deltaChunks.length > 0) {
+          const deduped = deltaChunks.filter(
+            (c, i) => i === 0 || c.trim() !== deltaChunks[i - 1].trim()
+          );
+          raw.response = deduped.join("");
+        }
+      } else {
+        try {
+          raw = JSON.parse(text);
+        } catch {
+          raw = { response: text };
+        }
+      }
+
+      // Normalise to a full GrokResult — use server fields when available, fill gaps locally
+      const result: GrokResult = {
+        id: raw.id ?? Date.now(),
+        uid: raw.uid ?? uid,
+        question: raw.question ?? questionText,
+        response: raw.response ?? "",
+        timestamp: raw.timestamp ?? new Date().toISOString(),
+        expectedtokens: raw.expectedtokens ?? 0,
+        expectedcost: raw.expectedcost ?? 0,
+        requestType: raw.requestType ?? 6,
+        model: raw.model ?? "grok",
+      };
+      setHistory((prev) => [result, ...prev]);
+      setQuery("");
     } catch (err) {
-      setError("Unable to reach the Grok API (/api/ZGrok). The endpoint may not be configured yet.");
-    } finally { setSearching(false); }
+      setError(err instanceof Error ? err.message : "Unable to reach the Grok API (/api/ZGrok).");
+      console.error("Grok search error:", err);
+    } finally {
+      setSearching(false);
+    }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === "Enter") handleSearch(); };
-  const formatDate = (ts: string) => new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleSearch();
+  };
+
+  const formatDate = (ts: string) =>
+    new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
   const formatCost = (cost: number) => `$${cost.toFixed(4)}`;
 
   return (
     <div className="max-w-5xl mx-auto">
+      {/* Header */}
       <Box className="mb-6">
         <Box className="flex items-center gap-3 mb-2">
           <GrokIcon size={40} />
@@ -98,48 +187,107 @@ export function Grok() {
         </Alert>
       </Box>
 
+      {/* Search Box */}
       <Paper className="p-6 mb-6" elevation={2}>
         <Box className="flex items-center gap-3 mb-4">
           <SearchIcon className="text-slate-600" fontSize="large" />
           <Typography variant="h6">Ask Grok</Typography>
         </Box>
-        {error && <Alert severity="error" className="mb-3">{error}</Alert>}
+
+        {error && (
+          <Alert severity="error" className="mb-3">
+            {error}
+          </Alert>
+        )}
+
         <Box className="flex gap-3">
-          <TextField fullWidth value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={handleKeyDown}
-            placeholder="Ask Grok anything..." variant="outlined" size="small" disabled={searching} />
-          <Button variant="contained" onClick={handleSearch} disabled={searching || !query.trim()}
-            startIcon={searching ? <CircularProgress size={16} color="inherit" /> : <GrokIcon size={20} color="#fff" />}
-            sx={{ backgroundColor: GROK_COLOR, "&:hover": { backgroundColor: "#333" }, whiteSpace: "nowrap", minWidth: 140, textTransform: "none" }}>
+          <TextField
+            fullWidth
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask Grok anything..."
+            variant="outlined"
+            size="small"
+            disabled={searching}
+          />
+          <Button
+            variant="contained"
+            onClick={handleSearch}
+            disabled={searching || !query.trim()}
+            startIcon={
+              searching
+                ? <CircularProgress size={16} color="inherit" />
+                : <GrokIcon size={20} color="#fff" />
+            }
+            sx={{
+              backgroundColor: GROK_COLOR,
+              "&:hover": { backgroundColor: "#333" },
+              whiteSpace: "nowrap",
+              minWidth: 140,
+              textTransform: "none",
+            }}
+          >
             {searching ? "Asking..." : "Ask Grok"}
           </Button>
         </Box>
       </Paper>
 
+      {/* History */}
       <Box>
-        <Typography variant="h6" className="mb-3">Search History</Typography>
+        <Typography variant="h6" className="mb-3">
+          Search History
+        </Typography>
+
         {historyLoading ? (
-          <Box className="flex justify-center py-8"><CircularProgress size={32} /></Box>
+          <Box className="flex justify-center py-8">
+            <CircularProgress size={32} />
+          </Box>
         ) : history.length === 0 ? (
           <Paper className="p-8 text-center" elevation={0} sx={{ border: "1px solid #e2e8f0" }}>
             <GrokIcon size={48} color="#cbd5e1" />
-            <Typography variant="body1" color="text.secondary" className="mt-3">No Grok queries yet.</Typography>
+            <Typography variant="body1" color="text.secondary" className="mt-3">
+              No Grok queries yet. Ask something above to get started.
+            </Typography>
           </Paper>
         ) : (
           <div className="space-y-4">
-            {history.map((item) => (
-              <Paper key={item.id} className="p-5" elevation={1}>
+            {history.map((item, index) => (
+              <Paper key={item.id ?? index} className="p-5" elevation={1}>
                 <Box className="flex items-start justify-between gap-3 mb-3">
-                  <Typography variant="subtitle1" className="font-semibold text-slate-900">{item.question}</Typography>
-                  <Chip label="Grok" size="small" icon={<GrokIcon size={14} />} sx={{ backgroundColor: "#f1f1f1", color: "#111", flexShrink: 0 }} />
+                  <Typography variant="subtitle1" className="font-semibold text-slate-900">
+                    {item.question}
+                  </Typography>
+                  <Chip
+                    label="Grok"
+                    size="small"
+                    icon={<GrokIcon size={14} />}
+                    sx={{ backgroundColor: "#f1f1f1", color: "#111", flexShrink: 0 }}
+                  />
                 </Box>
-                <Typography variant="body2" color="text.secondary" className="mb-3 leading-relaxed whitespace-pre-wrap">{item.response}</Typography>
+                <Typography variant="body2" color="text.secondary" className="mb-3 leading-relaxed whitespace-pre-wrap">
+                  {item.response}
+                </Typography>
                 <Box className="flex items-center gap-3 flex-wrap">
-                  <Typography variant="caption" color="text.secondary">{formatDate(item.timestamp)}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {formatDate(item.timestamp)}
+                  </Typography>
                   <span className="text-slate-300">•</span>
-                  <Typography variant="caption" color="text.secondary">{item.expectedtokens} tokens</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {item.expectedtokens} tokens
+                  </Typography>
                   <span className="text-slate-300">•</span>
-                  <Typography variant="caption" color="text.secondary">{formatCost(item.expectedcost)}</Typography>
-                  {item.model && (<><span className="text-slate-300">•</span><Typography variant="caption" color="text.secondary">{item.model}</Typography></>)}
+                  <Typography variant="caption" color="text.secondary">
+                    {formatCost(item.expectedcost)}
+                  </Typography>
+                  {item.model && (
+                    <>
+                      <span className="text-slate-300">•</span>
+                      <Typography variant="caption" color="text.secondary">
+                        {item.model}
+                      </Typography>
+                    </>
+                  )}
                 </Box>
               </Paper>
             ))}
