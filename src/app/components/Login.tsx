@@ -354,7 +354,7 @@ export function Login() {
                 <h4 className="font-semibold text-green-400">Current Build</h4>
               </div>
               <p className="font-bold text-white mb-0.5" style={{ fontSize: '14pt' }}>Version 31</p>
-              <p className="text-slate-400 mb-0.5">Released: July 19, 2026</p>
+              <p className="text-slate-400 mb-0.5">Released: September 15, 2026</p>
               <a href="/versionhistory.html" target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-0.5 text-blue-400 hover:text-blue-300 underline transition-colors">
                 <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -393,10 +393,10 @@ export function Login() {
                 <h4 className="font-semibold text-purple-400">What's New</h4>
               </div>
               <ul className="text-slate-300 space-y-0.5">
-                <li className="flex items-start gap-1"><span className="text-purple-400 mt-0.5">•</span><span>Video Shorts — record & process video clips</span></li>
-                <li className="flex items-start gap-1"><span className="text-purple-400 mt-0.5">•</span><span>AccuWeather — live weather in desktop widget</span></li>
-                <li className="flex items-start gap-1"><span className="text-purple-400 mt-0.5">•</span><span>Visual Prompts — camera & image AI analysis</span></li>
-                <li className="flex items-start gap-1"><span className="text-purple-400 mt-0.5">•</span><span>MyDesktop detail modal with file attachments</span></li>
+                <li className="flex items-start gap-1"><span className="text-purple-400 mt-0.5">•</span><span>LLM Comparisons — Side-by-side model results</span></li>
+                <li className="flex items-start gap-1"><span className="text-purple-400 mt-0.5">•</span><span>Voice Response — TTS playback for AI answers</span></li>
+                <li className="flex items-start gap-1"><span className="text-purple-400 mt-0.5">•</span><span>Multi-Session Chat — Concurrent AI conversations</span></li>
+                <li className="flex items-start gap-1"><span className="text-purple-400 mt-0.5">•</span><span>AdBase Pro — Customer toggle &amp; inline switch</span></li>
               </ul>
             </div>
           </div>

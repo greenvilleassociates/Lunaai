@@ -75,16 +75,15 @@ export function About() {
                 <Paper className="p-4 border-l-4 border-green-600 bg-green-50">
                   <Box className="flex items-center justify-between mb-2">
                     <Typography variant="h6" className="font-bold text-green-800">Version 31 - Current Build</Typography>
-                    <Chip label="July 19, 2026" color="success" size="small" />
+                    <Chip label="September 15, 2026" color="success" size="small" />
                   </Box>
-                  <Typography variant="subtitle2" className="mb-3 text-green-700">Video Shorts, AccuWeather, Visual Prompts &amp; LunaMobile Support</Typography>
+                  <Typography variant="subtitle2" className="mb-3 text-green-700">LLM Comparisons, Voice Response &amp; Multi-Session Chat</Typography>
                   <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">
-                    <li><strong>Video Shorts (VideoQuestions)</strong> - Record video clips directly in the browser; audio track is extracted server-side and processed through the LunaAI voice-to-text pipeline</li>
-                    <li><strong>Visual Prompts (VideoOCR)</strong> - Capture photos via device camera or upload images; processed through the LunaAI vision AI pipeline for analysis, classification, and OCR</li>
-                    <li><strong>LunaMobile Support</strong> - ChatQueryType 100–199 range identifies mobile client requests; MyDesktop activity feed displays a LunaMobile badge for all mobile-originated queries</li>
-                    <li><strong>AccuWeather Integration</strong> - Dedicated AccuWeather page plus inline widget on MyDesktop; queries <code>/api/accuweather/&#123;query&#125;</code> with live condition highlights</li>
-                    <li><strong>MyDesktop Detail Modal</strong> - Full response viewer with file attachments, token/cost breakdown, and source badge</li>
-                    <li><strong>BannerAd Stability</strong> - Removed broken JSON fetch; component initializes directly from built-in fallback commercials</li>
+                    <li><strong>LLM Comparisons</strong> - Side-by-side response view across multiple AI providers for direct quality comparison</li>
+                    <li><strong>Voice Response</strong> - TTS playback button on all AI search results via /api/VoiceResponse two-step flow</li>
+                    <li><strong>Multi-Session Chat</strong> - Run concurrent independent AI conversations without losing context</li>
+                    <li><strong>AdBase Pro</strong> - Inline Switch toggle per campaign row; Customer Name promoted to primary column with Client ID subtitle</li>
+                    <li><strong>MUI v9 Fixes</strong> - Replaced deprecated InputProps with slotProps; fixed empty-body JSON crash on 204 responses</li>
                   </ul>
                 </Paper>
 
