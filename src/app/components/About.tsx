@@ -7,19 +7,19 @@ export function About() {
       <Box className="flex items-center justify-between mb-6">
         <h2 className="text-3xl">About LunaAI</h2>
         <Chip
-          label="Version 31"
+          label="Version 33"
           color="success"
           icon={<NewReleases />}
           sx={{ fontSize: '1rem', padding: '20px 10px' }}
         />
       </Box>
-      
+
       <div className="space-y-6">
         <section>
           <h3 className="text-2xl mb-3">Manager of LLMs</h3>
           <p className="text-slate-600 mb-4">
-            LunaAI is an intelligent orchestration platform that manages multiple Large Language Models (LLMs). 
-            Our system processes requests across various AI providers, chains results, and delivers comprehensive 
+            LunaAI is an intelligent orchestration platform that manages multiple Large Language Models (LLMs).
+            Our system processes requests across various AI providers, chains results, and delivers comprehensive
             responses directly to your desktop.
           </p>
         </section>
@@ -54,9 +54,9 @@ export function About() {
         <section>
           <h3 className="text-xl mb-3">Why LunaAI?</h3>
           <p className="text-slate-600">
-            Instead of managing multiple AI subscriptions and interfaces, LunaAI provides a unified platform 
-            to leverage the strengths of different LLMs. Whether you need ChatGPT's versatility or Claude's 
-            reasoning capabilities, LunaAI intelligently routes your requests and combines results for 
+            Instead of managing multiple AI subscriptions and interfaces, LunaAI provides a unified platform
+            to leverage the strengths of different LLMs. Whether you need ChatGPT's versatility or Claude's
+            reasoning capabilities, LunaAI intelligently routes your requests and combines results for
             optimal outcomes.
           </p>
         </section>
@@ -71,19 +71,51 @@ export function About() {
             </AccordionSummary>
             <AccordionDetails>
               <Box className="space-y-4">
-                {/* Version 31 */}
+
+                {/* Version 33 */}
                 <Paper className="p-4 border-l-4 border-green-600 bg-green-50">
                   <Box className="flex items-center justify-between mb-2">
-                    <Typography variant="h6" className="font-bold text-green-800">Version 31 - Current Build</Typography>
-                    <Chip label="September 15, 2026" color="success" size="small" />
+                    <Typography variant="h6" className="font-bold text-green-800">Version 33 - Current Build</Typography>
+                    <Chip label="September 17, 2026" color="success" size="small" />
                   </Box>
-                  <Typography variant="subtitle2" className="mb-3 text-green-700">LLM Comparisons, Voice Response &amp; Multi-Session Chat</Typography>
+                  <Typography variant="subtitle2" className="mb-3 text-green-700">3-Step Authentication — Hardcoded Users, JSON Data, Azure API</Typography>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">
+                    <li><strong>3-Step Auth Flow</strong> - Login checks hardcoded users first, then /Data/users.json, then POST /api/Auth/login</li>
+                    <li><strong>Hardcoded Users</strong> - guest/guest, admin/admin, john/john always available with no network dependency</li>
+                    <li><strong>Auth Helper Refactor</strong> - Extracted authenticateLocalUser and postLoginFireAndForget to eliminate duplicated login logic</li>
+                  </ul>
+                </Paper>
+
+                {/* Version 32 */}
+                <Paper className="p-4 border-l-4 border-teal-600 bg-teal-50">
+                  <Box className="flex items-center justify-between mb-2">
+                    <Typography variant="h6" className="font-bold text-teal-800">Version 32</Typography>
+                    <Chip label="September 15, 2026" size="small" />
+                  </Box>
+                  <Typography variant="subtitle2" className="mb-3 text-teal-700">LLM Comparisons, Voice Response &amp; Multi-Session Chat</Typography>
                   <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">
                     <li><strong>LLM Comparisons</strong> - Side-by-side response view across multiple AI providers for direct quality comparison</li>
                     <li><strong>Voice Response</strong> - TTS playback button on all AI search results via /api/VoiceResponse two-step flow</li>
                     <li><strong>Multi-Session Chat</strong> - Run concurrent independent AI conversations without losing context</li>
                     <li><strong>AdBase Pro</strong> - Inline Switch toggle per campaign row; Customer Name promoted to primary column with Client ID subtitle</li>
+                    <li><strong>API Auth Fix</strong> - Login now uses POST /api/Auth/login instead of client-side password matching against GET /api/Users</li>
                     <li><strong>MUI v9 Fixes</strong> - Replaced deprecated InputProps with slotProps; fixed empty-body JSON crash on 204 responses</li>
+                  </ul>
+                </Paper>
+
+                {/* Version 31 */}
+                <Paper className="p-4 border-l-4 border-teal-600 bg-teal-50">
+                  <Box className="flex items-center justify-between mb-2">
+                    <Typography variant="h6" className="font-bold text-teal-800">Version 31</Typography>
+                    <Chip label="July 19, 2026" size="small" />
+                  </Box>
+                  <Typography variant="subtitle2" className="mb-3 text-teal-700">Video Shorts, AccuWeather, Visual Prompts &amp; LunaMobile Support</Typography>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">
+                    <li><strong>Video Shorts (VideoQuestions)</strong> - Record video clips directly in the browser; audio extracted and processed through the LunaAI voice-to-text pipeline</li>
+                    <li><strong>Visual Prompts (VideoOCR)</strong> - Capture photos via device camera or upload images for AI vision analysis, classification, and OCR</li>
+                    <li><strong>LunaMobile Support</strong> - ChatQueryType 100–199 identifies mobile client requests; MyDesktop shows LunaMobile badge for mobile-originated queries</li>
+                    <li><strong>AccuWeather Integration</strong> - Dedicated AccuWeather page plus inline widget on MyDesktop</li>
+                    <li><strong>MyDesktop Detail Modal</strong> - Full response viewer with file attachments, token/cost breakdown, and source badge</li>
                   </ul>
                 </Paper>
 
@@ -99,47 +131,7 @@ export function About() {
                     <li><strong>MyDesktop Source Badges</strong> - Activity feed now displays correct AI provider badges for all sources</li>
                     <li><strong>Login Performance</strong> - Navigate to main screen immediately; geolocation, IP, log &amp; session are fire-and-forget</li>
                     <li><strong>Password Validation</strong> - Local JSON login now validates both username AND password</li>
-                    <li><strong>API Auth Fallback</strong> - Switched to GET /api/Users filter (avoids broken Auth endpoint)</li>
                     <li><strong>ApiWarmupLoader</strong> - 10s max load, progress capped at 99%, no decimal display</li>
-                  </ul>
-                </Paper>
-
-                {/* Version 29 */}
-                <Paper className="p-4 border-l-4 border-teal-600 bg-teal-50">
-                  <Box className="flex items-center justify-between mb-2">
-                    <Typography variant="h6" className="font-bold text-teal-800">Version 29</Typography>
-                    <Chip label="May 11, 2026" size="small" />
-                  </Box>
-                  <Typography variant="subtitle2" className="mb-3 text-teal-700">Build Stabilization &amp; Multi-Log Login Events</Typography>
-                  <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">
-                    <li><strong>Role-Based Login Logging</strong> - postLoginEvents dispatches to AuthLog, UserNotices, UserLog, AdminLogs, SuperuserLog based on role</li>
-                    <li><strong>API Auth via /api/Users</strong> - Login fallback uses GET /api/Users with plainpassword filter instead of broken Auth endpoint</li>
-                  </ul>
-                </Paper>
-
-                {/* Version 28 */}
-                <Paper className="p-4 border-l-4 border-teal-600 bg-teal-50">
-                  <Box className="flex items-center justify-between mb-2">
-                    <Typography variant="h6" className="font-bold text-teal-800">Version 28</Typography>
-                    <Chip label="May 11, 2026" size="small" />
-                  </Box>
-                  <Typography variant="subtitle2" className="mb-3 text-teal-700">Search Rebilling, Empowr &amp; Geocode Features</Typography>
-                  <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">
-                    <li><strong>Search Rebilling</strong> - Improved billing and cost tracking for AI search requests</li>
-                    <li><strong>Empowr to Features</strong> - USC Empowr added to Features page</li>
-                    <li><strong>Geocode to Features</strong> - Geocode lookup added to Features page</li>
-                  </ul>
-                </Paper>
-
-                {/* Version 27 */}
-                <Paper className="p-4 border-l-4 border-teal-600 bg-teal-50">
-                  <Box className="flex items-center justify-between mb-2">
-                    <Typography variant="h6" className="font-bold text-teal-800">Version 27</Typography>
-                    <Chip label="May 11, 2026" size="small" />
-                  </Box>
-                  <Typography variant="subtitle2" className="mb-3 text-teal-700">Context Based Router Configuration</Typography>
-                  <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">
-                    <li><strong>Context Router Config</strong> - Dynamic routing configuration for Luna Context Router</li>
                   </ul>
                 </Paper>
 
@@ -201,6 +193,52 @@ export function About() {
                     <li><strong>Features Keyword Search</strong> - Queries /api/WebSearch by keyword</li>
                   </ul>
                 </Paper>
+
+                {/* Release 7.5 */}
+                <Paper className="p-4 border-l-4 border-blue-600 bg-blue-50">
+                  <Box className="flex items-center justify-between mb-2">
+                    <Typography variant="h6" className="font-bold text-blue-800">Release 7.5</Typography>
+                    <Chip label="February 20, 2026" color="primary" size="small" />
+                  </Box>
+                  <Typography variant="subtitle2" className="mb-3 text-blue-700">HR Manager &amp; Advanced Administration</Typography>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">
+                    <li><strong>HR Manager System</strong> - Complete team and manager designation</li>
+                    <li><strong>Business Unit Management</strong> - Multi-store/branch assignment with Corporate HQ auto-creation</li>
+                    <li><strong>Settings Page</strong> - Tabbed superuser interface for LLM, API, Security, and System configuration</li>
+                    <li><strong>Role-Based Access Control</strong> - Enhanced permissions for superusers and company admins</li>
+                  </ul>
+                </Paper>
+
+                {/* Release 7.0 */}
+                <Paper className="p-4 border-l-4 border-purple-600 bg-purple-50">
+                  <Box className="flex items-center justify-between mb-2">
+                    <Typography variant="h6" className="font-bold text-purple-800">Release 7.0</Typography>
+                    <Chip label="January 15, 2026" color="secondary" size="small" />
+                  </Box>
+                  <Typography variant="subtitle2" className="mb-3 text-purple-700">LLM Agent Configuration &amp; Multi-Provider Support</Typography>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">
+                    <li><strong>LLM Agent Management</strong> - Configure ChatGPT, Claude, USC Empowr, and Grok AI</li>
+                    <li><strong>EntraID Authentication</strong> - Microsoft Azure AD integration for enterprise security</li>
+                    <li><strong>Dynamic Configuration</strong> - JSON-based agent settings with temperature, tokens, and prompts</li>
+                    <li><strong>API-First Architecture</strong> - Azure backend with local JSON fallback</li>
+                  </ul>
+                </Paper>
+
+                {/* Release 6.0 */}
+                <Paper className="p-4 border-l-4 border-slate-600 bg-slate-50">
+                  <Box className="flex items-center justify-between mb-2">
+                    <Typography variant="h6" className="font-bold text-slate-800">Release 6.0</Typography>
+                    <Chip label="December 1, 2025" size="small" />
+                  </Box>
+                  <Typography variant="subtitle2" className="mb-3 text-slate-700">Authentication &amp; Session Management</Typography>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">
+                    <li><strong>User Authentication</strong> - Complete login/logout system with session tracking</li>
+                    <li><strong>Geolocation Tracking</strong> - Login location capture for security auditing</li>
+                    <li><strong>IP Address Logging</strong> - Network security and access monitoring</li>
+                    <li><strong>Protected Routes</strong> - Role-based page access control</li>
+                  </ul>
+                </Paper>
+
               </Box>
             </AccordionDetails>
           </Accordion>
