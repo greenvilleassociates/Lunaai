@@ -71,6 +71,7 @@ export function Login() {
 
   const performAuthentication = async () => {
     try {
+      // Check local JSON first
       const users = await fetchExternalData(DATA_URLS.USERS);
       const localUser = users.find(
         (u: { username: string; password: string }) =>
@@ -162,41 +163,41 @@ export function Login() {
         return;
       }
 
-      const usersUrl = getApiUrl(API_CONFIG.ENDPOINTS.USERS);
-      const usersResponse = await fetch(usersUrl);
+      // Try /api/Auth/login — proper server-side authentication
+      const authUrl = getApiUrl(API_CONFIG.ENDPOINTS.AUTH_LOGIN);
+      const authResponse = await fetch(authUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, plainPassword: password }),
+      });
 
-      if (!usersResponse.ok) {
-        throw new Error("Unable to reach authentication server");
-      }
-
-      const allUsers = await usersResponse.json();
-      const user = allUsers.find(
-        (u: any) => u.username === username && (u.password === password || u.plainpassword === password)
-      );
-
-      if (!user) {
+      if (!authResponse.ok) {
         throw new Error("Invalid username or password");
       }
 
-      const authToken = "";
+      const authData = await authResponse.json();
+      const authToken = authData.token || "";
       const loginTime = new Date().toLocaleString();
+      const uid = authData.userId?.toString() || "";
 
-      localStorage.setItem("uid", user.uid || user.id || user.userid?.toString() || "");
-      localStorage.setItem("userid", user.userid?.toString() || user.id?.toString() || "");
-      localStorage.setItem("username", user.username || username);
-      localStorage.setItem("role", user.role || "user");
+      localStorage.setItem("uid", uid);
+      localStorage.setItem("userid", uid);
+      localStorage.setItem("username", authData.userUsername || username);
+      localStorage.setItem("role", authData.userRole || "user");
+      localStorage.setItem("email", authData.userEmail || "");
       localStorage.setItem("loginTime", loginTime);
       localStorage.setItem("latitude", "N/A");
       localStorage.setItem("longitude", "N/A");
       localStorage.setItem("ipAddress", "N/A");
-      localStorage.setItem("defaultSearchEngine", (user.dse ?? 1).toString());
-      localStorage.setItem("maxsearchengines", (user.maxsearchengines ?? 1).toString());
-      localStorage.setItem("chainsearch", (user.chainsearch ?? 0).toString());
+      localStorage.setItem("defaultSearchEngine", "1");
+      localStorage.setItem("maxsearchengines", "1");
+      localStorage.setItem("chainsearch", "0");
       if (authToken) localStorage.setItem("authToken", authToken);
 
       setLoading(false);
       navigate("/", { replace: true });
 
+      // Fire-and-forget post-login tasks
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           localStorage.setItem("latitude", pos.coords.latitude.toFixed(6));
@@ -213,19 +214,19 @@ export function Login() {
 
       fetch(getApiUrl(API_CONFIG.ENDPOINTS.USER_LOG), {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${user.uid}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${uid}` },
         body: JSON.stringify({
           descr: "User login via Azure API",
           emplid: 0,
-          fullname: user.username,
+          fullname: authData.userFullName || authData.userUsername || username,
           logdate: new Date().toISOString(),
           secpriority: 1,
           noccomments: `Successful login at ${loginTime}`,
           nocOpId: 0,
           escalationId: 0,
           triagecasenumber: "",
-          userid: parseInt(user.uid) || 0,
-          role: user.role,
+          userid: authData.userId || 0,
+          role: authData.userRole || "user",
         }),
       }).catch(() => {});
 
